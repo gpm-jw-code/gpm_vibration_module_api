@@ -7,6 +7,7 @@ namespace gpm_vibration_module_api
     public class DataSet
     {
         internal bool IsReady = false;
+        public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
         public clsFFTData FFTData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();

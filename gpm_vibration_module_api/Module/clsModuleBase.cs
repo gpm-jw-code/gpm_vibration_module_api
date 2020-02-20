@@ -40,7 +40,7 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException exp)
             {
-                return exp.ErrorCode;
+                return Convert.ToInt32(clsErrorCode.Error.ConnectFail);
             }
         }
         /// <summary>
@@ -230,7 +230,9 @@ namespace gpm_vibration_module_api
             catch (Exception exp)
             {
                 timespend = -1;
-                throw;
+                AccDataBuffer.Clear();
+                WaitForBufferRecieveDone.Set();
+                return new byte[0];
             }
         }
         private ManualResetEvent WaitForBufferRecieveDone;
@@ -251,7 +253,6 @@ namespace gpm_vibration_module_api
                         WaitForBufferRecieveDone.Set();
                     }
                     else
-                        //  Get the rest of the data.  AccDataBuffer
                         client.BeginReceive(state.buffer, 0, state.BufferSize, 0,
                             new AsyncCallback(receiveCallBack), state);
                 }
@@ -266,7 +267,6 @@ namespace gpm_vibration_module_api
                 AccDataBuffer.Clear();
                 WaitForBufferRecieveDone.Set();
             }
-
             //            AccDataBuffer.AddRange(state.buffer);
         }
 

@@ -115,6 +115,11 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public int Connect(string IP, int Port)
         {
+            if (IP.Split('.').Length != 4 | IP == "")
+                return Convert.ToInt32(clsErrorCode.Error.IPIllegal);
+            if (Port <= 0)
+                return Convert.ToInt32(clsErrorCode.Error.PortIllegal);
+
             try
             {
                 if (ConnectEvent != null)
@@ -134,7 +139,7 @@ namespace gpm_vibration_module_api
                 }
                 return ret;
             }
-            catch(Exception exp)
+            catch (Exception exp)
             {
                 return -69;
             }
@@ -155,7 +160,7 @@ namespace gpm_vibration_module_api
             if (module_base.moduleSettings.DataLength == clsEnum.Module_Setting_Enum.DataLength.x8)
                 Thread.Sleep(2000);
             else
-                Thread.Sleep(800);
+                Thread.Sleep(1500);
             paramSetThread = new Thread(ParamSetTask) { IsBackground = true };
             paramSetThread.Start();
             WaitAsyncForParametersSet.WaitOne();
@@ -265,7 +270,9 @@ namespace gpm_vibration_module_api
         public DataSet GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
             if (Connected == false)
-                return new DataSet();
+            {
+                return new DataSet() { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
+            }
             WaitAsyncForParametersSet.Set();
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
@@ -352,6 +359,12 @@ namespace gpm_vibration_module_api
             {
                 byte[] AccPacket;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend);
+                if(AccPacket.Length==0)
+                {
+                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.AccDataGetTimeout);
+                    WaitAsyncForGetDataTask.Set();
+                    return;
+                }
                 var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, module_base.moduleSettings.SensorType == clsEnum.Module_Setting_Enum.SensorType.Genernal ? clsEnum.FWSetting_Enum.AccConvertAlgrium.Old : clsEnum.FWSetting_Enum.AccConvertAlgrium.New);
                 DataSetRet.AccData.X = datas[0];
                 DataSetRet.AccData.Y = datas[1];

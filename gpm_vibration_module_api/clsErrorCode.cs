@@ -9,14 +9,15 @@ namespace gpm_vibration_module_api
 
         public enum Error
         {
-            ConnectFail=1404,
-            Timeout,
-            KeyproNotFound,
-            TrialTimeEnd,
-            ModelSaveError,
-            ModelDeleteError,
-            ModelNoExist = 2040,
-            ConnectFail_HostNoReply = 16606
+            ConnectFail = 603,
+            AccDataGetTimeout = 605,
+            ParametersSettingTimeout = 606,
+            KeyproNotFound = 404,
+            TrialTimeEnd = 401,
+            NoConnection = 604,
+            ConnectFail_HostNoReply = 16606,
+            PortIllegal = 602,
+            IPIllegal = 601
         }
     }
 }
