@@ -1,5 +1,5 @@
 ﻿//#define YCM
-#define KeyproEnable
+//#define KeyproEnable
 
 using System;
 using System.Collections.Generic;
