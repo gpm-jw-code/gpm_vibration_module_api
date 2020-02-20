@@ -47,17 +47,7 @@ namespace gpm_vibration_module_api
 
         }
 
-        public struct Diagnose
-        {
-            public enum TrainingResult
-            {
-                OK, NG
-            }
-            public enum DiagnoseMode
-            {
-                Realtime, Inspection
-            }
-        }
+       
 
         internal struct KeyPro
         {
