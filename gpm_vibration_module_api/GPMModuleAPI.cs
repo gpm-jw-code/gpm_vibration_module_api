@@ -1,4 +1,6 @@
 ﻿//#define YCM
+#define KeyproEnable
+
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -11,6 +13,12 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+#if KeyproEnable
+        private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+#else
+                private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.Exist;
+
+#endif
         /// <summary>
         /// 存放所有連線socket
         /// </summary>
@@ -54,7 +62,7 @@ namespace gpm_vibration_module_api
         private Thread paramSetThread;
         private ManualResetEvent WaitAsyncForGetDataTask;
         private ManualResetEvent WaitAsyncForParametersSet;
-
+        private event Action<string> FunctionCalled;
         /// <summary>
         /// 斷線事件
         /// </summary>
@@ -65,15 +73,36 @@ namespace gpm_vibration_module_api
         private clsModuleBase module_base = new clsModuleBase();
         public GPMModuleAPI(clsEnum.Module_Setting_Enum.SensorType sensorType)
         {
+            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
+            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
+#if KeyproEnable
+            var ret = KeyproMdule.API.IsKeyInsert();
+#endif
             WaitAsyncForGetDataTask = new ManualResetEvent(false);
             WaitAsyncForParametersSet = new ManualResetEvent(true);
             GetDataTaskPause = new ManualResetEvent(true);
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
             module_base.moduleSettings.SensorType = sensorType;
+
+        }
+
+        private void API_KeyProRemoveEvent(DateTime obj)
+        {
+            KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+        }
+
+        private void API_KeyProInsertEvent(DateTime obj)
+        {
+            KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.Exist;
         }
 
         public GPMModuleAPI()
         {
+            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
+            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
+#if KeyproEnable
+            var ret = KeyproMdule.API.IsKeyInsert();
+#endif
             WaitAsyncForGetDataTask = new ManualResetEvent(false);
             WaitAsyncForParametersSet = new ManualResetEvent(true);
             GetDataTaskPause = new ManualResetEvent(true);
@@ -115,6 +144,8 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public int Connect(string IP, int Port)
         {
+            if (KeyProExisStatus == clsEnum.KeyPro.KeyProExisStatus.NoInsert)
+                return Convert.ToInt32(clsErrorCode.Error.KeyproNotFound);
             if (IP.Split('.').Length != 4 | IP == "")
                 return Convert.ToInt32(clsErrorCode.Error.IPIllegal);
             if (Port <= 0)
@@ -208,6 +239,8 @@ namespace gpm_vibration_module_api
         {
             set
             {
+                if (SensorType != clsEnum.Module_Setting_Enum.SensorType.High)
+                    return;
                 setTaskObj.SettingItem = 1;
                 setTaskObj.SettingValue = value;
                 StartParamSetTask();
@@ -269,10 +302,10 @@ namespace gpm_vibration_module_api
         /// </summary>
         public DataSet GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
+            if (KeyProExisStatus == clsEnum.KeyPro.KeyProExisStatus.NoInsert)
+                return new DataSet() { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KeyproNotFound) };
             if (Connected == false)
-            {
                 return new DataSet() { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
-            }
             WaitAsyncForParametersSet.Set();
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
@@ -359,7 +392,7 @@ namespace gpm_vibration_module_api
             {
                 byte[] AccPacket;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend);
-                if(AccPacket.Length==0)
+                if (AccPacket.Length == 0)
                 {
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.AccDataGetTimeout);
                     WaitAsyncForGetDataTask.Set();

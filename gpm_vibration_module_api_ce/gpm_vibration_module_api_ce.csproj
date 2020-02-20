@@ -77,6 +77,8 @@
     <Compile Include="..\gpm_vibration_module_api\DataSet.cs" />
     <Compile Include="..\gpm_vibration_module_api\GpmMath\FFT.cs" />
     <Compile Include="..\gpm_vibration_module_api\GpmMath\Numeric.cs" />
+    <Compile Include="..\gpm_vibration_module_api\KeyproMdule.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="TestFriends.cs" />
   </ItemGroup>
 </Project>
