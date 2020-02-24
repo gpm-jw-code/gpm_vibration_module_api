@@ -1,5 +1,5 @@
-﻿//#define YCM
-//#define KeyproEnable
+﻿#define YCM
+//define KeyproEnable
 
 using System;
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace gpm_vibration_module_api
 #if KeyproEnable
         private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
 #else
-                private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.Exist;
+        private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.Exist;
 
 #endif
         /// <summary>
@@ -46,6 +46,18 @@ namespace gpm_vibration_module_api
                 {
 
                 }
+            }
+        }
+
+        public Socket ModuleSocket
+        {
+            get
+            {
+                return module_base.ModuleSocket;
+            }
+            set
+            {
+                module_base.ModuleSocket = value;
             }
         }
 
@@ -153,8 +165,7 @@ namespace gpm_vibration_module_api
 
             try
             {
-                if (ConnectEvent != null)
-                    ConnectEvent.Invoke(IP);
+
                 if (SCKConectionList.ContainsKey(IP))
                 {
                     Disconnect();
@@ -163,6 +174,8 @@ namespace gpm_vibration_module_api
                 var ret = module_base.Connect(IP, Port);
                 if (ret == 0)
                 {
+                    if (ConnectEvent != null)
+                        ConnectEvent.Invoke(IP);
                     if (!SCKConectionList.ContainsKey(IP))
                         SCKConectionList.Add(IP, module_base.ModuleSocket);
                     else
@@ -296,6 +309,11 @@ namespace gpm_vibration_module_api
                 return module_base.ModuleSocket.Connected;
             }
         }
+
+        /// <summary>
+        /// 設定感測器安裝位置名稱
+        /// </summary>
+        public string Location { get; set; }
 
         /// <summary>
         /// 取得三軸加速度量測值
