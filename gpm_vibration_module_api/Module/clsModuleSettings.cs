@@ -4,10 +4,30 @@ using System.Text;
 
 namespace gpm_vibration_module_api.Module
 {
-    internal class clsModuleSettings
+    public class clsModuleSettings
     {
-        public byte[] ByteAryOfParameters = new byte[8] { 0x01, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
-        private clsEnum.Module_Setting_Enum.DataLength pDataLength= clsEnum.Module_Setting_Enum.DataLength.x1;
+        private byte[] byteAryOfParameters  = new byte[] { 0x01 , 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
+        public byte[] ByteAryOfParameters
+        {
+            set
+            {
+                byteAryOfParameters = value;
+                string str = "";
+                foreach (var item in value)
+                {
+                    str += item + ",";
+                }
+                ParametersStringType = str;
+            }
+            get
+            {
+                return byteAryOfParameters;
+            }
+        }
+        public string ParametersStringType = "1,0,159,0,0,0,0,0";
+
+
+        private clsEnum.Module_Setting_Enum.DataLength pDataLength = clsEnum.Module_Setting_Enum.DataLength.x1;
         private clsEnum.Module_Setting_Enum.MeasureRange pMeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
         private clsEnum.Module_Setting_Enum.ODR pODR = clsEnum.Module_Setting_Enum.ODR._9F;
         private clsEnum.Module_Setting_Enum.SensorType pSensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
@@ -30,7 +50,9 @@ namespace gpm_vibration_module_api.Module
                     default:
                         break;
                 }
-                ByteAryOfParameters[0] = byteval;
+                var b = ByteAryOfParameters;
+                b[0] = byteval;
+                ByteAryOfParameters = b;
                 pSensorType = value;
             }
         }

@@ -29,10 +29,10 @@ namespace gpm_vibration_module_api
 
             public enum MeasureRange
             {
-                MR_2G = 16384,
-                MR_4G = 8192,
-                MR_8G = 4096,
-                MR_16G = 2048,
+                MR_2G = 16384,  
+                MR_4G = 8192, 
+                MR_8G = 4096, 
+                MR_16G = 2048, 
             }
         }
         /// <summary>

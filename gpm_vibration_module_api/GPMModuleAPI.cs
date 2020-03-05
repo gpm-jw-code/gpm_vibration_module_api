@@ -1,10 +1,14 @@
 ﻿#define YCM
 //define KeyproEnable
 
+using gpm_vibration_module_api.Module;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Xml.Serialization;
 
 namespace gpm_vibration_module_api
 {
@@ -58,6 +62,7 @@ namespace gpm_vibration_module_api
             set
             {
                 module_base.ModuleSocket = value;
+                SensorIP = GetIPFromSocketObj(value);
             }
         }
 
@@ -118,6 +123,7 @@ namespace gpm_vibration_module_api
             WaitAsyncForGetDataTask = new ManualResetEvent(false);
             WaitAsyncForParametersSet = new ManualResetEvent(true);
             GetDataTaskPause = new ManualResetEvent(true);
+
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
 #if YCM
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.High;
@@ -126,6 +132,8 @@ namespace gpm_vibration_module_api
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
             WifiSensorUsing = true;
 #endif
+
+
 
         }
         public string SensorIP { get; private set; }
@@ -208,6 +216,7 @@ namespace gpm_vibration_module_api
             paramSetThread = new Thread(ParamSetTask) { IsBackground = true };
             paramSetThread.Start();
             WaitAsyncForParametersSet.WaitOne();
+            Save();
         }
 
         private void ParamSetTask()
@@ -229,6 +238,53 @@ namespace gpm_vibration_module_api
             }
             WaitAsyncForParametersSet.Set();
         }
+
+        /// <summary>
+        /// 儲存控制器參數到硬碟 路徑: Environment.CurrentDirectory + $@"\SensorConfig\{moduleIP}\"
+        /// </summary>
+        public int Save()
+        {
+            try
+            {
+                var ModelSavePath = "SensorConfig\\" + SensorIP;
+                if (!Directory.Exists(ModelSavePath))
+                    Directory.CreateDirectory(ModelSavePath);
+                var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
+                if (!File.Exists(filepath))
+                    File.Create(filepath).Close();
+                FileStream fs = new FileStream(filepath, FileMode.Create);
+                XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                xs.Serialize(fs, module_base.moduleSettings);
+                fs.Close();
+
+                return 0;
+            }
+            catch (IOException exp)
+            {
+                return -1;
+            }
+        }
+
+        public void Load()
+        {
+            var configpath = "SensorConfig\\" + SensorIP + "\\Controller_Parameters.xml";
+            if (File.Exists(configpath))
+            {
+                FileStream fs = new FileStream(configpath, FileMode.Open);
+                XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                clsModuleSettings setting = (clsModuleSettings)xs.Deserialize(fs);
+                fs.Flush();
+                fs.Close();
+                SensorType = setting.SensorType;
+                MeasureRange = setting.MeasureRange;
+                DataLength = setting.DataLength;
+
+                ODR = setting.ODR;
+                module_base.moduleSettings = setting;
+            }
+
+        }
+
         /// <summary>
         /// 設定/取得量測範圍
         /// </summary>
@@ -245,6 +301,39 @@ namespace gpm_vibration_module_api
                 return module_base.moduleSettings.MeasureRange;
             }
         }
+
+        public int MeasureRange_IntType
+        {
+            set
+            {
+                setTaskObj.SettingItem = 2;
+                switch (value)
+                {
+                    case 2:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
+                        break;
+                    case 4:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MeasureRange.MR_4G;
+                        break;
+                    case 8:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MeasureRange.MR_8G;
+                        break;
+                    case 16:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MeasureRange.MR_16G;
+                        break;
+                    default:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
+                        break;
+                }
+
+                StartParamSetTask();
+            }
+            get
+            {
+                return 16384 / Convert.ToInt32(module_base.moduleSettings.MeasureRange);
+            }
+        }
+
         /// <summary>
         /// 設定/取得封包資料長度
         /// </summary>
@@ -261,6 +350,41 @@ namespace gpm_vibration_module_api
             get
             {
                 return module_base.moduleSettings.DataLength;
+            }
+        }
+        /// <summary>
+        /// 設定/取得封包資料長度
+        /// </summary>
+        public int DataLength_IntType
+        {
+            set
+            {
+                if (SensorType != clsEnum.Module_Setting_Enum.SensorType.High)
+                    return;
+                setTaskObj.SettingItem = 1;
+                switch (value)
+                {
+                    case 512:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DataLength.x1;
+                        break;
+                    case 1024:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DataLength.x2;
+                        break;
+                    case 2048:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DataLength.x4;
+                        break;
+                    case 4096:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DataLength.x8;
+                        break;
+                    default:
+                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DataLength.x1;
+                        break;
+                }
+                StartParamSetTask();
+            }
+            get
+            {
+                return Convert.ToInt32(module_base.moduleSettings.DataLength);
             }
         }
 
@@ -380,7 +504,8 @@ namespace gpm_vibration_module_api
             //    Datas.AccData.X.Add(-99999);
             //    Datas.AccData.Y.Add(-99999);
             //    Datas.AccData.Z.Add(-99999);
-            //    throw;
+            //    
+            ;
             //}
             //return Datas;
         }
@@ -474,7 +599,12 @@ namespace gpm_vibration_module_api
             }
             return freqVec;
         }
-
+        public string GetIPFromSocketObj(Socket sensorSocket)
+        {
+            IPEndPoint IPP = (IPEndPoint)sensorSocket.RemoteEndPoint;
+            string Ip = IPP.Address.ToString();
+            return Ip;
+        }
 
     }
 }

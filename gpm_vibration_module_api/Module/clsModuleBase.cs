@@ -32,6 +32,7 @@ namespace gpm_vibration_module_api
             {
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 ModuleSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                ModuleSocket.ReceiveBufferSize = 16384;
                 ModuleSocket.Connect(remoteEP);
                 if (ModuleSocket.Connected)
                     return 0;
@@ -95,7 +96,7 @@ namespace gpm_vibration_module_api
             clsEnum.Module_Setting_Enum.MeasureRange? measureRange,
             clsEnum.Module_Setting_Enum.ODR? oDR)
         {
-            var returnBytes = moduleSettings.SensorType == clsEnum.Module_Setting_Enum.SensorType.High | sensorType == clsEnum.Module_Setting_Enum.SensorType.High ? 1 : 8;
+            var returnBytes = moduleSettings.SensorType == clsEnum.Module_Setting_Enum.SensorType.High | sensorType == clsEnum.Module_Setting_Enum.SensorType.High ? 8 : 8;
             if (moduleSettings.WifiControllUseHighSppedSensor)
                 returnBytes = 8;
             moduleSettings.SensorType = sensorType != null ? (clsEnum.Module_Setting_Enum.SensorType)sensorType : moduleSettings.SensorType;
@@ -113,6 +114,8 @@ namespace gpm_vibration_module_api
             if (Parameters.Length == 1 && Parameters[0] == 0x02)
                 return;
             ParametersToDefine[0] = Parameters[0];
+            Array.Copy(Parameters, 1, ParametersToDefine, 1, 7);
+
             var TypeByte = ParametersToDefine[0];
             var DataLengthByte = ParametersToDefine[1];
             var ODRByte = ParametersToDefine[2];
@@ -207,7 +210,7 @@ namespace gpm_vibration_module_api
             public StringBuilder sb = new StringBuilder();
 
         }
-
+        DateTime st_time;
         internal byte[] GetAccData_HighSpeedWay(out long timespend)
         {
             try
@@ -219,12 +222,15 @@ namespace gpm_vibration_module_api
                 ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
                 var Datalength = Convert.ToInt32(moduleSettings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
-                var st_time = DateTime.Now;
+                st_time = DateTime.Now;
                 SocketState state = new SocketState() { buffer = new byte[Datalength], workSocket = ModuleSocket, BufferSize = Datalength };
+                Thread thmonitorBuffer = new Thread(monitorBuffer);
+                thmonitorBuffer.Start(ModuleSocket);
                 ModuleSocket.BeginReceive(state.buffer, 0, state.BufferSize, 0, new AsyncCallback(receiveCallBack), state);
                 WaitForBufferRecieveDone.WaitOne();
                 var ed_time = DateTime.Now;
                 timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
+                Console.WriteLine("Waitone : " +timespend);
                 return AccDataBuffer.ToArray();
             }
             catch (Exception exp)
@@ -235,6 +241,13 @@ namespace gpm_vibration_module_api
                 return new byte[0];
             }
         }
+
+        private void monitorBuffer(object skobj)
+        {
+            Socket s = ModuleSocket;
+                Console.WriteLine(s.Available+" aaa1aa23");
+        }
+
         private ManualResetEvent WaitForBufferRecieveDone;
         private void receiveCallBack(IAsyncResult ar)
         {
@@ -245,11 +258,15 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
+                    Console.WriteLine("b to read = " + bytesRead);
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer, 0, rev, 0, bytesRead);
                     AccDataBuffer.AddRange(rev);
                     if (AccDataBuffer.Count == state.BufferSize)
                     {
+                        var ed_time = DateTime.Now;
+                        var timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
+                        Console.WriteLine("No Waitone : " + timespend);
                         WaitForBufferRecieveDone.Set();
                     }
                     else
@@ -291,6 +308,7 @@ namespace gpm_vibration_module_api
                     if (timespend > 5000)
                         return new byte[0];
                     int avaliable = ModuleSocket.Available;
+                   // ModuleSocket.Receive(returnData, RecieveByteNum, ExpectRetrunSize, 0);
                     ModuleSocket.Receive(returnData, RecieveByteNum, avaliable, 0);
                     RecieveByteNum += avaliable;
                 }
