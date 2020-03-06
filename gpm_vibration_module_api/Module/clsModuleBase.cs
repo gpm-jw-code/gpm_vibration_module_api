@@ -1,4 +1,5 @@
-﻿using System;
+﻿using gpm_vibration_module_api.Tools;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -32,7 +33,7 @@ namespace gpm_vibration_module_api
             {
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 ModuleSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                ModuleSocket.ReceiveBufferSize = 16384;
+                ModuleSocket.ReceiveBufferSize = 512;
                 ModuleSocket.Connect(remoteEP);
                 if (ModuleSocket.Connected)
                     return 0;
@@ -207,19 +208,186 @@ namespace gpm_vibration_module_api
             public Socket workSocket = null;
             public int BufferSize = 256;
             public byte[] buffer;
+            public int WindowSize = 512;
             public StringBuilder sb = new StringBuilder();
+            public IAsyncResult AR;
 
         }
+
+
+        internal event Action<DataSet> DataReady;
+
+        private Thread THBulkProcess = null;
+        /// <summary>
+        /// 開始巨量資料接收
+        /// </summary>
+        public void StartGetBulkData(MeasureOption option)
+        {
+            SocketBufferClear();
+
+            if (THBulkProcess == null)
+            {
+                THBulkProcess = new Thread(BulkBufferProcess) { IsBackground = true };
+                THBulkProcess.Start();
+                BulkState = new SocketState() { buffer = new byte[512], workSocket = ModuleSocket, BufferSize = 512, WindowSize = option.WindowSize };
+                ModuleSocket.BeginReceive(BulkState.buffer, 0, BulkState.BufferSize, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
+            }
+            WaitForBufferRecieveDone = new ManualResetEvent(true);
+            var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKVALUE + "\r\n");
+            ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+        }
+
+        private Dictionary<string, List<double>> WindowData = new Dictionary<string, List<double>>()
+        {
+            { "X", new List<double>() },
+            { "Y", new List<double>() },
+            { "Z", new List<double>() }
+        };
+
+        private List<double>[] RedundentData = new List<double>[3];
+        private List<byte> Bulk_Buffer = new List<byte>();
+
+        private SocketState BulkState = new SocketState();
+        /// <summary>
+        /// 巨量資料非同步接收
+        /// </summary>
+        /// <param name="ar"></param>
+        private void receiveCallBack_Bulk(IAsyncResult ar)
+        {
+            try
+            {
+                BulkState.AR = ar;
+                SocketState state = (SocketState)ar.AsyncState;
+                var client = state.workSocket;
+                int bytesRead = client.EndReceive(ar);
+                if (bytesRead > 0)
+                {
+                    var rev = new byte[bytesRead];
+                    Array.Copy(state.buffer, 0, rev, 0, bytesRead);
+                    Bulk_Buffer.AddRange(rev);
+                }
+                state.buffer = new byte[512];
+                client.BeginReceive(state.buffer, 0, state.BufferSize, 0,(receiveCallBack_Bulk), state);
+            }
+            catch (Exception exp)
+            {
+                Console.WriteLine(exp.Message);
+            }
+            //WaitForBufferRecieveDone.Set();
+        }
+
+        private void BulkBufferProcess()
+        {
+            while (true)
+            {
+                var condition = BulkState.WindowSize * 8;
+                if (Bulk_Buffer.Count > condition)
+                {
+                    try
+                    {
+                        var startIndex = 0;
+                        for (startIndex = 0; true; startIndex++)
+                        {
+                            if (Bulk_Buffer[startIndex] == 13 && Bulk_Buffer[startIndex + 1] == 10)
+                            {
+                                break;
+                            }
+                        }
+                        startIndex = startIndex == 6 ? 0 : startIndex + 2;
+
+                        byte[] rev = new byte[condition];
+                        Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
+                        Bulk_Buffer.RemoveRange(0, condition + startIndex);
+                        var doubleOutput = BytesToDoubleList(rev);
+                        var dataset = new DataSet();
+                        dataset.AccData.X = (doubleOutput[0]);
+                        dataset.AccData.Y = (doubleOutput[1]);
+                        dataset.AccData.Z = (doubleOutput[2]);
+                        DataReady?.Invoke(dataset);
+
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                }
+                Thread.Sleep(1);
+            }
+        }
+
+        private List<double>[] BytesToDoubleList(byte[] buffer)
+        {
+            var LSB = Convert.ToInt32(moduleSettings.MeasureRange);
+            int splitIndex = -1;
+            // 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 
+            // 6/14/22/30/38
+            // 6?   => 0 , 8 , 16 
+
+            // 3?   => 5 ,13, 21 ,29
+            // 2?   => 4 , 12 , 20, 28
+
+            // 0 X X 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 
+            // 1?   => 3, 11 , 19 
+            // 0 8 16
+            try
+            {
+                for (int i = 0; true; i++)
+                {
+                    if (buffer[i] == 13)
+                    {
+                        if (buffer[i + 1] == 10)
+                        {
+                            splitIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return new List<double>[3];
+            }
+            var x = new List<double>();
+            var y = new List<double>();
+            var z = new List<double>();
+            var startIndex = splitIndex == 6 ? 0 : splitIndex + 2;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                if ((8 * i) + startIndex + 0 + 5 >= buffer.Length)
+                    break;
+                x.Add(ConverterTools.bytesToDouble(buffer[(8 * i) + startIndex + 0], buffer[(8 * i) + startIndex + 1]) / LSB);
+                y.Add(ConverterTools.bytesToDouble(buffer[(8 * i) + startIndex + 2], buffer[(8 * i) + startIndex + 3]) / LSB);
+                z.Add(ConverterTools.bytesToDouble(buffer[(8 * i) + startIndex + 4], buffer[(8 * i) + startIndex + 5]) / LSB);
+            }
+            return new List<double>[3] { x, y, z };
+        }
+
         DateTime st_time;
+        int revBNUm = 0;
         internal byte[] GetAccData_HighSpeedWay(out long timespend)
         {
             try
             {
+                revBNUm = 0;
                 WaitForBufferRecieveDone = new ManualResetEvent(false);
                 AccDataBuffer.Clear();
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
-                ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+                for (int i = 0; i < 3; i++)
+                {
+                    ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+                    var s1 = DateTime.Now;
+                    while (ModuleSocket.Available == 0)
+                    {
+
+                    }
+                    Thread.Sleep(1000);
+                    Console.WriteLine(ModuleSocket.Available);
+                    Console.WriteLine((DateTime.Now - s1).TotalMilliseconds);
+
+
+                }
                 var Datalength = Convert.ToInt32(moduleSettings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 st_time = DateTime.Now;
@@ -230,7 +398,7 @@ namespace gpm_vibration_module_api
                 WaitForBufferRecieveDone.WaitOne();
                 var ed_time = DateTime.Now;
                 timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
-                Console.WriteLine("Waitone : " +timespend);
+                Console.WriteLine("Waitone : " + timespend);
                 return AccDataBuffer.ToArray();
             }
             catch (Exception exp)
@@ -245,7 +413,7 @@ namespace gpm_vibration_module_api
         private void monitorBuffer(object skobj)
         {
             Socket s = ModuleSocket;
-                Console.WriteLine(s.Available+" aaa1aa23");
+            Console.WriteLine(s.Available + " aaa1aa23");
         }
 
         private ManualResetEvent WaitForBufferRecieveDone;
@@ -258,7 +426,8 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-                    Console.WriteLine("b to read = " + bytesRead);
+                    revBNUm += bytesRead;
+                    Console.WriteLine("Num sum = " + revBNUm);
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer, 0, rev, 0, bytesRead);
                     AccDataBuffer.AddRange(rev);
@@ -267,7 +436,7 @@ namespace gpm_vibration_module_api
                         var ed_time = DateTime.Now;
                         var timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
                         Console.WriteLine("No Waitone : " + timespend);
-                        WaitForBufferRecieveDone.Set();
+                        //WaitForBufferRecieveDone.Set();
                     }
                     else
                         client.BeginReceive(state.buffer, 0, state.BufferSize, 0,
@@ -277,7 +446,7 @@ namespace gpm_vibration_module_api
                 {
 
                 }
-
+                WaitForBufferRecieveDone.Set();
             }
             catch
             {
@@ -308,7 +477,7 @@ namespace gpm_vibration_module_api
                     if (timespend > 5000)
                         return new byte[0];
                     int avaliable = ModuleSocket.Available;
-                   // ModuleSocket.Receive(returnData, RecieveByteNum, ExpectRetrunSize, 0);
+                    // ModuleSocket.Receive(returnData, RecieveByteNum, ExpectRetrunSize, 0);
                     ModuleSocket.Receive(returnData, RecieveByteNum, avaliable, 0);
                     RecieveByteNum += avaliable;
                 }

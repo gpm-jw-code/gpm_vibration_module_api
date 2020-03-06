@@ -71,6 +71,8 @@ namespace gpm_vibration_module_api
             public object SettingItem;
             public object SettingValue;
         }
+
+        public MeasureOption option = new MeasureOption();
         private DataSet DataSetRet = new DataSet();
         private clsParamSetTaskObj setTaskObj = new clsParamSetTaskObj();
         private bool IsGetFFT = false;
@@ -84,6 +86,17 @@ namespace gpm_vibration_module_api
         /// 斷線事件
         /// </summary>
         public event Action<DateTime> DisconnectEvent;
+
+
+        private int windowsize = 512;
+        public int WindowSize
+        {
+            get
+            { return windowsize; }
+            set
+            { windowsize = value; }
+        }
+
         /// <summary>
         /// 控制器底層控制
         /// </summary>
@@ -439,11 +452,45 @@ namespace gpm_vibration_module_api
         /// </summary>
         public string Location { get; set; }
 
+
+        public void MeasureStart(MeasureOption option)
+        {
+           
+            this.option = option;
+            
+            module_base.DataReady += Module_base_DataReady;
+            module_base.StartGetBulkData(option);
+
+        }
+
+        public event Action<DataSet> DataRecieve;
+        private void Module_base_DataReady(DataSet dataSet)
+        {
+            Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.ffff"));
+            dataSet.FFTData.X = GpmMath.FFT.GetFFT(dataSet.AccData.X);
+            dataSet.FFTData.Y = GpmMath.FFT.GetFFT(dataSet.AccData.Y);
+            dataSet.FFTData.Z = GpmMath.FFT.GetFFT(dataSet.AccData.Z);
+            dataSet.FFTData.FreqsVec = FreqVecCal(dataSet.FFTData.X.Count);
+
+            dataSet.Features.VibrationEnergy.X = GpmMath.Stastify.GetOA(dataSet.FFTData.X);
+            dataSet.Features.VibrationEnergy.Y = GpmMath.Stastify.GetOA(dataSet.FFTData.Y);
+            dataSet.Features.VibrationEnergy.Z = GpmMath.Stastify.GetOA(dataSet.FFTData.Z);
+            dataSet.Features.AccP2P.X = GpmMath.Stastify.GetPP(dataSet.AccData.X);
+            dataSet.Features.AccP2P.Y = GpmMath.Stastify.GetPP(dataSet.AccData.Y);
+            dataSet.Features.AccP2P.Z = GpmMath.Stastify.GetPP(dataSet.AccData.Z);
+
+            dataSet.Features.AccRMS.X = GpmMath.Stastify.RMS(dataSet.AccData.X);
+            dataSet.Features.AccRMS.Y = GpmMath.Stastify.RMS(dataSet.AccData.Y);
+            dataSet.Features.AccRMS.Z = GpmMath.Stastify.RMS(dataSet.AccData.Z);
+            DataRecieve?.Invoke(dataSet);
+        }
+
         /// <summary>
         /// 取得三軸加速度量測值
         /// </summary>
         public DataSet GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
+
             if (KeyProExisStatus == clsEnum.KeyPro.KeyProExisStatus.NoInsert)
                 return new DataSet() { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KeyproNotFound) };
             if (Connected == false)
@@ -454,7 +501,7 @@ namespace gpm_vibration_module_api
             this.IsGetOtherFeatures = IsGetOtherFeatures;
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
             getDataThread.Start();
-            WaitAsyncForGetDataTask.WaitOne();
+            //WaitAsyncForGetDataTask.WaitOne();
             return DataSetRet;
             //DataSet Datas = new DataSet();
             //try

@@ -8,7 +8,7 @@ namespace gpm_vibration_module_api
     {
         internal enum ControllerCommand
         {
-            READVALUE, READSTVAL
+            READVALUE, READSTVAL, BULKVALUE, 
         }
         public struct Module_Setting_Enum
         {
@@ -42,7 +42,7 @@ namespace gpm_vibration_module_api
         {
             internal enum AccConvertAlgrium
             {
-                Old, New
+                Old, New , Bulk
             }
 
         }

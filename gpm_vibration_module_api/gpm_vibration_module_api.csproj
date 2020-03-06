@@ -48,6 +48,7 @@
     <Compile Include="GpmMath\Numeric.cs" />
     <Compile Include="GPMModuleAPI.cs" />
     <Compile Include="KeyproMdule.cs" />
+    <Compile Include="MeasureOption.cs" />
     <Compile Include="Module\clsModuleBase.cs" />
     <Compile Include="Module\clsModuleSettings.cs" />
     <Compile Include="Module\ModulesServer.cs" />

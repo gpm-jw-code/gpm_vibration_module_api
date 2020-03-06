@@ -21,7 +21,7 @@ namespace gpm_vibration_module_api
         }
         public class clsFFTData : AxisListValue
         {
-            internal const double SamplingRate = 5000;
+            internal const double SamplingRate = 1000;
             public List<double> FreqsVec = new List<double>();
         }
 

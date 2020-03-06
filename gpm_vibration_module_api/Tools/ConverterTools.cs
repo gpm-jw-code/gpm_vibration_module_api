@@ -29,22 +29,50 @@ namespace gpm_vibration_module_api.Tools
             List<double> Gx = new List<double>();
             List<double> Gy = new List<double>();
             List<double> Gz = new List<double>();
+            int splitIndex = -1;
+            // 0 0 X X 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 
+            // 2?   => 4 , 12 , 20, 28
 
-            for (int i = 0; i < N; i++)
+            // 0 X X 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 
+            // 1?   => 3, 11 , 19 
+            // 0 8 16
+            for (int i = 0; true; i++)
             {
-                if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Old)
+                if (AccPacket[i] == 13)
                 {
-                    Gx.Add(bytesToDouble(AccPacket[N * 0 + i], AccPacket[N * 1 + i]) / LSB);
-                    Gy.Add(bytesToDouble(AccPacket[N * 2 + i], AccPacket[N * 3 + i]) / LSB);
-                    Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i]) / LSB);
-                }
-                else
-                {
-                    Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1]) / LSB);
-                    Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3]) / LSB);
-                    Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5]) / LSB);
+                    if (AccPacket[i + 1] == 10)
+                    {
+                        splitIndex = i;
+                        break;
+                    }
                 }
             }
+            //var s = splitIndex < 6 ? :;
+            if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Bulk)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    Gx.Add(bytesToDouble(AccPacket[(8 * i) + 0], AccPacket[(8 * i) + 1]) / LSB);
+                    Gy.Add(bytesToDouble(AccPacket[(8 * i) + 2], AccPacket[(8 * i) + 3]) / LSB);
+                    Gz.Add(bytesToDouble(AccPacket[(8 * i) + 4], AccPacket[(8 * i) + 5]) / LSB);
+                }
+            }
+            else
+                for (int i = 0; i < N; i++)
+                {
+                    if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Old)
+                    {
+                        Gx.Add(bytesToDouble(AccPacket[N * 0 + i], AccPacket[N * 1 + i]) / LSB);
+                        Gy.Add(bytesToDouble(AccPacket[N * 2 + i], AccPacket[N * 3 + i]) / LSB);
+                        Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i]) / LSB);
+                    }
+                    else
+                    {
+                        Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1]) / LSB);
+                        Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3]) / LSB);
+                        Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5]) / LSB);
+                    }
+                }
 
             return new List<List<double>> { Gx, Gy, Gz };
         }
