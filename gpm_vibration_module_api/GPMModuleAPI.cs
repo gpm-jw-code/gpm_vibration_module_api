@@ -1,4 +1,4 @@
-﻿#define YCM
+﻿//#define YCM
 //define KeyproEnable
 
 using gpm_vibration_module_api.Module;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Xml.Serialization;
 
@@ -113,7 +114,7 @@ namespace gpm_vibration_module_api
             GetDataTaskPause = new ManualResetEvent(true);
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
             module_base.moduleSettings.SensorType = sensorType;
-
+            module_base.DataReady += Module_base_DataReady;
         }
 
         private void API_KeyProRemoveEvent(DateTime obj)
@@ -145,7 +146,7 @@ namespace gpm_vibration_module_api
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
             WifiSensorUsing = true;
 #endif
-
+            module_base.DataReady += Module_base_DataReady;
 
 
         }
@@ -215,6 +216,15 @@ namespace gpm_vibration_module_api
         public int Disconnect()
         {
             return module_base.Disconnect();
+        }
+
+
+        public void BULKBreak()
+        {
+            if (Connected)
+            {
+                module_base.BulkBreak();
+            }
         }
 
         private void StartParamSetTask()
@@ -313,6 +323,12 @@ namespace gpm_vibration_module_api
             {
                 return module_base.moduleSettings.MeasureRange;
             }
+        }
+
+        public byte[] ReadStval()
+        {
+            byte[] cmd = Encoding.ASCII.GetBytes("READSTVAL\r\n");
+            return module_base.SendCommand(cmd, 8);
         }
 
         public int MeasureRange_IntType
@@ -455,10 +471,9 @@ namespace gpm_vibration_module_api
 
         public void MeasureStart(MeasureOption option)
         {
-           
+
             this.option = option;
-            
-            module_base.DataReady += Module_base_DataReady;
+
             module_base.StartGetBulkData(option);
 
         }
@@ -501,7 +516,7 @@ namespace gpm_vibration_module_api
             this.IsGetOtherFeatures = IsGetOtherFeatures;
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
             getDataThread.Start();
-            //WaitAsyncForGetDataTask.WaitOne();
+            WaitAsyncForGetDataTask.WaitOne();
             return DataSetRet;
             //DataSet Datas = new DataSet();
             //try
@@ -582,7 +597,7 @@ namespace gpm_vibration_module_api
             {
                 byte[] AccPacket;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend);
-                if (AccPacket.Length == 0)
+                if (AccPacket.Length < 3072)
                 {
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.AccDataGetTimeout);
                     WaitAsyncForGetDataTask.Set();
@@ -651,6 +666,11 @@ namespace gpm_vibration_module_api
             IPEndPoint IPP = (IPEndPoint)sensorSocket.RemoteEndPoint;
             string Ip = IPP.Address.ToString();
             return Ip;
+        }
+
+        public void TinySensorFWUpdate(List<byte[]> data)
+        {
+            module_base.TinySensorFWUpdate(data);
         }
 
     }

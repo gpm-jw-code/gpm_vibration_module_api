@@ -36,20 +36,21 @@ namespace gpm_vibration_module_api.Tools
             // 0 X X 0 0 0 0 0 0 X X 0 0 0 0 0 0 X X 
             // 1?   => 3, 11 , 19 
             // 0 8 16
-            for (int i = 0; true; i++)
-            {
-                if (AccPacket[i] == 13)
-                {
-                    if (AccPacket[i + 1] == 10)
-                    {
-                        splitIndex = i;
-                        break;
-                    }
-                }
-            }
+            
             //var s = splitIndex < 6 ? :;
             if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Bulk)
             {
+                for (int i = 0; true; i++)
+                {
+                    if (AccPacket[i] == 13)
+                    {
+                        if (AccPacket[i + 1] == 10)
+                        {
+                            splitIndex = i;
+                            break;
+                        }
+                    }
+                }
                 for (int i = 0; i < N; i++)
                 {
                     Gx.Add(bytesToDouble(AccPacket[(8 * i) + 0], AccPacket[(8 * i) + 1]) / LSB);
