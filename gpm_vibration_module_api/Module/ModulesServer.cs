@@ -19,9 +19,10 @@ namespace gpm_vibration_module_api.Module
         private static ManualResetEvent allDone = new ManualResetEvent(false);
         private static System.Object lockThis = new System.Object();
         public static event Action<ConnectObj> SensorConnectInEvent;
-        public static bool SensorServerBuliding(string strServerLocalIP, int intServerLocalPort)
+        public static bool SensorServerBuliding(string strServerLocalIP, int intServerLocalPort,out string errorcode)
         {
-            SensorConnectInEvent += Inner_SensorConnectInEvent;
+            errorcode = "";
+               SensorConnectInEvent += Inner_SensorConnectInEvent;
             try
             {
                 SensorServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -37,6 +38,7 @@ namespace gpm_vibration_module_api.Module
             }
             catch (Exception exp)
             {
+                errorcode = exp.Message;
                 return false;
             }
         }

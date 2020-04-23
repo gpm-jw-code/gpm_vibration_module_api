@@ -117,6 +117,7 @@ namespace gpm_vibration_module_api.Module
                 }
                 ByteAryOfParameters[3] = byteval;
                 pMeasureRange = value;
+                
             }
         }
 
