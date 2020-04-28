@@ -571,6 +571,7 @@ namespace gpm_vibration_module_api
                         var timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
                         //Console.WriteLine("No Waitone : " + timespend);
                         //WaitForBufferRecieveDone.Set();
+                        WaitForBufferRecieveDone.Set();
                     }
                     else
                         client.BeginReceive(state.buffer, 0, state.BufferSize, 0,
@@ -580,7 +581,7 @@ namespace gpm_vibration_module_api
                 {
 
                 }
-                WaitForBufferRecieveDone.Set();
+                
             }
             catch
             {

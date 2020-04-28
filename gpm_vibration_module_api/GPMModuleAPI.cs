@@ -545,8 +545,8 @@ namespace gpm_vibration_module_api
 
             if (KeyProExisStatus == clsEnum.KeyPro.KeyProExisStatus.NoInsert)
                 return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KeyproNotFound) };
-            if (Connected == false)
-                return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
+           // if (Connected == false)
+           //     return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
             WaitAsyncForParametersSet.Set();
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
@@ -647,9 +647,9 @@ namespace gpm_vibration_module_api
 
                 if (IsGetFFT)
                 {
-                    DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X, true);
-                    DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y, true);
-                    DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z, true);
+                    DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X, false);
+                    DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y, false);
+                    DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z, false);
                     DataSetRet.FFTData.FreqsVec = FreqVecCal(DataSetRet.FFTData.X.Count);
                 }
 
