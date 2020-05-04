@@ -14,6 +14,8 @@ namespace gpm_vibration_module_api
     /// </summary>
     internal class clsModuleBase
     {
+
+
         public Module.clsModuleSettings moduleSettings = new Module.clsModuleSettings();
         private ManualResetEvent pausesignal;
         private bool IsPauseReady = true;
@@ -276,7 +278,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
-               // Console.WriteLine("[SendBulkDataStartCmd()] " + exp.Message);
+                // Console.WriteLine("[SendBulkDataStartCmd()] " + exp.Message);
             }
             BulkRequestPause.Set();
 
@@ -290,7 +292,7 @@ namespace gpm_vibration_module_api
             {
                 ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
             }
-            catch(Exception exp)
+            catch (Exception exp)
             {
                 Console.WriteLine("[SendBulkDataStartCmd()] " + exp.Message);
             }
@@ -377,7 +379,7 @@ namespace gpm_vibration_module_api
             {
                 client.BeginReceive(BulkState.buffer, 0, BulkState.BufferSize, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
-            catch(Exception exp)
+            catch (Exception exp)
             {
                 Console.WriteLine("[receiveCallBack_Bulk] " + exp.Message);
             }
@@ -738,6 +740,21 @@ namespace gpm_vibration_module_api
             }
         }
 
+        internal double GetUV()
+        {
+            var bytesRetrumn = SendCommand(Encoding.ASCII.GetBytes("READVALUE\r\n"), 4);
+            if (bytesRetrumn.Length == 0)
+                return -1; //Timeout
+            return ConvertToUVSensingValue(bytesRetrumn);
+        }
+
+        private double ConvertToUVSensingValue(byte[] _dataBytes)
+        {
+            byte hb = _dataBytes[0];
+            byte Lb = _dataBytes[1];
+            return hb * 256 + Lb;
+            //Covert to double (count num)
+        }
 
     }
 }

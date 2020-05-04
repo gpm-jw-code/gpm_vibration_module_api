@@ -4,6 +4,13 @@ using System.Text;
 
 namespace gpm_vibration_module_api
 {
+    public class UVDataSet
+    {
+        public double UVValue = -1;
+        public int ErrorCode = 0;
+        public DateTime RecieveTime;
+
+    }
     public class DataSet
     {
         public DataSet(double samplingRate)

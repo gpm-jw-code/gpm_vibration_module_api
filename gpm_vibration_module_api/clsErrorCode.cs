@@ -10,7 +10,7 @@ namespace gpm_vibration_module_api
         public enum Error
         {
             ConnectFail = 603,
-            AccDataGetTimeout = 605,
+            DataGetTimeout = 605,
             ParametersSettingTimeout = 606,
             KeyproNotFound = 404,
             TrialTimeEnd = 401,
@@ -19,5 +19,6 @@ namespace gpm_vibration_module_api
             PortIllegal = 602,
             IPIllegal = 601
         }
+
     }
 }

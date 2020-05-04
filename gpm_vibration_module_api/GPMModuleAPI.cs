@@ -162,7 +162,7 @@ namespace gpm_vibration_module_api
 
         }
         public string SensorIP { get; private set; }
-
+        public int SensorPort;
         public enum Enum_AccGetMethod
         {
             Auto, Manual
@@ -181,6 +181,11 @@ namespace gpm_vibration_module_api
         }
         public event Action<string> ConnectEvent;
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
+
+        public int Connect()
+        {
+            return Connect(SensorIP, SensorPort);
+        }
         /// <summary>
         /// 與控制器進行連線
         /// </summary>
@@ -204,6 +209,7 @@ namespace gpm_vibration_module_api
                     Disconnect();
                 }
                 SensorIP = IP;
+                SensorPort = Port;
                 var ret = module_base.Connect(IP, Port);
                 if (ret == 0)
                 {
@@ -609,6 +615,18 @@ namespace gpm_vibration_module_api
             //return Datas;
         }
 
+        public UVDataSet GetUVSensingValue()
+        {
+            var _uvVal = module_base.GetUV();
+            UVDataSet _uvDataSet = new UVDataSet
+            {
+                UVValue = _uvVal,
+                ErrorCode = _uvVal == -1 ? Convert.ToInt32(clsErrorCode.Error.DataGetTimeout) : 0,
+                RecieveTime = DateTime.Now
+            };
+            return _uvDataSet;
+        }
+
         private ManualResetEvent GetDataTaskPause;
         public void GetDataResume()
         {
@@ -636,7 +654,7 @@ namespace gpm_vibration_module_api
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend);
                 if (AccPacket.Length < 3072)
                 {
-                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.AccDataGetTimeout);
+                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DataGetTimeout);
                     WaitAsyncForGetDataTask.Set();
                     return;
                 }
