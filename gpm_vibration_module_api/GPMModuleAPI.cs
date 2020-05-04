@@ -218,7 +218,11 @@ namespace gpm_vibration_module_api
                     if (!SCKConectionList.ContainsKey(IP))
                         SCKConectionList.Add(IP, module_base.ModuleSocket);
                     else
+                    {
+                        if (ReConnectEvent != null)
+                            ReConnectEvent.Invoke(IP);
                         SCKConectionList[IP] = module_base.ModuleSocket;
+                    }
                     //BULKBreak();
                 }
                 return ret;
@@ -744,6 +748,6 @@ namespace gpm_vibration_module_api
             }
         }
 
-
+        public Action<string> ReConnectEvent { get; set; }
     }
 }
