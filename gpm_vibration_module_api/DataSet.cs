@@ -6,12 +6,18 @@ namespace gpm_vibration_module_api
 {
     public class DataSet
     {
+        public DataSet(double samplingRate)
+        {
+            this.FFTData.SamplingRate = samplingRate;
+        }
+
         internal bool IsReady = false;
         public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
         public clsFFTData FFTData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();
         public long TimeSpend;
+        public DateTime RecieveTime;
         public class clsAcc : AxisListValue
         {
             public enum States
@@ -21,7 +27,7 @@ namespace gpm_vibration_module_api
         }
         public class clsFFTData : AxisListValue
         {
-            internal const double SamplingRate = 1000;
+            internal double SamplingRate = 1001;
             public List<double> FreqsVec = new List<double>();
         }
 

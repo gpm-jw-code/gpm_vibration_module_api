@@ -8,7 +8,7 @@ namespace gpm_vibration_module_api
     {
         internal enum ControllerCommand
         {
-            READVALUE, READSTVAL, BULKVALUE, 
+            READVALUE, READSTVAL, BULKVALUE, BULKBREAK
         }
         public struct Module_Setting_Enum
         {
