@@ -96,10 +96,11 @@ namespace gpm_vibration_module_api.GpmMath
                
                 var numToAdd = FFTWindow - TD.Count;
                 toConvertTimeData.AddRange(new double[numToAdd]);
-                var _window = WindowFun.Hamming(toConvertTimeData.Count);
+                //var _window = WindowFun.Hamming(toConvertTimeData.Count);
                 for (int i = 0; i < toConvertTimeData.Count; i++)
                 {
-                    toConvertTimeData[i] = toConvertTimeData[i] * _window[i];
+                    //toConvertTimeData[i] = toConvertTimeData[i] * _window[i];
+                    toConvertTimeData[i] = toConvertTimeData[i];
                 }
 
             }
