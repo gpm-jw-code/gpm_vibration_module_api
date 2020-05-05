@@ -161,7 +161,7 @@ namespace gpm_vibration_module_api
 
 
         }
-        public string SensorIP { get; private set; }
+        public string SensorIP { get; private set; } = "";
         public int SensorPort;
         public enum Enum_AccGetMethod
         {
@@ -555,8 +555,8 @@ namespace gpm_vibration_module_api
 
             if (KeyProExisStatus == clsEnum.KeyPro.KeyProExisStatus.NoInsert)
                 return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KeyproNotFound) };
-           // if (Connected == false)
-           //     return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
+            // if (Connected == false)
+            //     return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
             WaitAsyncForParametersSet.Set();
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
