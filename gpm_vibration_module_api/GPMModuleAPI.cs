@@ -158,7 +158,7 @@ namespace gpm_vibration_module_api
             WifiSensorUsing = true;
 #endif
             module_base.DataReady += Module_base_DataReady;
-
+            Thread.Sleep(100);
 
         }
         public string SensorIP { get; private set; }
