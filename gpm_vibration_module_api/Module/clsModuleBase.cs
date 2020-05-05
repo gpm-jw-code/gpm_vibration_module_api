@@ -1,6 +1,7 @@
 ﻿using gpm_vibration_module_api.Tools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -224,7 +225,8 @@ namespace gpm_vibration_module_api
             public int WindowSize = 512;
             public StringBuilder sb = new StringBuilder();
             public IAsyncResult AR;
-
+            public bool IsDoneFlag = false;
+            public bool IsTimeout = false;
         }
 
         internal void TinySensorFWUpdate(List<byte[]> efm8DataFrames)
@@ -505,7 +507,7 @@ namespace gpm_vibration_module_api
 
         DateTime st_time;
         int revBNUm = 0;
-        internal byte[] GetAccData_HighSpeedWay(out long timespend)
+        internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
             try
             {
@@ -514,27 +516,17 @@ namespace gpm_vibration_module_api
                 AccDataBuffer.Clear();
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
-
                 ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var s1 = DateTime.Now;
-                //while (ModuleSocket.Available < 3072)
-                //{
-                //    Thread.Sleep(1);
-
-                //}
-                //Console.WriteLine(ModuleSocket.Available);
-                //Console.WriteLine((DateTime.Now - s1).TotalMilliseconds);
                 var Datalength = Convert.ToInt32(moduleSettings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 st_time = DateTime.Now;
                 SocketState state = new SocketState() { buffer = new byte[Datalength], workSocket = ModuleSocket, BufferSize = Datalength };
-                Thread thmonitorBuffer = new Thread(monitorBuffer);
-                thmonitorBuffer.Start(ModuleSocket);
+                StartTimeoutCheckout(state);
                 ModuleSocket.BeginReceive(state.buffer, 0, state.BufferSize, 0, new AsyncCallback(receiveCallBack), state);
                 WaitForBufferRecieveDone.WaitOne();
                 var ed_time = DateTime.Now;
                 timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
-                                                               // Console.WriteLine("Waitone : " + timespend);
+                IsTimeout = state.IsTimeout;
                 return AccDataBuffer.ToArray();
             }
             catch (Exception exp)
@@ -542,14 +534,33 @@ namespace gpm_vibration_module_api
                 timespend = -1;
                 AccDataBuffer.Clear();
                 WaitForBufferRecieveDone.Set();
+                IsTimeout = false;
                 return new byte[0];
             }
         }
 
-        private void monitorBuffer(object skobj)
+        private void StartTimeoutCheckout(SocketState state)
         {
-            Socket s = ModuleSocket;
-            //Console.WriteLine(s.Available + " aaa1aa23");
+            Thread timeoutCheckThread = new Thread(TimeoutCheck);
+            timeoutCheckThread.Start(state);
+        }
+
+        private void TimeoutCheck(object state)
+        {
+            SocketState _state = (SocketState)state;
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            while (_state.IsDoneFlag == false)
+            {
+                if (timer.ElapsedMilliseconds >= 5000)
+                {
+                    _state.IsTimeout = true;
+                    AccDataBuffer.Clear();
+                    WaitForBufferRecieveDone.Set();
+                    return;
+                }
+                Thread.Sleep(1);
+            }
         }
 
         private ManualResetEvent WaitForBufferRecieveDone;
@@ -573,17 +584,21 @@ namespace gpm_vibration_module_api
                         var timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
                         //Console.WriteLine("No Waitone : " + timespend);
                         //WaitForBufferRecieveDone.Set();
+                        state.IsDoneFlag = true;
                         WaitForBufferRecieveDone.Set();
                     }
                     else
+                    {
+                        state.IsDoneFlag = false;
                         client.BeginReceive(state.buffer, 0, state.BufferSize, 0,
-                            new AsyncCallback(receiveCallBack), state);
+                             new AsyncCallback(receiveCallBack), state);
+                    }
                 }
                 else
                 {
 
                 }
-                
+
             }
             catch
             {
