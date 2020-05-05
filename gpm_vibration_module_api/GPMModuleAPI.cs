@@ -1,5 +1,5 @@
-﻿//#define YCM
-//define KeyproEnable
+﻿#define YCM
+#define KeyproEnable
 
 using gpm_vibration_module_api.Module;
 using System;
@@ -158,7 +158,7 @@ namespace gpm_vibration_module_api
             WifiSensorUsing = true;
 #endif
             module_base.DataReady += Module_base_DataReady;
-
+            Thread.Sleep(100);
 
         }
         public string SensorIP { get; private set; }
@@ -669,9 +669,9 @@ namespace gpm_vibration_module_api
 
                 if (IsGetFFT)
                 {
-                    DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X, true);
-                    DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y, true);
-                    DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z, true);
+                    DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
+                    DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
+                    DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
                     DataSetRet.FFTData.FreqsVec = FreqVecCal(DataSetRet.FFTData.X.Count);
                 }
 

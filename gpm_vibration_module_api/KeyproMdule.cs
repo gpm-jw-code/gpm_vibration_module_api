@@ -24,6 +24,7 @@ namespace gpm_vibration_module_api
             /// </summary>
             internal static event Action<DateTime> KeyProInsertEvent;
 
+            private static Thread keyproCheckTh;
             /// <summary>
             /// 確認Key是不是有插在USB Port上
             /// </summary>
@@ -39,8 +40,11 @@ namespace gpm_vibration_module_api
             /// </summary>
             private static void StartKeyproMonitor()
             {
-                Thread keyproCheckTh = new Thread(keyprocheckMonitor) { IsBackground = true };
-                keyproCheckTh.Start();
+                if (keyproCheckTh == null)
+                {
+                    keyproCheckTh = new Thread(keyprocheckMonitor) { IsBackground = true };
+                    keyproCheckTh.Start();
+                }
             }
 
             private static void keyprocheckMonitor()
@@ -58,7 +62,7 @@ namespace gpm_vibration_module_api
                             KeyProRemoveEvent.Invoke(DateTime.Now);
                         }
                     }
-                    catch(Exception exp)
+                    catch (Exception exp)
                     {
 
                     }
@@ -107,27 +111,32 @@ namespace gpm_vibration_module_api
             [DllImport("Rockey4SClass_x64.dll", EntryPoint = "Rockey4SmartClass.Rockey4Smart")]
             private static extern ushort Rockey64(ushort function, ref ushort handle, ref uint lp1, ref uint lp2, ref ushort p1, ref ushort p2, ref ushort p3, ref ushort p4, byte[] buffer);
 
+            private static object _lock = new object();
             /// <summary>
             /// 確認所有密碼的Keypro
             /// </summary>
             /// <returns></returns>
             public static bool MixCheck()
             {
-                // move dll to C://Windows
-                //File.Copy(".//Rockey4ND.dll", "\\Windows\\Rockey4ND.dll", true);
-                bool isexist = false;
-                if (KeyProInsertCheck(PurchaseCode.KLXSS) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+
+                lock (_lock)
                 {
-                    isexist = true;
-                }
-                else
-                {
-                    if (KeyProInsertCheck(PurchaseCode.ACTCI) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+                    // move dll to C://Windows
+                    //File.Copy(".//Rockey4ND.dll", "\\Windows\\Rockey4ND.dll", true);
+                    bool isexist = false;
+                    if (KeyProInsertCheck(PurchaseCode.KLXSS) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+                    {
                         isexist = true;
+                    }
                     else
-                        isexist = false;
+                    {
+                        if (KeyProInsertCheck(PurchaseCode.ACTCI) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+                            isexist = true;
+                        else
+                            isexist = false;
+                    }
+                    return isexist;
                 }
-                return isexist;
             }
 
             private static int FindKey(ushort handle, uint lp1, uint lp2, ushort pass1, ushort pass2, ushort pass3, ushort pass4, byte[] buffer)
@@ -148,7 +157,7 @@ namespace gpm_vibration_module_api
                 }
             }
 
-            private static gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus KeyProInsertCheck(PurchaseCode purchaseCode)
+            public static gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus KeyProInsertCheck(PurchaseCode purchaseCode)
             {
                 try
                 {
