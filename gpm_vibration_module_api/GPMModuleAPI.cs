@@ -1,5 +1,5 @@
 ﻿#define YCM
-#define KeyproEnable
+//#define KeyproEnable
 
 using gpm_vibration_module_api.Module;
 using System;
@@ -181,6 +181,22 @@ namespace gpm_vibration_module_api
         }
         public event Action<string> ConnectEvent;
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
+
+        public int AccDataRevTimeOut
+        {
+            set
+            {
+                try
+                {
+                    Int32.TryParse(value + "", out int _result);
+                    module_base.timeout = _result;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
 
         public int Connect()
         {
@@ -657,7 +673,7 @@ namespace gpm_vibration_module_api
                 byte[] AccPacket;
                 bool IsTimeout;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
-                if (AccPacket.Length < 3072)
+                if (AccPacket.Length < Convert.ToInt32(DataLength) * 6)
                 {
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DataGetTimeout);
                     WaitAsyncForGetDataTask.Set();

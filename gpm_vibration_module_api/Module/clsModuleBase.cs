@@ -16,7 +16,7 @@ namespace gpm_vibration_module_api
     internal class clsModuleBase
     {
 
-
+        internal int timeout = 8000; //unit: ms
         public Module.clsModuleSettings moduleSettings = new Module.clsModuleSettings();
         private ManualResetEvent pausesignal;
         private bool IsPauseReady = true;
@@ -42,6 +42,7 @@ namespace gpm_vibration_module_api
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 ModuleSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 ModuleSocket.ReceiveBufferSize = 8192;
+                ModuleSocket.ReceiveTimeout = 10000;
                 ModuleSocket.Connect(remoteEP);
                 if (ModuleSocket.Connected)
                     return 0;
@@ -118,6 +119,18 @@ namespace gpm_vibration_module_api
             return moduleSettings.ByteAryOfParameters;
         }
 
+        private string ObjectAryToString(string split, byte[] obj)
+        {
+            var _s = "";
+
+            foreach (var item in obj)
+            {
+                _s += item + split;
+            }
+            _s.Remove(_s.Length - 1);
+            return _s;
+        }
+
         private void DefineSettingByParameters(byte[] Parameters)
         {
             if (Parameters.Length == 0)
@@ -125,6 +138,9 @@ namespace gpm_vibration_module_api
                 Console.WriteLine($" Parameters write fail...");
                 return;
             }
+
+            Console.WriteLine(ObjectAryToString(",", Parameters));
+
             var ParametersToDefine = (Parameters.Length != 8 | Parameters[0] != 0x02) ? new byte[] { 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00 } : Parameters;
             if (Parameters.Length == 1 && Parameters[0] == 0x02)
                 return;
@@ -552,7 +568,7 @@ namespace gpm_vibration_module_api
             timer.Start();
             while (_state.IsDoneFlag == false)
             {
-                if (timer.ElapsedMilliseconds >= 5000)
+                if (timer.ElapsedMilliseconds >= timeout) //TODO 外部可調
                 {
                     _state.IsTimeout = true;
                     AccDataBuffer.Clear();
@@ -694,6 +710,7 @@ namespace gpm_vibration_module_api
                 {
                     SocketBufferClear();
                 }
+                Console.WriteLine("Write to Control : " + ObjectAryToString(",", Data));
                 ModuleSocket.Send(Data, 0, Data.Length, SocketFlags.None);
                 int RecieveByteNum = 0;
                 int timespend = 0;
