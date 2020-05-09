@@ -122,7 +122,7 @@ namespace gpm_vibration_module_api
             GetDataTaskPause = new ManualResetEvent(true);
             getDataThread = new Thread(GetDataTask) { IsBackground = true };
             module_base.moduleSettings.SensorType = sensorType;
-            module_base.DataReady += Module_base_DataReady;
+            module_base.DataRecieve += Module_base_DataReady;
         }
 
         private void API_KeyProRemoveEvent(DateTime obj)
@@ -157,7 +157,7 @@ namespace gpm_vibration_module_api
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
             WifiSensorUsing = true;
 #endif
-            module_base.DataReady += Module_base_DataReady;
+            module_base.DataRecieve += Module_base_DataReady;
             Thread.Sleep(100);
 
         }

@@ -265,7 +265,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        internal event Action<DataSet> DataReady;
+        internal event Action<DataSet> DataRecieve;
         private MeasureOption userOption;
         private Thread THBulkProcess = null;
         /// <summary>
@@ -364,7 +364,6 @@ namespace gpm_vibration_module_api
         /// <param name="ar"></param>
         private void receiveCallBack_Bulk(IAsyncResult ar)
         {
-
             //如果是巨量暫停狀態，收到的東西都是設定的東西
             BulkState = (SocketState)ar.AsyncState;
             BulkState.AR = ar;
@@ -376,7 +375,6 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-
                     var rev = new byte[bytesRead];
                     Array.Copy(BulkState.buffer, 0, rev, 0, bytesRead);
                     Bulk_Buffer.AddRange(rev);
@@ -423,15 +421,6 @@ namespace gpm_vibration_module_api
                     try
                     {
                         var startIndex = 0;
-                        //for (startIndex = 0; true; startIndex++)
-                        //{
-                        //    if (Bulk_Buffer[startIndex] == 13 && Bulk_Buffer[startIndex + 1] == 10)
-                        //    {
-                        //        break;
-                        //    }
-                        //}
-                        //startIndex = startIndex == 6 ? 0 : startIndex + 2;
-
                         byte[] rev = new byte[condition];
                         Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
@@ -441,7 +430,7 @@ namespace gpm_vibration_module_api
                         dataset.AccData.Y = (doubleOutput[1]);
                         dataset.AccData.Z = (doubleOutput[2]);
                         //DataReady?.BeginInvoke(dataset, null, null);
-                        DataReady?.Invoke(dataset);
+                        DataRecieve?.Invoke(dataset);
                     }
                     catch (Exception exp)
                     {
