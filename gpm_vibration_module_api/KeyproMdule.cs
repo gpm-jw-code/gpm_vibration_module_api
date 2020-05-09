@@ -29,10 +29,10 @@ namespace gpm_vibration_module_api
             /// 確認Key是不是有插在USB Port上
             /// </summary>
             /// <returns></returns>
-            internal static gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus IsKeyInsert()
+            internal static gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE IsKeyInsert()
             {
                 StartKeyproMonitor();
-                return BaseMethod.MixCheck() == true ? gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist : gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+                return BaseMethod.MixCheck() == true ? gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist : gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
             }
 
             /// <summary>
@@ -124,13 +124,13 @@ namespace gpm_vibration_module_api
                     // move dll to C://Windows
                     //File.Copy(".//Rockey4ND.dll", "\\Windows\\Rockey4ND.dll", true);
                     bool isexist = false;
-                    if (KeyProInsertCheck(PurchaseCode.KLXSS) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+                    if (KeyProInsertCheck(PurchaseCode.KLXSS) == gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist)
                     {
                         isexist = true;
                     }
                     else
                     {
-                        if (KeyProInsertCheck(PurchaseCode.ACTCI) == gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist)
+                        if (KeyProInsertCheck(PurchaseCode.ACTCI) == gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist)
                             isexist = true;
                         else
                             isexist = false;
@@ -148,7 +148,7 @@ namespace gpm_vibration_module_api
                     object o = System.Activator.CreateInstance(AT);
                     Type t = o.GetType();
                     MethodInfo MI = AT.GetMethod("Rockey");
-                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.Ry4Cmd.RY_FIND, handle, lp1, lp2, p1, p2, p3, p4, buffer });
+                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.RY4CMD.RY_FIND, handle, lp1, lp2, p1, p2, p3, p4, buffer });
                     return Convert.ToInt32(result);
                 }
                 catch (Exception exp)
@@ -157,7 +157,7 @@ namespace gpm_vibration_module_api
                 }
             }
 
-            public static gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus KeyProInsertCheck(PurchaseCode purchaseCode)
+            public static gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE KeyProInsertCheck(PurchaseCode purchaseCode)
             {
                 try
                 {
@@ -176,14 +176,14 @@ namespace gpm_vibration_module_api
 #endif
                     if (0 != Convert.ToInt32(ret))
                     {
-                        return gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+                        return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
                     }
                     else
-                        return gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.Exist;
+                        return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
                 }
                 catch (Exception EXP)
                 {
-                    return gpm_vibration_module_api.clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+                    return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
                 }
             }
 
@@ -199,7 +199,7 @@ namespace gpm_vibration_module_api
                     object o = System.Activator.CreateInstance(AT);
                     Type t = o.GetType();
                     MethodInfo MI = AT.GetMethod("Rockey");
-                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.Ry4Cmd.RY_FIND, handle, lp1, lp2, pass1, pass2, pass3, pass4, buffer });
+                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.RY4CMD.RY_FIND, handle, lp1, lp2, pass1, pass2, pass3, pass4, buffer });
                     return result;
                 }
                 else
@@ -209,7 +209,7 @@ namespace gpm_vibration_module_api
                     object o = System.Activator.CreateInstance(AT);
                     Type t = o.GetType();
                     MethodInfo MI = AT.GetMethod("Rockey");
-                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.Ry4Cmd.RY_FIND, handle, lp1, lp2, pass1, pass2, pass3, pass4, buffer });
+                    object result = MI.Invoke(o, new object[] { (ushort)gpm_vibration_module_api.clsEnum.KeyPro.RY4CMD.RY_FIND, handle, lp1, lp2, pass1, pass2, pass3, pass4, buffer });
                     return result;
                 }
             }

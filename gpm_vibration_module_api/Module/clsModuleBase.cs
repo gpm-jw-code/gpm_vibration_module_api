@@ -13,24 +13,24 @@ namespace gpm_vibration_module_api
     /// <summary>
     /// 振動感測模組底層控制類別
     /// </summary>
-    internal class clsModuleBase
+    internal class ClsModuleBase
     {
 
-        internal int timeout = 8000; //unit: ms
-        public Module.clsModuleSettings moduleSettings = new Module.clsModuleSettings();
-        private ManualResetEvent pausesignal;
-        private bool IsPauseReady = true;
-        internal bool IsOldFWUsing = false;
-        public double SamplingRate { get; internal set; } = 1000.0;
-        public clsModuleBase()
+        internal int acc_data_rev_timeout = 8000; //unit: ms
+        public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
+        private ManualResetEvent pause_signal;
+        private bool is_pause_ready = true;
+        internal bool is_old_firmware_using = false;
+        public double sampling_rate { get; internal set; } = 1000.0;
+        public ClsModuleBase()
         {
-            pausesignal = new ManualResetEvent(true);
-            BulkRequestPause = new ManualResetEvent(true);
-            WaitForDataGet = new ManualResetEvent(true);
+            pause_signal = new ManualResetEvent(true);
+            bulk_request_pause_signal = new ManualResetEvent(true);
+            wait_for_data_get_signal = new ManualResetEvent(true);
         }
 
-        public Socket ModuleSocket { get; internal set; }
-        public bool IsBulkBreak { get; private set; } = true;
+        public Socket module_socket { get; internal set; }
+        public bool is_bulk_break { get; private set; } = true;
 
         /// <summary>
         /// 連線
@@ -40,11 +40,11 @@ namespace gpm_vibration_module_api
             try
             {
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
-                ModuleSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                ModuleSocket.ReceiveBufferSize = 8192;
-                ModuleSocket.ReceiveTimeout = 10000;
-                ModuleSocket.Connect(remoteEP);
-                if (ModuleSocket.Connected)
+                module_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                module_socket.ReceiveBufferSize = 8192;
+                module_socket.ReceiveTimeout = 10000;
+                module_socket.Connect(remoteEP);
+                if (module_socket.Connected)
                     return 0;
                 else
                     return Convert.ToInt32(clsErrorCode.Error.ConnectFail);
@@ -63,14 +63,14 @@ namespace gpm_vibration_module_api
             try
             {
                 SendBulkBreakCmd();
-                ModuleSocket.Shutdown(SocketShutdown.Both);
+                module_socket.Shutdown(SocketShutdown.Both);
             }
             catch (Exception)
             {
             }
             try
             {
-                ModuleSocket.Close();
+                module_socket.Close();
             }
             catch (Exception)
             {
@@ -102,21 +102,21 @@ namespace gpm_vibration_module_api
         /// <param name="measureRange"></param>
         /// <param name="oDR"></param>
         /// <returns></returns>
-        public byte[] WriteParameterToController(clsEnum.Module_Setting_Enum.SensorType? sensorType,
-            clsEnum.Module_Setting_Enum.DataLength? dataLength,
-            clsEnum.Module_Setting_Enum.MeasureRange? measureRange,
+        public byte[] WriteParameterToController(clsEnum.Module_Setting_Enum.SENSOR_TYPE? sensorType,
+            clsEnum.Module_Setting_Enum.DATA_LENGTH? dataLength,
+            clsEnum.Module_Setting_Enum.MEASURE_RANGE? measureRange,
             clsEnum.Module_Setting_Enum.ODR? oDR)
         {
-            var returnBytes = moduleSettings.SensorType == clsEnum.Module_Setting_Enum.SensorType.High | sensorType == clsEnum.Module_Setting_Enum.SensorType.High ? 8 : 8;
+            var returnBytes = module_settings.SensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High | sensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High ? 8 : 8;
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
-            moduleSettings.SensorType = sensorType != null ? (clsEnum.Module_Setting_Enum.SensorType)sensorType : moduleSettings.SensorType;
-            moduleSettings.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DataLength)dataLength : moduleSettings.DataLength;
-            moduleSettings.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MeasureRange)measureRange : moduleSettings.MeasureRange;
-            moduleSettings.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : moduleSettings.ODR;
-            var ParamReturn = WriteParameterToController(moduleSettings.ByteAryOfParameters, returnBytes);
+            module_settings.SensorType = sensorType != null ? (clsEnum.Module_Setting_Enum.SENSOR_TYPE)sensorType : module_settings.SensorType;
+            module_settings.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH)dataLength : module_settings.DataLength;
+            module_settings.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE)measureRange : module_settings.MeasureRange;
+            module_settings.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : module_settings.ODR;
+            var ParamReturn = WriteParameterToController(module_settings.ByteAryOfParameters, returnBytes);
             DefineSettingByParameters(ParamReturn);
-            return moduleSettings.ByteAryOfParameters;
+            return module_settings.ByteAryOfParameters;
         }
 
         private string ObjectAryToString(string split, byte[] obj)
@@ -155,71 +155,71 @@ namespace gpm_vibration_module_api
             switch (TypeByte)
             {
                 case 0x01:
-                    moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
+                    module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
                     break;
                 case 0x02:
-                    moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.High;
+                    module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
                     break;
                 default:
-                    moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
+                    module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
                     break;
             }
 
             switch (DataLengthByte)
             {
                 case 0x00:
-                    moduleSettings.DataLength = clsEnum.Module_Setting_Enum.DataLength.x1;
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                     break;
                 case 0x01:
-                    moduleSettings.DataLength = clsEnum.Module_Setting_Enum.DataLength.x2;
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
                     break;
                 case 0x02:
-                    moduleSettings.DataLength = clsEnum.Module_Setting_Enum.DataLength.x4;
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
                     break;
                 case 0x03:
-                    moduleSettings.DataLength = clsEnum.Module_Setting_Enum.DataLength.x8;
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
                     break;
                 default:
-                    moduleSettings.DataLength = clsEnum.Module_Setting_Enum.DataLength.x1;
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                     break;
             }
 
             switch (ODRByte)
             {
                 case 0x9F:
-                    moduleSettings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
                     break;
                 case 0x87:
-                    moduleSettings.ODR = clsEnum.Module_Setting_Enum.ODR._87;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._87;
                     break;
                 default:
-                    moduleSettings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
                     break;
             }
 
             switch (MeasureRangeByte)
             {
                 case 0x00:
-                    moduleSettings.MeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                     break;
                 case 0x10:
-                    moduleSettings.MeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_4G;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
                     break;
                 case 0x20:
-                    moduleSettings.MeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_8G;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
                     break;
                 case 0x30:
-                    moduleSettings.MeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_16G;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
                     break;
                 default:
-                    moduleSettings.MeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                     break;
             }
         }
         private void WaitPause()
         {
-            pausesignal.Reset();
-            while (IsPauseReady == false)
+            pause_signal.Reset();
+            while (is_pause_ready == false)
             {
                 Thread.Sleep(1);
             }
@@ -235,14 +235,14 @@ namespace gpm_vibration_module_api
 
         private class SocketState
         {
-            public Socket workSocket = null;
-            public int BufferSize = 256;
-            public byte[] buffer;
-            public int WindowSize = 512;
-            public StringBuilder sb = new StringBuilder();
-            public IAsyncResult AR;
-            public bool IsDoneFlag = false;
-            public bool IsTimeout = false;
+            public Socket work_socket_ = null;
+            public int buffer_size_ = 256;
+            public byte[] buffer_;
+            public int window_size_ = 512;
+            public StringBuilder string_builder_ = new StringBuilder();
+            public IAsyncResult async_result_;
+            public bool is_data_recieve_done_flag_ = false;
+            public bool is_data_recieve_timeout_ = false;
         }
 
         internal void TinySensorFWUpdate(List<byte[]> efm8DataFrames)
@@ -250,11 +250,11 @@ namespace gpm_vibration_module_api
             try
             {
                 SocketBufferClear();
-                ModuleSocket.Send(Encoding.ASCII.GetBytes("INTOBMODE\r\n"));
+                module_socket.Send(Encoding.ASCII.GetBytes("INTOBMODE\r\n"));
 
                 foreach (var item in efm8DataFrames)
                 {
-                    ModuleSocket.Send(item, 0, item.Length, SocketFlags.None);
+                    module_socket.Send(item, 0, item.Length, SocketFlags.None);
                     Thread.Sleep(100);
                 }
             }
@@ -271,7 +271,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 開始巨量資料接收
         /// </summary>
-        public void StartGetBulkData(MeasureOption option)
+        public void StartGetData_Bulk(MeasureOption option)
         {
             userOption = option;
             SendBulkBreakCmd();
@@ -280,8 +280,8 @@ namespace gpm_vibration_module_api
             {
                 THBulkProcess = new Thread(BulkBufferProcess) { IsBackground = true };
                 THBulkProcess.Start();
-                BulkState = new SocketState() { buffer = new byte[512], workSocket = ModuleSocket, BufferSize = 512, WindowSize = option.WindowSize };
-                ModuleSocket.BeginReceive(BulkState.buffer, 0, BulkState.BufferSize, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
+                BulkState = new SocketState() { buffer_ = new byte[512], work_socket_ = module_socket, buffer_size_ = 512, window_size_ = option.WindowSize };
+                module_socket.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
             Bulk_Buffer.Clear();
             SendBulkDataStartCmd();
@@ -292,23 +292,23 @@ namespace gpm_vibration_module_api
             {
                 //BulkBreak();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKVALUE + "\r\n");
-                ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+                module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
             }
             catch (Exception exp)
             {
                 // Console.WriteLine("[SendBulkDataStartCmd()] " + exp.Message);
             }
-            BulkRequestPause.Set();
+            bulk_request_pause_signal.Set();
 
         }
 
         private void SendBulkBreakCmd()
         {
-            BulkRequestPause.Reset();
+            bulk_request_pause_signal.Reset();
             var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKBREAK + "\r\n");
             try
             {
-                ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+                module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
             }
             catch (Exception exp)
             {
@@ -318,32 +318,32 @@ namespace gpm_vibration_module_api
 
         internal void BulkBreak()
         {
-            BulkRequestPause.Reset();
+            bulk_request_pause_signal.Reset();
             Thread.Sleep(500);
 
             //IsBulkBreak = true;
-            while (!IsBulkBreak)
+            while (!is_bulk_break)
             {
                 Thread.Sleep(1);
             }
 
-            while (ModuleSocket.Available != 0)
+            while (module_socket.Available != 0)
             {
                 SocketBufferClear();
                 SendBulkBreakCmd();
                 Thread.Sleep(100);
             }
             Bulk_Buffer.Clear();
-            BulkState.buffer = new byte[512];
+            BulkState.buffer_ = new byte[512];
             try
             {
-                ModuleSocket.EndReceive(BulkState.AR);
+                module_socket.EndReceive(BulkState.async_result_);
             }
             catch
             {
 
             }
-            IsBulkBreak = true;
+            is_bulk_break = true;
 
         }
 
@@ -366,9 +366,9 @@ namespace gpm_vibration_module_api
         {
             //如果是巨量暫停狀態，收到的東西都是設定的東西
             BulkState = (SocketState)ar.AsyncState;
-            BulkState.AR = ar;
-            BulkRequestPause.WaitOne();
-            var client = BulkState.workSocket;
+            BulkState.async_result_ = ar;
+            bulk_request_pause_signal.WaitOne();
+            var client = BulkState.work_socket_;
             try
             {
 
@@ -376,7 +376,7 @@ namespace gpm_vibration_module_api
                 if (bytesRead > 0)
                 {
                     var rev = new byte[bytesRead];
-                    Array.Copy(BulkState.buffer, 0, rev, 0, bytesRead);
+                    Array.Copy(BulkState.buffer_, 0, rev, 0, bytesRead);
                     Bulk_Buffer.AddRange(rev);
                 }
                 else
@@ -384,7 +384,7 @@ namespace gpm_vibration_module_api
 
                 }
 
-                BulkState.buffer = new byte[512];
+                BulkState.buffer_ = new byte[512];
 
             }
             catch (Exception exp)
@@ -393,7 +393,7 @@ namespace gpm_vibration_module_api
             }
             try
             {
-                client.BeginReceive(BulkState.buffer, 0, BulkState.BufferSize, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
+                client.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
             catch (Exception exp)
             {
@@ -409,10 +409,10 @@ namespace gpm_vibration_module_api
         {
             while (true)
             {
-                IsBulkBreak = true;
-                BulkRequestPause.WaitOne();
-                IsBulkBreak = false;
-                var condition = BulkState.WindowSize * 6;
+                is_bulk_break = true;
+                bulk_request_pause_signal.WaitOne();
+                is_bulk_break = false;
+                var condition = BulkState.window_size_ * 6;
                 if (Bulk_Buffer.Count >= condition)
                 {
                     //RecieveCnt++;
@@ -425,7 +425,7 @@ namespace gpm_vibration_module_api
                         Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
                         var doubleOutput = BytesToDoubleList(rev, false);
-                        var dataset = new DataSet(SamplingRate);
+                        var dataset = new DataSet(sampling_rate);
                         dataset.AccData.X = (doubleOutput[0]);
                         dataset.AccData.Y = (doubleOutput[1]);
                         dataset.AccData.Z = (doubleOutput[2]);
@@ -462,7 +462,7 @@ namespace gpm_vibration_module_api
 
         private List<double>[] BytesToDoubleList(byte[] buffer, bool HeadExist)
         {
-            var LSB = Convert.ToInt32(moduleSettings.MeasureRange);
+            var LSB = Convert.ToInt32(module_settings.MeasureRange);
             int splitIndex = -1;
             if (HeadExist == true)
             {
@@ -521,17 +521,17 @@ namespace gpm_vibration_module_api
                 AccDataBuffer.Clear();
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
-                ModuleSocket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = Convert.ToInt32(moduleSettings.DataLength) * 6;
+                module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
+                var Datalength = Convert.ToInt32(module_settings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 st_time = DateTime.Now;
-                SocketState state = new SocketState() { buffer = new byte[Datalength], workSocket = ModuleSocket, BufferSize = Datalength };
+                SocketState state = new SocketState() { buffer_ = new byte[Datalength], work_socket_ = module_socket, buffer_size_ = Datalength };
                 StartTimeoutCheckout(state);
-                ModuleSocket.BeginReceive(state.buffer, 0, state.BufferSize, 0, new AsyncCallback(receiveCallBack), state);
+                module_socket.BeginReceive(state.buffer_, 0, state.buffer_size_, 0, new AsyncCallback(receiveCallBack), state);
                 WaitForBufferRecieveDone.WaitOne();
                 var ed_time = DateTime.Now;
                 timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
-                IsTimeout = state.IsTimeout;
+                IsTimeout = state.is_data_recieve_timeout_;
                 return AccDataBuffer.ToArray();
             }
             catch (Exception exp)
@@ -555,11 +555,11 @@ namespace gpm_vibration_module_api
             SocketState _state = (SocketState)state;
             Stopwatch timer = new Stopwatch();
             timer.Start();
-            while (_state.IsDoneFlag == false)
+            while (_state.is_data_recieve_done_flag_ == false)
             {
-                if (timer.ElapsedMilliseconds >= timeout) //TODO 外部可調
+                if (timer.ElapsedMilliseconds >= acc_data_rev_timeout) //TODO 外部可調
                 {
-                    _state.IsTimeout = true;
+                    _state.is_data_recieve_timeout_ = true;
                     AccDataBuffer.Clear();
                     WaitForBufferRecieveDone.Set();
                     return;
@@ -574,28 +574,28 @@ namespace gpm_vibration_module_api
             try
             {
                 SocketState state = (SocketState)ar.AsyncState;
-                var client = state.workSocket;
+                var client = state.work_socket_;
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
                     revBNUm += bytesRead;
                     //Console.WriteLine("Num sum = " + revBNUm);
                     var rev = new byte[bytesRead];
-                    Array.Copy(state.buffer, 0, rev, 0, bytesRead);
+                    Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     AccDataBuffer.AddRange(rev);
-                    if (AccDataBuffer.Count == state.BufferSize)
+                    if (AccDataBuffer.Count == state.buffer_size_)
                     {
                         var ed_time = DateTime.Now;
                         var timespend = (ed_time - st_time).Ticks / 10000; //1 tick = 100 nanosecond  = 0.0001 毫秒
                         //Console.WriteLine("No Waitone : " + timespend);
                         //WaitForBufferRecieveDone.Set();
-                        state.IsDoneFlag = true;
+                        state.is_data_recieve_done_flag_ = true;
                         WaitForBufferRecieveDone.Set();
                     }
                     else
                     {
-                        state.IsDoneFlag = false;
-                        client.BeginReceive(state.buffer, 0, state.BufferSize, 0,
+                        state.is_data_recieve_done_flag_ = false;
+                        client.BeginReceive(state.buffer_, 0, state.buffer_size_, 0,
                              new AsyncCallback(receiveCallBack), state);
                     }
                 }
@@ -613,9 +613,9 @@ namespace gpm_vibration_module_api
             //            AccDataBuffer.AddRange(state.buffer);
         }
 
-        private ManualResetEvent BulkRequestPause;
-        private ManualResetEvent WaitForDataGet;
-        internal CommandTask SendCmdTaskObj = new CommandTask();
+        private ManualResetEvent bulk_request_pause_signal;
+        private ManualResetEvent wait_for_data_get_signal;
+        internal CommandTask send_cmd_task_obj = new CommandTask();
         /// <summary>
         /// 發送任意bytes給控制器
         /// </summary>
@@ -624,16 +624,16 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         internal byte[] SendCommand(byte[] Data, int ExpectRetrunSize)
         {
-            SendCmdTaskObj.Data = Data;
-            SendCmdTaskObj.ExpectReturSize = ExpectRetrunSize;
-            WaitForDataGet.Reset();
+            send_cmd_task_obj.Data = Data;
+            send_cmd_task_obj.ExpectReturSize = ExpectRetrunSize;
+            wait_for_data_get_signal.Reset();
             Thread th = new Thread(SendCommandThread);
             th.Start();
-            WaitForDataGet.WaitOne();
-            if (SendCmdTaskObj.IsAutoStartBulk)
+            wait_for_data_get_signal.WaitOne();
+            if (send_cmd_task_obj.IsAutoStartBulk)
             {
                 userOption = new MeasureOption() { WindowSize = 512 };
-                StartGetBulkData(option: userOption);
+                StartGetData_Bulk(option: userOption);
             }
             return DataFromSensor;
 
@@ -688,19 +688,19 @@ namespace gpm_vibration_module_api
         }
         private void SendCommandThread()
         {
-            byte[] Data = SendCmdTaskObj.Data;
-            int ExpectRetrunSize = SendCmdTaskObj.ExpectReturSize;
+            byte[] Data = send_cmd_task_obj.Data;
+            int ExpectRetrunSize = send_cmd_task_obj.ExpectReturSize;
             BulkBreak();
             byte[] returnData = null;
             try
             {
                 SocketBufferClear();
-                while (ModuleSocket.Available != 0)
+                while (module_socket.Available != 0)
                 {
                     SocketBufferClear();
                 }
                 Console.WriteLine("Write to Control : " + ObjectAryToString(",", Data));
-                ModuleSocket.Send(Data, 0, Data.Length, SocketFlags.None);
+                module_socket.Send(Data, 0, Data.Length, SocketFlags.None);
                 int RecieveByteNum = 0;
                 int timespend = 0;
                 while (RecieveByteNum < ExpectRetrunSize)
@@ -711,16 +711,16 @@ namespace gpm_vibration_module_api
                         if (timespend > 5000)
                         {
                             DataFromSensor = new byte[0];
-                            WaitForDataGet.Set();
+                            wait_for_data_get_signal.Set();
                             return;
                         }
-                        int avaliable = ModuleSocket.Available;
+                        int avaliable = module_socket.Available;
                         returnData = new byte[avaliable];
                         //returnData = new byte[avaliable];
                         // ModuleSocket.Receive(returnData, RecieveByteNum, ExpectRetrunSize, 0);
                         if (avaliable != 0)
                         {
-                            ModuleSocket.Receive(returnData, RecieveByteNum, avaliable, 0);
+                            module_socket.Receive(returnData, RecieveByteNum, avaliable, 0);
                             RecieveByteNum += avaliable;
                         }
                     }
@@ -736,7 +736,7 @@ namespace gpm_vibration_module_api
             {
                 DataFromSensor = returnData;
             }
-            WaitForDataGet.Set();
+            wait_for_data_get_signal.Set();
         }
 
 
@@ -747,13 +747,13 @@ namespace gpm_vibration_module_api
         {
             try
             {
-                if (ModuleSocket == null)
+                if (module_socket == null)
                     return;
-                if (ModuleSocket.Available != 0)
+                if (module_socket.Available != 0)
                 {
-                    var size = ModuleSocket.Available;
+                    var size = module_socket.Available;
                     byte[] buffer = new byte[size];
-                    ModuleSocket.Receive(buffer, 0, size, SocketFlags.None);
+                    module_socket.Receive(buffer, 0, size, SocketFlags.None);
                 }
             }
             catch

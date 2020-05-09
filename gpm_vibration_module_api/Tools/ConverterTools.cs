@@ -22,7 +22,7 @@ namespace gpm_vibration_module_api.Tools
         /// </summary>
         /// <param name="AccPacket"></param>
         /// <returns></returns>
-        internal static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MeasureRange measureRange, clsEnum.FWSetting_Enum.AccConvertAlgrium convertAlgrium)
+        internal static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM convertAlgrium)
         {
             Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
             var N = AccPacket.Length / 6;
@@ -39,7 +39,7 @@ namespace gpm_vibration_module_api.Tools
             // 0 8 16
 
             //var s = splitIndex < 6 ? :;
-            if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Bulk)
+            if (convertAlgrium == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Bulk)
             {
                 for (int i = 0; true; i++)
                 {
@@ -62,7 +62,7 @@ namespace gpm_vibration_module_api.Tools
             else
                 for (int i = 0; i < N; i++)
                 {
-                    if (convertAlgrium == clsEnum.FWSetting_Enum.AccConvertAlgrium.Old)
+                    if (convertAlgrium == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old)
                     {
                         Gx.Add(bytesToDouble(AccPacket[N * 0 + i], AccPacket[N * 1 + i]) / LSB);
                         Gy.Add(bytesToDouble(AccPacket[N * 2 + i], AccPacket[N * 3 + i]) / LSB);
@@ -79,7 +79,7 @@ namespace gpm_vibration_module_api.Tools
             return new List<List<double>> { Gx, Gy, Gz };
         }
 
-        internal static List<double> BytesToXYZAccData(byte[] XYZBytes, clsEnum.Module_Setting_Enum.MeasureRange measureRange)
+        internal static List<double> BytesToXYZAccData(byte[] XYZBytes, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange)
         {
             List<double> XYZData = new List<double>();
             var LSB = Convert.ToInt32(measureRange);

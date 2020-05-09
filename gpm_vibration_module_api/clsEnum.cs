@@ -12,12 +12,12 @@ namespace gpm_vibration_module_api
         }
         public struct Module_Setting_Enum
         {
-            public enum SensorType
+            public enum SENSOR_TYPE
             {
                 High = 2, Genernal = 1
             }
 
-            public enum DataLength
+            public enum DATA_LENGTH
             {
                 x1 = 512, x2 = 1024, x4 = 2048, x8 = 4096
             }
@@ -27,7 +27,7 @@ namespace gpm_vibration_module_api
                 _9F = 159, _87 = 135
             }
 
-            public enum MeasureRange
+            public enum MEASURE_RANGE
             {
                 MR_2G = 16384,  
                 MR_4G = 8192, 
@@ -40,7 +40,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         internal struct FWSetting_Enum
         {
-            internal enum AccConvertAlgrium
+            internal enum ACC_CONVERT_ALGRIUM
             {
                 Old, New , Bulk
             }
@@ -51,7 +51,7 @@ namespace gpm_vibration_module_api
 
         internal struct KeyPro
         {
-            internal enum Ry4Cmd : ushort
+            internal enum RY4CMD : ushort
             {
                 RY_FIND = 1,            //Find Ry4S
                 RY_FIND_NEXT,       //Find next
@@ -69,7 +69,7 @@ namespace gpm_vibration_module_api
                 RY_CALCULATE2,      //Calculate1
                 RY_CALCULATE3,      //Calculate1
             };
-            internal enum Ry4ErrCode : uint
+            internal enum RY4_ERROR_CODE : uint
             {
                 ERR_SUCCESS = 0,                            //No error
                 ERR_NO_PARALLEL_PORT = 0x80300001,      //(0x80300001)No parallel port
@@ -102,7 +102,7 @@ namespace gpm_vibration_module_api
                 ERR_PRNPORT_BUSY = 0x80300101               //(0x80300101)Parallel port busy
 
             };
-            public enum KeyProExisStatus
+            public enum KEYPRO_EXIST_STATE
             {
                 Exist, NoInsert
             }

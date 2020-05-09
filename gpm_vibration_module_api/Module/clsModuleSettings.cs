@@ -27,13 +27,13 @@ namespace gpm_vibration_module_api.Module
         public string ParametersStringType = "1,0,159,0,0,0,0,0";
 
 
-        private clsEnum.Module_Setting_Enum.DataLength pDataLength = clsEnum.Module_Setting_Enum.DataLength.x1;
-        private clsEnum.Module_Setting_Enum.MeasureRange pMeasureRange = clsEnum.Module_Setting_Enum.MeasureRange.MR_2G;
+        private clsEnum.Module_Setting_Enum.DATA_LENGTH pDataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+        private clsEnum.Module_Setting_Enum.MEASURE_RANGE pMeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
         private clsEnum.Module_Setting_Enum.ODR pODR = clsEnum.Module_Setting_Enum.ODR._9F;
-        private clsEnum.Module_Setting_Enum.SensorType pSensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
+        private clsEnum.Module_Setting_Enum.SENSOR_TYPE pSensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
         private bool IsWIFIControllUsingHighSpeedSensor = false;
 
-        public clsEnum.Module_Setting_Enum.SensorType SensorType
+        public clsEnum.Module_Setting_Enum.SENSOR_TYPE SensorType
         {
             get { return pSensorType; }
             set
@@ -41,10 +41,10 @@ namespace gpm_vibration_module_api.Module
                 byte byteval = 0x00;
                 switch (value)
                 {
-                    case clsEnum.Module_Setting_Enum.SensorType.Genernal:
+                    case clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal:
                         byteval = 0x01;
                         break;
-                    case clsEnum.Module_Setting_Enum.SensorType.High:
+                    case clsEnum.Module_Setting_Enum.SENSOR_TYPE.High:
                         byteval = 0x02;
                         break;
                     default:
@@ -57,7 +57,7 @@ namespace gpm_vibration_module_api.Module
             }
         }
 
-        public clsEnum.Module_Setting_Enum.DataLength DataLength
+        public clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength
         {
             get { return pDataLength; }
             set
@@ -65,16 +65,16 @@ namespace gpm_vibration_module_api.Module
                 byte byteval = 0x00;
                 switch (value)
                 {
-                    case clsEnum.Module_Setting_Enum.DataLength.x1:
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x1:
                         byteval = 0x00;
                         break;
-                    case clsEnum.Module_Setting_Enum.DataLength.x2:
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x2:
                         byteval = 0x01;
                         break;
-                    case clsEnum.Module_Setting_Enum.DataLength.x4:
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x4:
                         byteval = 0x02;
                         break;
-                    case clsEnum.Module_Setting_Enum.DataLength.x8:
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
                         byteval = 0x03;
                         break;
                     default:
@@ -94,7 +94,7 @@ namespace gpm_vibration_module_api.Module
                 pODR = value;
             }
         }
-        public clsEnum.Module_Setting_Enum.MeasureRange MeasureRange
+        public clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange
         {
             get { return pMeasureRange; }
             set
@@ -102,16 +102,16 @@ namespace gpm_vibration_module_api.Module
                 byte byteval = 0x00;
                 switch (value)
                 {
-                    case clsEnum.Module_Setting_Enum.MeasureRange.MR_2G:
+                    case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G:
                         byteval = 0x00;
                         break;
-                    case clsEnum.Module_Setting_Enum.MeasureRange.MR_4G:
+                    case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G:
                         byteval = 0x10;
                         break;
-                    case clsEnum.Module_Setting_Enum.MeasureRange.MR_8G:
+                    case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G:
                         byteval = 0x20;
                         break;
-                    case clsEnum.Module_Setting_Enum.MeasureRange.MR_16G:
+                    case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G:
                         byteval = 0x30;
                         break;
                 }
