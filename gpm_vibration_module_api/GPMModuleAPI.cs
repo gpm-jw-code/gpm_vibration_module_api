@@ -525,7 +525,7 @@ namespace gpm_vibration_module_api
         public string Location { get; set; }
 
 
-        public void MeasureStart(MeasureOption option)
+        public void StartDataRecieve(MeasureOption option)
         {
             this.option = option;
             module_base.StartGetData_Bulk(option);

@@ -271,7 +271,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 開始巨量資料接收
         /// </summary>
-        public void StartGetData_Bulk(MeasureOption option)
+        internal void StartGetData_Bulk(MeasureOption option)
         {
             userOption = option;
             SendBulkBreakCmd();
@@ -339,9 +339,9 @@ namespace gpm_vibration_module_api
             {
                 module_socket.EndReceive(BulkState.async_result_);
             }
-            catch
+            catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message + ex.StackTrace);
             }
             is_bulk_break = true;
 
