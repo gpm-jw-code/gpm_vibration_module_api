@@ -210,18 +210,28 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public int Connect(string IP, int Port)
         {
+            Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
             if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Keypro Not Found");
                 return Convert.ToInt32(clsErrorCode.Error.KeyproNotFound);
+            }
             if (IP.Split('.').Length != 4 | IP == "")
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, IP Illegal");
                 return Convert.ToInt32(clsErrorCode.Error.IPIllegal);
+            }
             if (Port <= 0)
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Port Illegal");
                 return Convert.ToInt32(clsErrorCode.Error.PortIllegal);
-
+            }
             try
             {
 
                 if (socket_conected_list.ContainsKey(IP))
                 {
+                    Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Detect Connection already , do Disconnect()");
                     Disconnect();
                 }
                 SensorIP = IP;
@@ -241,10 +251,13 @@ namespace gpm_vibration_module_api
                     }
                     //BULKBreak();
                 }
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] {(ret == 0 ? "Successfully Established Connection." : $"Couldn't Not Established Connection, ERROR_CODE={ret}.")} IP:{IP}, Port:{Port}");
                 return ret;
             }
             catch (Exception exp)
             {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, EXCEPTION OCCURIED");
+                Tools.Logger.Code_Error_Log.Log($"[Fun: Connecnt() ] {exp.Message},{exp.StackTrace}");
                 return -69;
             }
         }
@@ -528,6 +541,7 @@ namespace gpm_vibration_module_api
         public void StartDataRecieve(MeasureOption option)
         {
             this.option = option;
+           
             module_base.StartGetData_Bulk(option);
         }
         public bool IsAutoResumeBulkAfterWriteSetting

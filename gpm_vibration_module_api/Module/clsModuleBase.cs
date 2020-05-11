@@ -273,6 +273,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         internal void StartGetData_Bulk(MeasureOption option)
         {
+            Tools.Logger.Event_Log.Log($"[StartDataRecieve] Start Data Recieve(BULK Method). Options:{option._Description}");
             userOption = option;
             SendBulkBreakCmd();
             SocketBufferClear();
@@ -284,6 +285,7 @@ namespace gpm_vibration_module_api
                 module_socket.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
             Bulk_Buffer.Clear();
+            Tools.Logger.Event_Log.Log($"[StartGetData_Bulk] Send:{clsEnum.ControllerCommand.BULKVALUE + "\r\n"}");
             SendBulkDataStartCmd();
         }
         internal void SendBulkDataStartCmd()
@@ -296,7 +298,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
-                // Console.WriteLine("[SendBulkDataStartCmd()] " + exp.Message);
+                Tools.Logger.Event_Log.Log($"[SendBulkDataStartCmd] {exp.Message + exp.StackTrace}");
             }
             bulk_request_pause_signal.Set();
 
@@ -389,6 +391,8 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
+                Tools.Logger.Event_Log.Log($"[receiveCallBack_Bulk] ERROR OCCURED");
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack_Bulk] {exp.Message},{exp.StackTrace}");
                 Console.WriteLine("[receiveCallBack_Bulk] " + exp.Message);
             }
             try

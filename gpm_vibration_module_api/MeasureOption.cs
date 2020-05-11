@@ -6,7 +6,16 @@ namespace gpm_vibration_module_api
 {
     public class MeasureOption
     {
-        public int WindowSize = 512 ;
+        public int WindowSize = 512;
         public int TimePeriod = 10;
+
+        public string _Description
+        {
+            get
+            {
+                return $"WindowSize:{WindowSize}, TimePeriod:{TimePeriod}";
+            }
+        }
+
     }
 }
