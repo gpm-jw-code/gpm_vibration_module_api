@@ -24,7 +24,7 @@ namespace gpm_vibration_module_api.Tools
         /// <returns></returns>
         internal static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM convertAlgrium)
         {
-            Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
+            //Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
             var N = AccPacket.Length / 6;
             var LSB = Convert.ToInt32(measureRange);
             List<double> Gx = new List<double>();

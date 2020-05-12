@@ -156,8 +156,9 @@ namespace gpm_vibration_module_api
 #else
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
             WifiSensorUsing = true;
-#endif
+
             module_base.DataRecieve += Module_base_DataReady;
+#endif
             Thread.Sleep(100);
 
         }
@@ -190,6 +191,23 @@ namespace gpm_vibration_module_api
                 {
                     Int32.TryParse(value + "", out int _result);
                     module_base.acc_data_rev_timeout = _result;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
+
+
+        public int ParamRWTimeOut
+        {
+            set
+            {
+                try
+                {
+                    Int32.TryParse(value + "", out int _result);
+                    module_base.fw_parm_rw_timeout = _result;
                 }
                 catch (Exception ex)
                 {
@@ -249,6 +267,8 @@ namespace gpm_vibration_module_api
                             ReConnectEvent.Invoke(IP);
                         socket_conected_list[IP] = module_base.module_socket;
                     }
+                    IsDataHandShakeNormal = SelfTest();
+                    //SelfTest
                     //BULKBreak();
                 }
                 Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] {(ret == 0 ? "Successfully Established Connection." : $"Couldn't Not Established Connection, ERROR_CODE={ret}.")} IP:{IP}, Port:{Port}");
@@ -261,6 +281,27 @@ namespace gpm_vibration_module_api
                 return -69;
             }
         }
+
+        public bool IsDataHandShakeNormal { private set; get; }
+
+        private bool SelfTest()
+        {
+            Tools.Logger.Event_Log.Log("[SelfTEst] READSTVAL..");
+            var _return = module_base.SendCommand(new byte[] { 0x53, 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }, 8);
+            if (_return == null | _return?.Length != 8)
+            {
+                Tools.Logger.Event_Log.Log("[SelfTEst] ...Defaul PARAM SETTING FAIL..");
+                return false;
+            }
+            else
+            {
+                module_base.CheckParamIllegeAndFixIt(ref _return);
+                module_base.DefineSettingByParameters(_return);
+                return true;
+            }
+        }
+
+
         /// <summary>
         /// 斷開與控制器的連線
         /// </summary>
@@ -280,17 +321,20 @@ namespace gpm_vibration_module_api
 
         private void StartParamSetTask()
         {
-            if (Connected == false)
-                return;
-            WaitAsyncForParametersSet.Reset();
-            if (module_base.module_settings.DataLength == clsEnum.Module_Setting_Enum.DATA_LENGTH.x8)
-                Thread.Sleep(2000);
-            else
-                Thread.Sleep(1500);
-            paramSetThread = new Thread(ParamSetTask) { IsBackground = true };
-            paramSetThread.Start();
-            WaitAsyncForParametersSet.WaitOne();
-            Save();
+            try
+            {
+                //if (Connected == false)
+                //    return;
+                WaitAsyncForParametersSet.Reset();
+                paramSetThread = new Thread(ParamSetTask) { IsBackground = true };
+                paramSetThread.Start();
+                WaitAsyncForParametersSet.WaitOne();
+                Save();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message + ex.StackTrace);
+            }
             // SendBulkDataStartCmd();
         }
 
@@ -381,8 +425,11 @@ namespace gpm_vibration_module_api
         {
             set
             {
-                setTaskObj.SettingItem = 2;
-                setTaskObj.SettingValue = value;
+                setTaskObj = new ClsParamSetTaskObj
+                {
+                    SettingItem = 2,
+                    SettingValue = value
+                };
                 StartParamSetTask();
             }
             get
@@ -541,7 +588,7 @@ namespace gpm_vibration_module_api
         public void StartDataRecieve(MeasureOption option)
         {
             this.option = option;
-           
+
             module_base.StartGetData_Bulk(option);
         }
         public bool IsAutoResumeBulkAfterWriteSetting
