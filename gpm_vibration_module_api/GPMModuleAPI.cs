@@ -70,7 +70,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public void UpdateParam()
+        private void UpdateParam()
         {
             var param = module_base.module_settings.ByteAryOfParameters;
             var cmd = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
@@ -84,13 +84,11 @@ namespace gpm_vibration_module_api
             public object SettingValue;
         }
 
-        public MeasureOption option = new MeasureOption();
+        private MeasureOption option = new MeasureOption();
         private DataSet DataSetRet = new DataSet(1000);
         private ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj();
         private bool IsGetFFT = false;
         private bool IsGetOtherFeatures = false;
-        private Thread getDataThread;
-        private Thread paramSetThread;
         private ManualResetEvent WaitAsyncForGetDataTask;
         private ManualResetEvent WaitAsyncForParametersSet;
         private event Action<string> FunctionCalled;
@@ -123,7 +121,6 @@ namespace gpm_vibration_module_api
             WaitAsyncForGetDataTask = new ManualResetEvent(false);
             WaitAsyncForParametersSet = new ManualResetEvent(true);
             GetDataTaskPause = new ManualResetEvent(true);
-            getDataThread = new Thread(GetDataTask) { IsBackground = true };
             module_base.module_settings.SensorType = sensorType;
             module_base.DataRecieve += Module_base_DataReady;
         }
@@ -152,7 +149,6 @@ namespace gpm_vibration_module_api
             WaitAsyncForParametersSet = new ManualResetEvent(true);
             GetDataTaskPause = new ManualResetEvent(true);
 
-            getDataThread = new Thread(GetDataTask) { IsBackground = true };
 #if YCM
             module_base.module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
             WifiSensorUsing = false;
@@ -166,7 +162,7 @@ namespace gpm_vibration_module_api
 
         }
         public string SensorIP { get; private set; } = "";
-        public int SensorPort;
+        private int SensorPort;
         public enum Enum_AccGetMethod
         {
             Auto, Manual
@@ -183,7 +179,7 @@ namespace gpm_vibration_module_api
                 return module_base.module_settings.WifiControllUseHighSppedSensor;
             }
         }
-        public event Action<string> ConnectEvent;
+        internal event Action<string> ConnectEvent;
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
 
         public int AccDataRevTimeOut
@@ -339,7 +335,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        public void BULKBreak()
+        private void BULKBreak()
         {
             if (Connected)
             {
@@ -429,7 +425,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public void Load()
+        private void Load()
         {
             var configpath = "SensorConfig\\" + SensorIP + "\\Controller_Parameters.xml";
             if (File.Exists(configpath))
@@ -493,7 +489,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange
         {
-            set
+            internal set
             {
                 setTaskObj = new ClsParamSetTaskObj
                 {
@@ -555,7 +551,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         public clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength
         {
-            set
+            internal set
             {
                 if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
                     return;
@@ -609,7 +605,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         public clsEnum.Module_Setting_Enum.SENSOR_TYPE SensorType
         {
-            set
+            internal set
             {
                 setTaskObj.SettingItem = 0;
                 setTaskObj.SettingValue = value;
@@ -691,7 +687,7 @@ namespace gpm_vibration_module_api
             dataSet.Features.AccRMS.Z = GpmMath.Stastify.RMS(dataSet.AccData.Z);
             DataRecieve?.Invoke(dataSet);
         }
-        public void SendBulkDataStartCmd()
+        private void SendBulkDataStartCmd()
         {
             module_base.SendBulkDataStartCmd();
         }
@@ -738,18 +734,8 @@ namespace gpm_vibration_module_api
         }
 
         private ManualResetEvent GetDataTaskPause;
-        public void GetDataResume()
-        {
-            GetDataTaskPause.Set();
-        }
-        /// <summary>
-        /// 暫停收數據
-        /// </summary>
-        public void GetDataPause()
-        {
-            GetDataTaskPause.Reset();
-        }
-
+       
+      
         private bool IsGetDataTaskPaused = true;
 
         public void Stop_All_Action()
@@ -847,7 +833,7 @@ namespace gpm_vibration_module_api
             return Ip;
         }
 
-        public void TinySensorFWUpdate(List<byte[]> data)
+        private void TinySensorFWUpdate(List<byte[]> data)
         {
             module_base.TinySensorFWUpdate(data);
         }
