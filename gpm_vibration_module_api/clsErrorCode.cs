@@ -17,7 +17,8 @@ namespace gpm_vibration_module_api
             NoConnection = 604,
             ConnectFail_HostNoReply = 16606,
             PortIllegal = 602,
-            IPIllegal = 601
+            IPIllegal = 601,
+            SelfTestFail = 506
         }
 
     }

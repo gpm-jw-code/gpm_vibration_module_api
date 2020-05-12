@@ -12,9 +12,14 @@ namespace gpm_vibration_module_api.Tools
         /// <param name="HB"></param>
         /// <param name="LB"></param>
         /// <returns></returns>
-        internal static double bytesToDouble(byte HB, byte LB)
+        internal static double bytesToDouble(byte HB, byte LB, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM _ALGRIUM)
         {
-            return HB + (sbyte)LB * 256;
+            if (_ALGRIUM == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Bulk | _ALGRIUM == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New)
+                return HB + (sbyte)LB * 256;
+            else
+                return LB + (sbyte)HB * 256;
+
+
         }
 
         /// <summary>
@@ -54,9 +59,9 @@ namespace gpm_vibration_module_api.Tools
                 }
                 for (int i = 0; i < N; i++)
                 {
-                    Gx.Add(bytesToDouble(AccPacket[(8 * i) + 0], AccPacket[(8 * i) + 1]) / LSB);
-                    Gy.Add(bytesToDouble(AccPacket[(8 * i) + 2], AccPacket[(8 * i) + 3]) / LSB);
-                    Gz.Add(bytesToDouble(AccPacket[(8 * i) + 4], AccPacket[(8 * i) + 5]) / LSB);
+                    Gx.Add(bytesToDouble(AccPacket[(8 * i) + 0], AccPacket[(8 * i) + 1], convertAlgrium) / LSB);
+                    Gy.Add(bytesToDouble(AccPacket[(8 * i) + 2], AccPacket[(8 * i) + 3], convertAlgrium) / LSB);
+                    Gz.Add(bytesToDouble(AccPacket[(8 * i) + 4], AccPacket[(8 * i) + 5], convertAlgrium) / LSB);
                 }
             }
             else
@@ -64,29 +69,29 @@ namespace gpm_vibration_module_api.Tools
                 {
                     if (convertAlgrium == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old)
                     {
-                        Gx.Add(bytesToDouble(AccPacket[N * 0 + i], AccPacket[N * 1 + i]) / LSB);
-                        Gy.Add(bytesToDouble(AccPacket[N * 2 + i], AccPacket[N * 3 + i]) / LSB);
-                        Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i]) / LSB);
+                        Gx.Add(bytesToDouble(AccPacket[N * 0 + i], AccPacket[N * 1 + i], convertAlgrium) / LSB);
+                        Gy.Add(bytesToDouble(AccPacket[N * 2 + i], AccPacket[N * 3 + i], convertAlgrium) / LSB);
+                        Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i], convertAlgrium) / LSB);
                     }
                     else
                     {
-                        Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1]) / LSB);
-                        Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3]) / LSB);
-                        Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5]) / LSB);
+                        Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1], convertAlgrium) / LSB);
+                        Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3], convertAlgrium) / LSB);
+                        Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5], convertAlgrium) / LSB);
                     }
                 }
 
             return new List<List<double>> { Gx, Gy, Gz };
         }
 
-        internal static List<double> BytesToXYZAccData(byte[] XYZBytes, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange)
-        {
-            List<double> XYZData = new List<double>();
-            var LSB = Convert.ToInt32(measureRange);
-            XYZData.Add(bytesToDouble(XYZBytes[0], XYZBytes[1]) / LSB);
-            XYZData.Add(bytesToDouble(XYZBytes[2], XYZBytes[3]) / LSB);
-            XYZData.Add(bytesToDouble(XYZBytes[4], XYZBytes[5]) / LSB);
-            return XYZData;
-        }
+        //internal static List<double> BytesToXYZAccData(byte[] XYZBytes, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange)
+        //{
+        //    List<double> XYZData = new List<double>();
+        //    var LSB = Convert.ToInt32(measureRange);
+        //    XYZData.Add(bytesToDouble(XYZBytes[0], XYZBytes[1]) / LSB);
+        //    XYZData.Add(bytesToDouble(XYZBytes[2], XYZBytes[3]) / LSB);
+        //    XYZData.Add(bytesToDouble(XYZBytes[4], XYZBytes[5]) / LSB);
+        //    return XYZData;
+        //}
     }
 }
