@@ -54,7 +54,7 @@ namespace gpm_vibration_module_api
                 port = ModulePort;
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 module_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                module_socket.ReceiveBufferSize = 8192;
+                module_socket.ReceiveBufferSize = 655350;
                 module_socket.ReceiveTimeout = 30000;
                 module_socket.Connect(remoteEP);
                 if (module_socket.Connected)
@@ -147,12 +147,15 @@ namespace gpm_vibration_module_api
             Console.WriteLine($"Controller Return:{ObjectAryToString(" ", ParamReturn)}");
             if (Is_PARAM_Return_Correct(_UserSetting.ByteAryOfParameters, ParamReturn))
             {
+                Tools.Logger.Event_Log.Log("PARAM SETTING OK");
                 Console.WriteLine("PARAM SETTING OK");
                 DefineSettingByParameters(ParamReturn);
+                Tools.Logger.Event_Log.Log($"PARAM NOW:{ObjectAryToString(",",module_settings.ByteAryOfParameters)}");
                 return module_settings.ByteAryOfParameters;
             }
             else
             {
+                Tools.Logger.Event_Log.Log("PARAM SETTING FAILURE");
                 Console.WriteLine("PARAM SETTING FAILURE");
                 DefineSettingByParameters(module_settings.ByteAryOfParameters);
                 return new byte[0];
@@ -176,11 +179,12 @@ namespace gpm_vibration_module_api
                     check2_result = false; break;
                 }
             }
+            Tools.Logger.Event_Log.Log($"check1:{check1_result}[{_send_string}]/[{_rev_string}],check2:{check2_result}");
 
             return check1_result == true | check2_result == true;
         }
 
-        private string ObjectAryToString(string split, byte[] obj)
+        public static string ObjectAryToString(string split, byte[] obj)
         {
             var _s = "";
 
@@ -342,8 +346,7 @@ namespace gpm_vibration_module_api
             SocketBufferClear();
             if (THBulkProcess == null)
             {
-                THBulkProcess = new Thread(BulkBufferProcess) { IsBackground = true };
-                THBulkProcess.Start();
+                Task.Run(() => BulkBufferProcess());
                 BulkState = new SocketState() { buffer_ = new byte[512], work_socket_ = module_socket, buffer_size_ = 512, window_size_ = option.WindowSize, task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data };
                 module_socket.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
@@ -427,7 +430,7 @@ namespace gpm_vibration_module_api
 
         private List<double>[] RedundentData = new List<double>[3];
         private List<byte> Bulk_Buffer = new List<byte>();
-
+        private List<byte> Bulk_temp_buffer = new List<byte>();
         private SocketState BulkState = new SocketState();
         /// <summary>
         /// 巨量資料非同步接收
@@ -447,8 +450,13 @@ namespace gpm_vibration_module_api
                 if (bytesRead > 0)
                 {
                     var rev = new byte[bytesRead];
-                    Array.Copy(BulkState.buffer_, 0, rev, 0, bytesRead);
-                    Bulk_Buffer.AddRange(rev);
+                    Array.Copy(BulkState.buffer_, 0, rev, 0, 6);
+                    Bulk_temp_buffer.AddRange(rev);
+                    if (Bulk_temp_buffer.Count >= 3072)
+                    {
+                        Bulk_Buffer.AddRange(Bulk_temp_buffer);
+                        Bulk_temp_buffer.Clear();
+                    }
                 }
                 else
                 {
@@ -488,16 +496,16 @@ namespace gpm_vibration_module_api
                 var condition = BulkState.window_size_ * 6;
                 if (Bulk_Buffer.Count >= condition)
                 {
-                    //RecieveCnt++;
-                    //Console.WriteLine(DateTime.Now + " Buffer ~~~~~~~~~ 有了");
-                    // Console.WriteLine(DateTime.Now + " " + RecieveCnt);
+                    Console.WriteLine($"Bulk Buffer Length:{Bulk_Buffer.Count}");
+                    var _ = Bulk_Buffer.Contains(159);
                     try
                     {
                         var startIndex = 0;
                         byte[] rev = new byte[condition];
                         Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
-                        var doubleOutput = BytesToDoubleList(rev, false);
+                        //var doubleOutput = BytesToDoubleList(rev, false);
+                        var doubleOutput = ConverterTools.AccPacketToListDouble(rev, module_settings.MeasureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New);
                         var dataset = new DataSet(sampling_rate);
                         dataset.AccData.X = (doubleOutput[0]);
                         dataset.AccData.Y = (doubleOutput[1]);
@@ -527,8 +535,6 @@ namespace gpm_vibration_module_api
                     //    RecieveCnt = 0;
                     //}
                 }
-
-
                 Thread.Sleep(1);
             }
         }
@@ -572,6 +578,10 @@ namespace gpm_vibration_module_api
                     if (HeadExist)
                         if ((8 * i) + startIndex + 0 + 5 >= buffer.Length)
                             break;
+                    //x.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 0], buffer[(multiple * i) + startIndex + 1], alg) / LSB);
+                    //y.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 2], buffer[(multiple * i) + startIndex + 3], alg) / LSB);
+                    //z.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 4], buffer[(multiple * i) + startIndex + 5], alg) / LSB);
+
                     x.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 0], buffer[(multiple * i) + startIndex + 1], alg) / LSB);
                     y.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 2], buffer[(multiple * i) + startIndex + 3], alg) / LSB);
                     z.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 4], buffer[(multiple * i) + startIndex + 5], alg) / LSB);
@@ -587,6 +597,7 @@ namespace gpm_vibration_module_api
         internal bool isBusy = false;
         internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
+            SocketState state= null;
             isBusy = true;
             acc_data_read_task_token_source = new CancellationTokenSource();
             bulk_use = false;
@@ -600,7 +611,15 @@ namespace gpm_vibration_module_api
                 var Datalength = Convert.ToInt32(module_settings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
-                SocketState state = new SocketState() { buffer_ = new byte[Datalength], work_socket_ = module_socket, buffer_size_ = Datalength, task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data };
+                state = new SocketState()
+                {
+                    window_size_ = Convert.ToInt32(module_settings.DataLength) * 6,
+                    buffer_ = new byte[512],
+                    work_socket_ = module_socket,
+                    buffer_size_ = 512,
+                    task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data,
+                    data_rev_ = new byte[0]
+                };
                 var _task = Task.Run(() => TimeoutCheck(state));
                 module_socket.BeginReceive(state.buffer_, 0, state.buffer_size_, 0, new AsyncCallback(receiveCallBack), state);
                 WaitForBufferRecieveDone.WaitOne();
@@ -610,6 +629,8 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
+                isBusy = false;
+                state.is_data_recieve_done_flag_ = true;
                 timespend = -1;
                 AccDataBuffer.Clear();
                 WaitForBufferRecieveDone.Set();
@@ -632,6 +653,23 @@ namespace gpm_vibration_module_api
             var timeoutPeriod = _state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data ? acc_data_rev_timeout : fw_parm_rw_timeout;
             while (_state.is_data_recieve_done_flag_ == false)
             {
+                try
+                {
+                    if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data && acc_data_read_task_token_source.IsCancellationRequested)
+                    {
+                        acc_data_read_task_token_source.Token.ThrowIfCancellationRequested();
+                    }
+                    if (_state.task_of_now == TIMEOUT_CHEK_ITEM.FW_Param_RW && param_setting_task_cancel_token_Source.IsCancellationRequested)
+                    {
+                        param_setting_task_cancel_token_Source.Token.ThrowIfCancellationRequested();
+                    }
+                }
+                catch (Exception)
+                {
+                    break;
+                }
+                
+
                 if (timer.ElapsedMilliseconds >= timeoutPeriod) //TODO 外部可調
                 {
                     timer.Stop();
@@ -641,12 +679,13 @@ namespace gpm_vibration_module_api
                     AccDataBuffer.Clear();
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data)
                     {
+                        isBusy = false;
                         WaitForBufferRecieveDone.Set();
                         acc_data_read_task_token_source.Cancel();
                     }
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.FW_Param_RW)
                     {
-                        _state.cancel_token_source_.Cancel();
+                        param_setting_task_cancel_token_Source.Cancel();
                     }
                     return;
                 }
@@ -672,11 +711,11 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-                    //Console.WriteLine("Num sum = " + revBNUm);
+                    Console.WriteLine("Num sum = " + bytesRead);
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     AccDataBuffer.AddRange(rev);
-                    if (AccDataBuffer.Count == state.buffer_size_)
+                    if (AccDataBuffer.Count == state.window_size_)
                     {
                         //Console.WriteLine("No Waitone : " + timespend);
                         //WaitForBufferRecieveDone.Set();

@@ -152,12 +152,14 @@ namespace gpm_vibration_module_api
 #if YCM
             module_base.module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
             WifiSensorUsing = false;
+
 #else
             module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
             WifiSensorUsing = true;
 
             module_base.DataRecieve += Module_base_DataReady;
 #endif
+            module_base.DataRecieve += Module_base_DataReady;
             Thread.Sleep(100);
 
         }
@@ -306,9 +308,10 @@ namespace gpm_vibration_module_api
 
         private async Task<bool> SelfTest()
         {
-            Tools.Logger.Event_Log.Log("[SelfTEst] READSTVAL..");
+            Tools.Logger.Event_Log.Log("[SelfTEst] Write..");
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
+            Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",",send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8);
             var _return2 = await module_base.SendCommand(send_bytes, 8);
             if (module_base.Is_PARAM_Return_Correct(module_base.module_settings.ByteAryOfParameters, _return2) == false)
@@ -318,6 +321,7 @@ namespace gpm_vibration_module_api
             }
             else
             {
+                Tools.Logger.Event_Log.Log("[SelfTEst] ...Defaul PARAM SETTING PASS..");
                 var PARAM = _return2;
                 //module_base.CheckParamIllegeAndFixIt(ref PARAM);
                 module_base.DefineSettingByParameters(PARAM);
@@ -335,7 +339,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        private void BULKBreak()
+        public void BULKBreak()
         {
             if (Connected)
             {

@@ -38,11 +38,18 @@ namespace gpm_vibration_module_api.Tools
         public string SaveDir;
         public void Log(string content)
         {
-            var fileName = DateTime.Now.ToString("yyyyMMdd_HH") + ".txt";
-            using (StreamWriter sw = new StreamWriter(SaveDir + fileName, true))
+            try
             {
-                sw.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} {content}");
-            };
+                var fileName = DateTime.Now.ToString("yyyyMMdd_HH") + ".txt";
+                using (StreamWriter sw = new StreamWriter(SaveDir + fileName, true))
+                {
+                    sw.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} {content}");
+                };
+            }
+            catch (Exception)
+            {
+
+            }
         }
         public void DirCreation()
         {

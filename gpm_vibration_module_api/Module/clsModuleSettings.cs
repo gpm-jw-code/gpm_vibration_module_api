@@ -1,4 +1,4 @@
-﻿//#define ETH468
+﻿#define ETH468
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,8 +32,13 @@ namespace gpm_vibration_module_api.Module
                 return byteAryOfParameters;
             }
         }
-        public string ParametersStringType = "1,0,159,0,0,0,0,0";
 
+#if (ETH468)
+        public string ParametersStringType = "1,1,159,0,0,2,0,0";
+
+#else
+          public string ParametersStringType = "1,0,159,0,0,0,0,0";
+#endif
 
         private clsEnum.Module_Setting_Enum.DATA_LENGTH pDataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
         private clsEnum.Module_Setting_Enum.MEASURE_RANGE pMeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
