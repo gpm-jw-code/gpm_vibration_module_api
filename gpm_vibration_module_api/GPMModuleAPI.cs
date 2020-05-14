@@ -229,7 +229,8 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns></returns>
-        public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
+        public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true, clsEnum.Module_Setting_Enum.MEASURE_RANGE mr_defaul = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G,
+            clsEnum.Module_Setting_Enum.DATA_LENGTH dl_defaul = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1)
         {
             Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
             if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
@@ -262,7 +263,6 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-
                         _socket.Shutdown(SocketShutdown.Both);
                         _socket.Dispose();
                     }
@@ -273,20 +273,22 @@ namespace gpm_vibration_module_api
                 else
                     socket_conected_list.Add(IP, null);
                 module_base.acc_data_read_task_token_source.Cancel();
-                var ret = module_base.Connect(IP, Port);
+                var ret = await module_base.Connect(IP, Port);
                 if (ret == 0)
                 {
                     ConnectEvent?.Invoke(IP);
                     ReConnectEvent?.Invoke(IP);
                     if (IsSelfTest)
-                        IsDataHandShakeNormal = await SelfTest();
+                    {
+                        IsDataHandShakeNormal = await SelfTest(mr_defaul, dl_defaul);
+                        ret = IsDataHandShakeNormal ? ret : Convert.ToInt32(clsErrorCode.Error.SelfTestFail);
+                    }
                 }
                 else
                 {
 
                 }
                 socket_conected_list[IP] = module_base.module_socket;
-
                 Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] {(ret == 0 ? "Successfully Established Connection." : $"Couldn't Not Established Connection, ERROR_CODE={ret}.")} IP:{IP}, Port:{Port}");
                 return ret;
             }
@@ -306,12 +308,52 @@ namespace gpm_vibration_module_api
 
 
 
-        private async Task<bool> SelfTest()
+        private async Task<bool> SelfTest(clsEnum.Module_Setting_Enum.MEASURE_RANGE mr_defaul = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G, clsEnum.Module_Setting_Enum.DATA_LENGTH dl_defaul = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1)
         {
             Tools.Logger.Event_Log.Log("[SelfTEst] Write..");
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
+
+            byte ml_bit = 0x00;
+            switch (mr_defaul)
+            {
+                case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G:
+                    ml_bit = 0x00;
+                    break;
+                case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G:
+                    ml_bit = 0x10;
+                    break;
+                case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G:
+                    ml_bit = 0x20;
+                    break;
+                case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G:
+                    ml_bit = 0x30;
+                    break;
+                default:
+                    break;
+            }
+
+            byte dl_bit = 0x00;
+            switch (dl_defaul)
+            {
+                case clsEnum.Module_Setting_Enum.DATA_LENGTH.x1:
+                    dl_bit = 0x01;
+                    break;
+                case clsEnum.Module_Setting_Enum.DATA_LENGTH.x2:
+                    dl_bit = 0x02;
+                    break;
+                case clsEnum.Module_Setting_Enum.DATA_LENGTH.x4:
+                    dl_bit = 0x04;
+                    break;
+                case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
+                    dl_bit = 0x08;
+                    break;
+                default:
+                    break;
+            }
+            module_base.module_settings.ByteAryOfParameters[1] = dl_bit;
+            module_base.module_settings.ByteAryOfParameters[3] = ml_bit;
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
-            Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",",send_bytes)}");
+            Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8);
             var _return2 = await module_base.SendCommand(send_bytes, 8);
             if (module_base.Is_PARAM_Return_Correct(module_base.module_settings.ByteAryOfParameters, _return2) == false)
@@ -398,7 +440,7 @@ namespace gpm_vibration_module_api
             else
             {
                 WaitAsyncForParametersSet.Set();
-                GetDataTask();
+                //GetDataTask();
                 return 0;
             }
         }
@@ -738,8 +780,8 @@ namespace gpm_vibration_module_api
         }
 
         private ManualResetEvent GetDataTaskPause;
-       
-      
+
+
         private bool IsGetDataTaskPaused = true;
 
         public void Stop_All_Action()
