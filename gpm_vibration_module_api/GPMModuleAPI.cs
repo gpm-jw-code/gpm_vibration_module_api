@@ -6,6 +6,7 @@
 using gpm_vibration_module_api.Module;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -137,6 +138,8 @@ namespace gpm_vibration_module_api
 
         public GPMModuleAPI(string IP = null)
         {
+            Sys_Config_Load();
+
             if (IP != null)
                 SensorIP = IP;
 
@@ -236,7 +239,7 @@ namespace gpm_vibration_module_api
             if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
             {
                 Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Keypro Not Found");
-                return Convert.ToInt32(clsErrorCode.Error.KeyproNotFound);
+                return Convert.ToInt32(clsErrorCode.Error.KEYPRO_NOT_FOUND);
             }
             if (IP.Split('.').Length != 4 | IP == "")
             {
@@ -283,6 +286,7 @@ namespace gpm_vibration_module_api
                         IsDataHandShakeNormal = await SelfTest(mr_defaul, dl_defaul);
                         ret = IsDataHandShakeNormal ? ret : Convert.ToInt32(clsErrorCode.Error.SelfTestFail);
                     }
+                    Sensor_Config_Load();
                 }
                 else
                 {
@@ -367,6 +371,7 @@ namespace gpm_vibration_module_api
                 var PARAM = _return2;
                 //module_base.CheckParamIllegeAndFixIt(ref PARAM);
                 module_base.DefineSettingByParameters(PARAM);
+                Freq_Vec = FreqVecCal();
                 return true;
             }
         }
@@ -405,21 +410,22 @@ namespace gpm_vibration_module_api
                 Console.WriteLine($"Reconnect Before Any Action TEST.{await Reconnect()}");
                 WaitAsyncForParametersSet.Reset();
                 var _ret = await Task.Run(() => ParamSetTask());
-                Save();
+                Sensor_Config_Save();
                 WaitAsyncForParametersSet.Set();
                 return _ret;
             }
             catch (Exception ex)
             {
+                Tools.Logger.Code_Error_Log.Log("[StartParamSetTaskAsync] " + ex.Message + "\r\n" + ex.StackTrace);
                 Console.WriteLine(ex.Message + ex.StackTrace);
-                return Convert.ToInt32(clsErrorCode.Error.ParametersSettingTimeout);
+                return Convert.ToInt32(clsErrorCode.Error.SYSTEM_ERROR);
             }
             // SendBulkDataStartCmd();
         }
 
         private async Task<int> ParamSetTask()
         {
-            var ret = new byte[0];
+            var ret = new Tuple<byte[], int>(null, -1);
             switch (Convert.ToInt32(setTaskObj.SettingItem))
             {
                 case 0:
@@ -436,11 +442,10 @@ namespace gpm_vibration_module_api
                     break;
             }
             module_base.SocketBufferClear();
-            if (ret.Length == 0) return Convert.ToInt32(clsErrorCode.Error.ParametersSettingTimeout);
+            if (ret.Item2 != 0) return ret.Item2;
             else
             {
                 WaitAsyncForParametersSet.Set();
-                //GetDataTask();
                 return 0;
             }
         }
@@ -448,7 +453,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 儲存控制器參數到硬碟 路徑: Environment.CurrentDirectory + $@"\SensorConfig\{moduleIP}\"
         /// </summary>
-        public int Save()
+        public int Sensor_Config_Save()
         {
             try
             {
@@ -471,7 +476,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        private void Load()
+        private void Sensor_Config_Load()
         {
             var configpath = "SensorConfig\\" + SensorIP + "\\Controller_Parameters.xml";
             if (File.Exists(configpath))
@@ -481,15 +486,15 @@ namespace gpm_vibration_module_api
                 clsModuleSettings setting = (clsModuleSettings)xs.Deserialize(fs);
                 fs.Flush();
                 fs.Close();
-                SensorType = setting.SensorType;
-                MeasureRange = setting.MeasureRange;
-                DataLength = setting.DataLength;
-                ODR = setting.ODR;
+                //SensorType = setting.SensorType;
+                // MeasureRange = setting.MeasureRange;
+                //DataLength = setting.DataLength;
+                //ODR = setting.ODR;
                 module_base.module_settings = setting;
             }
             else
             {
-                SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
+                SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
                 MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                 DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                 ODR = clsEnum.Module_Setting_Enum.ODR._9F;
@@ -498,16 +503,24 @@ namespace gpm_vibration_module_api
                     SensorType = SensorType,
                     DataLength = DataLength,
                     MeasureRange = MeasureRange,
-                    ODR = ODR
+                    ODR = ODR,
+                    sampling_rate_ = 5000
                 };
-                Save();
+                Sensor_Config_Save();
             }
 
         }
 
+
+        private void Sys_Config_Load()
+        {
+            var _settings = sys.Settings_Ctrl.Log_Config();
+            Tools.Logger.Event_Log.is_log_enable = Tools.Logger.Code_Error_Log.is_log_enable = _settings.is_write_log_to_HardDisk;
+            //SamplingRate = Convert.ToDouble(_settings.sampling_rate_of_vibration_sensor);
+        }
+
         public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange)
         {
-
             setTaskObj = new ClsParamSetTaskObj
             {
                 SettingItem = 2,
@@ -527,6 +540,10 @@ namespace gpm_vibration_module_api
             };
             var ret = await StartParamSetTaskAsync();
             module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
+            if(ret ==0)
+            {
+                Freq_Vec = FreqVecCal();
+            }
             return ret;
         }
 
@@ -744,7 +761,7 @@ namespace gpm_vibration_module_api
         {
             if (module_base.isBusy)
             {
-                return new DataSet(module_base.sampling_rate)
+                return new DataSet(module_base.module_settings.sampling_rate_)
                 {
                     AccData = DataSetRet.AccData,
                     FFTData = DataSetRet.FFTData,
@@ -754,7 +771,7 @@ namespace gpm_vibration_module_api
             }
 
             if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
-                return new DataSet(module_base.sampling_rate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KeyproNotFound) };
+                return new DataSet(module_base.module_settings.sampling_rate_) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.KEYPRO_NOT_FOUND) };
             // if (Connected == false)
             //     return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
             WaitAsyncForParametersSet.Set();
@@ -773,7 +790,7 @@ namespace gpm_vibration_module_api
             UVDataSet _uvDataSet = new UVDataSet
             {
                 UVValue = _uvVal,
-                ErrorCode = _uvVal == -1 ? Convert.ToInt32(clsErrorCode.Error.DataGetTimeout) : 0,
+                ErrorCode = _uvVal == -1 ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0,
                 RecieveTime = DateTime.Now
             };
             return _uvDataSet;
@@ -794,7 +811,7 @@ namespace gpm_vibration_module_api
             //GetDataTaskPause.WaitOne();
             //WaitAsyncForParametersSet.WaitOne();
             //IsGetDataTaskPaused = false;
-            DataSetRet = new DataSet(module_base.sampling_rate);
+            DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
             try
             {
                 byte[] AccPacket;
@@ -803,7 +820,7 @@ namespace gpm_vibration_module_api
                 module_base.isBusy = false;
                 if (AccPacket.Length < Convert.ToInt32(DataLength) * 6)
                 {
-                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DataGetTimeout);
+                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
                     return;
                 }
@@ -817,7 +834,8 @@ namespace gpm_vibration_module_api
                     DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
                     DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
                     DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
-                    DataSetRet.FFTData.FreqsVec = FreqVecCal(DataSetRet.FFTData.X.Count);
+                    //DataSetRet.FFTData.FreqsVec = FreqVecCal(DataSetRet.FFTData.X.Count);
+                    DataSetRet.FFTData.FreqsVec = Freq_Vec;
                 }
 
                 if (IsGetOtherFeatures)
@@ -862,10 +880,26 @@ namespace gpm_vibration_module_api
             else
                 return clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New;
         }
+
+        private List<double> Freq_Vec = new List<double>();
+
+
+        private List<double> FreqVecCal()
+        {
+            var freqVec = new List<double>();
+            var NysFreq = module_base.module_settings.sampling_rate_ / 2;
+            var FFTWindowSize = Convert.ToInt32(module_base.module_settings.DataLength) / 2;
+            for (int i = 0; i < FFTWindowSize; i++)
+            {
+                freqVec.Add((NysFreq / (double)FFTWindowSize) * (double)i);
+            }
+            return freqVec;
+        }
+
         private List<double> FreqVecCal(int FFTWindowSize)
         {
             var freqVec = new List<double>();
-            var NysFreq = module_base.sampling_rate / 2;
+            var NysFreq = module_base.module_settings.sampling_rate_ / 2;
             for (int i = 0; i < FFTWindowSize; i++)
             {
                 freqVec.Add((NysFreq / (double)FFTWindowSize) * (double)i);
@@ -892,11 +926,13 @@ namespace gpm_vibration_module_api
         {
             get
             {
-                return module_base.sampling_rate;
+                return module_base.module_settings.sampling_rate_;
             }
             set
             {
-                module_base.sampling_rate = value;
+                Freq_Vec = FreqVecCal();
+                module_base.module_settings.sampling_rate_ = value;
+                Sensor_Config_Save();
             }
         }
 

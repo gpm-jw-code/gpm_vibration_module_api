@@ -12,6 +12,7 @@ namespace gpm_vibration_module_api.Tools
     {
         public static EventLog Event_Log = new EventLog();
         public static CodeErrorLog Code_Error_Log = new CodeErrorLog();
+        
 
         public class EventLog : LogFun
         {
@@ -36,8 +37,10 @@ namespace gpm_vibration_module_api.Tools
     public class LogFun
     {
         public string SaveDir;
+        public bool is_log_enable = true;
         public void Log(string content)
         {
+            if (is_log_enable == false) return;
             try
             {
                 var fileName = DateTime.Now.ToString("yyyyMMdd_HH") + ".txt";

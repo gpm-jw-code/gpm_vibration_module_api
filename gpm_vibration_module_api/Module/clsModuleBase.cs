@@ -24,7 +24,6 @@ namespace gpm_vibration_module_api
         private ManualResetEvent pause_signal;
         private bool is_pause_ready = true;
         internal bool is_old_firmware_using = false;
-        public double sampling_rate { get; internal set; } = 1000.0;
         public ClsModuleBase()
         {
             pause_signal = new ManualResetEvent(true);
@@ -41,7 +40,7 @@ namespace gpm_vibration_module_api
 
         public async Task<int> Connect()
         {
-            var ret = await Connect(ip, port); 
+            var ret = await Connect(ip, port);
             return ret;
         }
         /// <summary>
@@ -61,11 +60,11 @@ namespace gpm_vibration_module_api
                 if (module_socket.Connected)
                     return 0;
                 else
-                    return Convert.ToInt32(clsErrorCode.Error.ConnectFail);
+                    return Convert.ToInt32(clsErrorCode.Error.CONNECT_FAIL);
             }
             catch (SocketException exp)
             {
-                return Convert.ToInt32(clsErrorCode.Error.ConnectFail);
+                return Convert.ToInt32(clsErrorCode.Error.CONNECT_FAIL);
             }
         }
         /// <summary>
@@ -128,7 +127,7 @@ namespace gpm_vibration_module_api
         /// <param name="measureRange"></param>
         /// <param name="oDR"></param>
         /// <returns></returns>
-        public byte[] SettingToController(clsEnum.Module_Setting_Enum.SENSOR_TYPE? sensorType,
+        public Tuple<byte[], int> SettingToController(clsEnum.Module_Setting_Enum.SENSOR_TYPE? sensorType,
             clsEnum.Module_Setting_Enum.DATA_LENGTH? dataLength,
             clsEnum.Module_Setting_Enum.MEASURE_RANGE? measureRange,
             clsEnum.Module_Setting_Enum.ODR? oDR)
@@ -152,14 +151,14 @@ namespace gpm_vibration_module_api
                 Console.WriteLine("PARAM SETTING OK");
                 DefineSettingByParameters(ParamReturn);
                 Tools.Logger.Event_Log.Log($"PARAM NOW:{ObjectAryToString(",", module_settings.ByteAryOfParameters)}");
-                return module_settings.ByteAryOfParameters;
+                return new Tuple<byte[], int>(module_settings.ByteAryOfParameters, 0);
             }
             else
             {
                 Tools.Logger.Event_Log.Log("PARAM SETTING FAILURE");
                 Console.WriteLine("PARAM SETTING FAILURE");
                 DefineSettingByParameters(module_settings.ByteAryOfParameters);
-                return new byte[0];
+                return new Tuple<byte[], int>(ParamReturn, ParamReturn.Length == 0 ? Convert.ToInt32(clsErrorCode.Error.PARAM_SET_TIMEOUT) : Convert.ToInt32(clsErrorCode.Error.ERROR_PARAM_RETURN_FROM_CONTROLLER));
             }
         }
 
@@ -505,7 +504,7 @@ namespace gpm_vibration_module_api
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
                         //var doubleOutput = BytesToDoubleList(rev, false);
                         var doubleOutput = ConverterTools.AccPacketToListDouble(rev, module_settings.MeasureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New);
-                        var dataset = new DataSet(sampling_rate);
+                        var dataset = new DataSet(module_settings.sampling_rate_);
                         dataset.AccData.X = (doubleOutput[0]);
                         dataset.AccData.Y = (doubleOutput[1]);
                         dataset.AccData.Z = (doubleOutput[2]);
@@ -715,9 +714,6 @@ namespace gpm_vibration_module_api
                     state.temp_rev_data.AddRange(rev);
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
-                        Tools.Logger.Event_Log.Log($"@@@@@@@@封包完全,大小:{0}");
-                        //Console.WriteLine("No Waitone : " + timespend);
-                        //WaitForBufferRecieveDone.Set();
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         Tools.Logger.Event_Log.Log($"@@2123 nnn,封包完全,{  state.data_rev_[3]}");
