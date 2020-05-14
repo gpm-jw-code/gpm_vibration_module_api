@@ -91,6 +91,9 @@ namespace gpm_vibration_module_api.Module
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
                         byteval = 0x08;
                         break;
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x16:
+                        byteval = 0x10;
+                        break;
                     default:
                         break;
                 }

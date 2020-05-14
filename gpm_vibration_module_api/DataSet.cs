@@ -68,5 +68,7 @@ namespace gpm_vibration_module_api
             public double Y = 0;
             public double Z = 0;
         }
+
+     
     }
 }

@@ -63,8 +63,9 @@
     <Compile Include="Module\ModulesServer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="sys\My_Settings.cs" />
+    <Compile Include="sys\Setting_Items.cs" />
     <Compile Include="sys\Settings_Ctrl.cs" />
+    <Compile Include="sys\Utility.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\Logger.cs" />
   </ItemGroup>

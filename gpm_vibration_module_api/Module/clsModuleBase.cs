@@ -112,6 +112,7 @@ namespace gpm_vibration_module_api
             }
             catch (OperationCanceledException ex)
             {
+                Tools.Logger.Event_Log.Log("[WriteParameterToController]使用者中斷");
                 return new byte[0];
             }
             catch
@@ -237,6 +238,9 @@ namespace gpm_vibration_module_api
                 case 0x08:
                     module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
                     break;
+                case 0x10:
+                    module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x16;
+                    break;
                 default:
                     module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                     break;
@@ -273,6 +277,8 @@ namespace gpm_vibration_module_api
                     module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                     break;
             }
+
+            module_settings.ByteAryOfParameters = Parameters;
         }
         private void WaitPause()
         {
@@ -299,12 +305,13 @@ namespace gpm_vibration_module_api
             public bool is_data_recieve_done_flag_ = false;
             public bool is_data_recieve_timeout_ = false;
             public TIMEOUT_CHEK_ITEM task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data;
-            public byte[] data_rev_;
+            public byte[] data_rev_ = new byte[0];
             public CancellationTokenSource cancel_token_source_;
+
             public long time_spend_;
             public List<byte> temp_rev_data = new List<byte>();
         }
-
+        internal CancellationTokenSource timeout_task_cancel_source = new CancellationTokenSource();
         internal struct SendCmdType
         {
         }
@@ -595,7 +602,7 @@ namespace gpm_vibration_module_api
         internal bool isBusy = false;
         internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
-            SocketState state = null;
+            SocketState state = new SocketState();
             isBusy = true;
             acc_data_read_task_token_source = new CancellationTokenSource();
             bulk_use = false;
@@ -615,7 +622,8 @@ namespace gpm_vibration_module_api
                     work_socket_ = module_socket,
                     buffer_size_ = Datalength,
                     task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data,
-                    data_rev_ = new byte[Datalength]
+                    data_rev_ = new byte[Datalength],
+                    is_data_recieve_done_flag_ = false
                 };
                 var _task = Task.Run(() => TimeoutCheck(state));
                 Tools.Logger.Event_Log.Log($"receiveCallBack_begining.");
@@ -644,6 +652,7 @@ namespace gpm_vibration_module_api
 
         private void TimeoutCheck(object state)
         {
+            timeout_task_cancel_source = new CancellationTokenSource();
             SocketState _state = (SocketState)state;
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -652,6 +661,12 @@ namespace gpm_vibration_module_api
             {
                 try
                 {
+
+                    if (timeout_task_cancel_source.Token.IsCancellationRequested)
+                    {
+                        timeout_task_cancel_source.Token.ThrowIfCancellationRequested();
+                    }
+
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data && acc_data_read_task_token_source.IsCancellationRequested)
                     {
                         acc_data_read_task_token_source.Token.ThrowIfCancellationRequested();
@@ -661,8 +676,16 @@ namespace gpm_vibration_module_api
                         param_setting_task_cancel_token_Source.Token.ThrowIfCancellationRequested();
                     }
                 }
-                catch (Exception)
+                catch (OperationCanceledException ex)
                 {
+                    _state.is_data_recieve_done_flag_ = true;
+                    _state.is_data_recieve_timeout_ = false;
+                    Tools.Logger.Event_Log.Log("[TimeoutCheck]使用者中斷");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.Event_Log.Log($"[TimeoutCheck]系統例外.,.{ex.Message + "\r\n" + ex.StackTrace}");
                     break;
                 }
 
@@ -738,6 +761,7 @@ namespace gpm_vibration_module_api
             }
             catch (OperationCanceledException ex)
             {
+                Tools.Logger.Event_Log.Log("[receiveCallBack]使用者中斷");
                 isBusy = false;
                 state.is_data_recieve_done_flag_ = true;
                 WaitForBufferRecieveDone.Set();
@@ -772,7 +796,7 @@ namespace gpm_vibration_module_api
 
         }
 
-        private CancellationTokenSource param_setting_task_cancel_token_Source;
+        internal CancellationTokenSource param_setting_task_cancel_token_Source;
         private ManualResetEvent bulk_request_pause_signal;
         private ManualResetEvent wait_for_data_get_signal;
         internal CommandTask send_cmd_task_obj = new CommandTask();
