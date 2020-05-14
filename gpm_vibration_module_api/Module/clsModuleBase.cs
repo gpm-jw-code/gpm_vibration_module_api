@@ -473,9 +473,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
-                Tools.Logger.Event_Log.Log($"[receiveCallBack_Bulk] ERROR OCCURED");
-                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack_Bulk] {exp.Message},{exp.StackTrace}");
-                Console.WriteLine("[receiveCallBack_Bulk] " + exp.Message);
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack_Bulk] ERROR OCCURED {exp.Message + exp.StackTrace}");
             }
             try
             {
@@ -483,7 +481,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
-                Console.WriteLine("[receiveCallBack_Bulk] " + exp.Message);
+                Tools.Logger.Code_Error_Log.Log("[receiveCallBack_Bulk] " + exp.Message);
             }
             //WaitForBufferRecieveDone.Set();
         }
@@ -501,7 +499,7 @@ namespace gpm_vibration_module_api
                 var condition = BulkState.window_size_ * 6;
                 if (Bulk_Buffer.Count >= condition)
                 {
-                    Console.WriteLine($"Bulk Buffer Length:{Bulk_Buffer.Count}");
+                    Tools.Logger.Event_Log.Log($"Bulk Buffer Length:{Bulk_Buffer.Count}");
                     var _ = Bulk_Buffer.Contains(159);
                     try
                     {
@@ -685,7 +683,7 @@ namespace gpm_vibration_module_api
                 }
                 catch (Exception ex)
                 {
-                    Tools.Logger.Event_Log.Log($"[TimeoutCheck]系統例外.,.{ex.Message + "\r\n" + ex.StackTrace}");
+                    Tools.Logger.Code_Error_Log.Log($"[TimeoutCheck]系統例外.,.{ex.Message + "\r\n" + ex.StackTrace}");
                     break;
                 }
 
@@ -694,7 +692,7 @@ namespace gpm_vibration_module_api
                 {
                     timer.Stop();
                     _state.time_spend_ = timer.ElapsedMilliseconds;
-                    Console.WriteLine($"Timeout Detector ..Task{ _state.task_of_now}..[Timeout] , Spend:{timer.ElapsedMilliseconds} ms");
+                    Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ _state.task_of_now}..[Timeout] , Spend:{timer.ElapsedMilliseconds} ms");
                     _state.is_data_recieve_timeout_ = true;
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data)
                     {
@@ -712,7 +710,7 @@ namespace gpm_vibration_module_api
             }
             timer.Stop();
             _state.time_spend_ = timer.ElapsedMilliseconds;
-            Console.WriteLine($"Timeout Detector ..Task{ _state.task_of_now}..[In Time] , Spend:{timer.ElapsedMilliseconds} ms");
+            Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ _state.task_of_now}..[In Time] , Spend:{timer.ElapsedMilliseconds} ms");
         }
 
         internal CancellationTokenSource acc_data_read_task_token_source = new CancellationTokenSource();
@@ -731,7 +729,7 @@ namespace gpm_vibration_module_api
                 if (bytesRead > 0)
                 {
                     Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead} / WS:{state.window_size_}");
-                    Console.WriteLine("Num sum = " + bytesRead);
+  
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
@@ -766,8 +764,9 @@ namespace gpm_vibration_module_api
                 state.is_data_recieve_done_flag_ = true;
                 WaitForBufferRecieveDone.Set();
             }
-            catch
+            catch( Exception ex)
             {
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] {ex.Message +"\r\n"+ ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
             }
@@ -858,7 +857,7 @@ namespace gpm_vibration_module_api
             try
             {
                 SocketBufferClear();
-                Console.WriteLine("Write to Control : " + ObjectAryToString(",", Data));
+                Tools.Logger.Event_Log.Log("Write to Control : " + ObjectAryToString(",", Data));
                 module_socket.Send(Data, 0, Data.Length, SocketFlags.None);
                 int RecieveByteNum = 0;
                 int timespend = 0;
@@ -891,7 +890,7 @@ namespace gpm_vibration_module_api
                     //Thread.Sleep(1);
                 }
                 COUNTER.Stop();
-                Console.WriteLine($"SendCommandToController ,SPEND:{COUNTER.ElapsedMilliseconds}");
+                Tools.Logger.Event_Log.Log($"SendCommandToController ,SPEND:{COUNTER.ElapsedMilliseconds}");
                 state.is_data_recieve_done_flag_ = true;
                 state.data_rev_ = RecievByteList.ToArray();
             }

@@ -357,9 +357,11 @@ namespace gpm_vibration_module_api
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
 
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
-            var _return1 = await module_base.SendCommand(send_bytes, 8);
+            var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
-            if (module_base.Is_PARAM_Return_Correct(module_base.module_settings.ByteAryOfParameters, _return2) == false)
+            var send_bytes_use_to_check = new byte[8];
+            Array.Copy(send_bytes,1,send_bytes_use_to_check,0,8);
+            if (module_base.Is_PARAM_Return_Correct(send_bytes_use_to_check, _return2) == false)
             {
                 Tools.Logger.Event_Log.Log("[SelfTEst] ...Defaul PARAM SETTING FAIL..");
                 return false;
@@ -406,7 +408,8 @@ namespace gpm_vibration_module_api
             try
             {
                 module_base.acc_data_read_task_token_source.Cancel();
-                Console.WriteLine($"Reconnect Before Any Action TEST.{await Reconnect()}");
+
+                Tools.Logger.Event_Log.Log($"Reconnect Before Any Action TEST.{await Reconnect()}");
                 WaitAsyncForParametersSet.Reset();
                 var _ret = await Task.Run(() => ParamSetTask());
                 Sensor_Config_Save();
@@ -416,7 +419,6 @@ namespace gpm_vibration_module_api
             catch (Exception ex)
             {
                 Tools.Logger.Code_Error_Log.Log("[StartParamSetTaskAsync] " + ex.Message + "\r\n" + ex.StackTrace);
-                Console.WriteLine(ex.Message + ex.StackTrace);
                 return Convert.ToInt32(clsErrorCode.Error.SYSTEM_ERROR);
             }
             // SendBulkDataStartCmd();
@@ -430,7 +432,8 @@ namespace gpm_vibration_module_api
             {
                 Tools.Logger.Event_Log.Log($"[ParamSetTask] 寫入設定至控制器({try_time})");
                 try_time++; //first =1, second =2
-                Console.WriteLine($"[ParamSetTask] 寫入設定至控制器({try_time})");
+                Tools.Logger.Event_Log.Log($"[ParamSetTask] 寫入設定至控制器({try_time})");
+
                 switch (Convert.ToInt32(setTaskObj.SettingItem))
                 {
                     case 0:
@@ -473,11 +476,11 @@ namespace gpm_vibration_module_api
                 var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
                 if (!File.Exists(filepath))
                     File.Create(filepath).Close();
-                FileStream fs = new FileStream(filepath, FileMode.Create);
-                XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
-                xs.Serialize(fs, module_base.module_settings);
-                fs.Close();
-
+                using (FileStream fs = new FileStream(filepath, FileMode.Create))
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                    xs.Serialize(fs, module_base.module_settings);
+                }
                 return 0;
             }
             catch (IOException ex)
@@ -499,13 +502,13 @@ namespace gpm_vibration_module_api
                 var configpath = "SensorConfig\\" + SensorIP + "\\Controller_Parameters.xml";
                 if (File.Exists(configpath))
                 {
-                    FileStream fs = new FileStream(configpath, FileMode.Open);
-                    XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
-                    clsModuleSettings setting = (clsModuleSettings)xs.Deserialize(fs);
-                    fs.Flush();
-                    fs.Close();
+                    using (FileStream fs = new FileStream(configpath, FileMode.Open))
+                    {
+                        XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                        clsModuleSettings setting = (clsModuleSettings)xs.Deserialize(fs);
+                        module_base.module_settings = setting;
+                    };
 
-                    module_base.module_settings = setting;
                 }
                 else
                 {

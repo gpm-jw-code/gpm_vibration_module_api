@@ -21,6 +21,11 @@ namespace gpm_vibration_module_api.Tools
                 SaveDir = "Log/Event_Log/";
                 DirCreation();
             }
+            public override void Log(string content)
+            {
+                Console.WriteLine("***EVENT LOG >>>" + content);
+                base.Log(content);
+            }
         }
 
         public class CodeErrorLog : LogFun
@@ -30,6 +35,12 @@ namespace gpm_vibration_module_api.Tools
                 SaveDir = "Log/Coode_Error_Log/";
                 DirCreation();
             }
+
+            public override void Log(string content)
+            {
+                Console.WriteLine("***CODE ERROR >>>"+content);
+                base.Log(content);
+            }
         }
     }
 
@@ -38,7 +49,7 @@ namespace gpm_vibration_module_api.Tools
     {
         public string SaveDir;
         public bool is_log_enable = true;
-        public void Log(string content)
+        public virtual void Log(string content)
         {
             if (is_log_enable == false) return;
             try
