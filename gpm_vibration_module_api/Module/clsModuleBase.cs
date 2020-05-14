@@ -728,7 +728,6 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-                    Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead} / WS:{state.window_size_}");
   
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
@@ -737,7 +736,6 @@ namespace gpm_vibration_module_api
                     {
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
-                        Tools.Logger.Event_Log.Log($"@@2123 nnn,封包完全,{  state.data_rev_[3]}");
                         WaitForBufferRecieveDone.Set();
                         state.is_data_recieve_done_flag_ = true;
 
@@ -759,14 +757,20 @@ namespace gpm_vibration_module_api
             }
             catch (OperationCanceledException ex)
             {
-                Tools.Logger.Event_Log.Log("[receiveCallBack]使用者中斷");
+                Tools.Logger.Event_Log.Log("[receiveCallBack] OperationCanceledException 使用者中斷");
                 isBusy = false;
                 state.is_data_recieve_done_flag_ = true;
                 WaitForBufferRecieveDone.Set();
             }
-            catch( Exception ex)
+            catch (SocketException ex)
             {
-                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] {ex.Message +"\r\n"+ ex.StackTrace}");
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] SocketException {ex.Message + "\r\n" + ex.StackTrace}");
+                isBusy = false;
+                WaitForBufferRecieveDone.Set();
+            }
+            catch ( Exception ex)
+            {
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message +"\r\n"+ ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
             }

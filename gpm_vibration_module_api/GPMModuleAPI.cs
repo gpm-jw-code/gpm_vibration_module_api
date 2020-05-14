@@ -294,7 +294,8 @@ namespace gpm_vibration_module_api
 
                 }
                 socket_conected_list[IP] = module_base.module_socket;
-                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] {(ret == 0 ? "Successfully Established Connection." : $"Couldn't Not Established Connection, ERROR_CODE={ret}.")} IP:{IP}, Port:{Port}");
+                var err_descript = ret == 1506 ? "socket connect_but handshake fail" : ret == 603 ? "Connection can't established" : "???";
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] {(ret == 0 ? "Successfully Established Connection." : $"{err_descript}ErrorCode:{ret}.")} IP:{IP}, Port:{Port}");
                 return ret;
             }
             catch (OperationCanceledException exp)
@@ -360,7 +361,7 @@ namespace gpm_vibration_module_api
             var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
             var send_bytes_use_to_check = new byte[8];
-            Array.Copy(send_bytes,1,send_bytes_use_to_check,0,8);
+            Array.Copy(send_bytes, 1, send_bytes_use_to_check, 0, 8);
             if (module_base.Is_PARAM_Return_Correct(send_bytes_use_to_check, _return2) == false)
             {
                 Tools.Logger.Event_Log.Log("[SelfTEst] ...Defaul PARAM SETTING FAIL..");
@@ -849,6 +850,7 @@ namespace gpm_vibration_module_api
                 byte[] AccPacket;
                 bool IsTimeout;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 module_base.isBusy = false;
                 if (AccPacket.Length < Convert.ToInt32(DataLength) * 6)
                 {
