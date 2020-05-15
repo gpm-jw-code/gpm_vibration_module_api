@@ -621,14 +621,16 @@ namespace gpm_vibration_module_api
                     buffer_size_ = Datalength,
                     task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data,
                     data_rev_ = new byte[Datalength],
-                    is_data_recieve_done_flag_ = false
+                    is_data_recieve_done_flag_ = false,
+                    time_spend_ = -1,
                 };
-                var _task = Task.Run(() => TimeoutCheck(state));
                 Tools.Logger.Event_Log.Log($"receiveCallBack_begining.");
                 module_socket.BeginReceive(state.buffer_, 0, state.buffer_size_, 0, new AsyncCallback(receiveCallBack), state);
+                var task = Task.Run(() => TimeoutCheck(state));
                 WaitForBufferRecieveDone.WaitOne();
-                timespend = state.time_spend_; //1 tick = 100 nanosecond  = 0.0001 毫秒
+                timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
                 IsTimeout = state.is_data_recieve_timeout_;
+                Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ state.task_of_now}..[In Time] , Spend:{timespend} ms");
                 return state.data_rev_;
             }
             catch (Exception exp)
@@ -648,15 +650,16 @@ namespace gpm_vibration_module_api
             Read_Acc_Data, FW_Param_RW
         }
 
-        private void TimeoutCheck(object state)
+        private async Task<long> TimeoutCheck(SocketState _state)
         {
             timeout_task_cancel_source = new CancellationTokenSource();
-            SocketState _state = (SocketState)state;
+
             Stopwatch timer = new Stopwatch();
             timer.Start();
             var timeoutPeriod = _state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data ? acc_data_rev_timeout : fw_parm_rw_timeout;
             while (_state.is_data_recieve_done_flag_ == false)
             {
+                Thread.Sleep(1);
                 try
                 {
 
@@ -704,13 +707,12 @@ namespace gpm_vibration_module_api
                     {
                         param_setting_task_cancel_token_Source.Cancel();
                     }
-                    return;
+                    return timer.ElapsedMilliseconds;
                 }
-                //Thread.Sleep(1);
             }
             timer.Stop();
-            _state.time_spend_ = timer.ElapsedMilliseconds;
-            Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ _state.task_of_now}..[In Time] , Spend:{timer.ElapsedMilliseconds} ms");
+            
+            return timer.ElapsedMilliseconds;
         }
 
         internal CancellationTokenSource acc_data_read_task_token_source = new CancellationTokenSource();
@@ -728,7 +730,7 @@ namespace gpm_vibration_module_api
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-  
+
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
@@ -768,9 +770,9 @@ namespace gpm_vibration_module_api
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
             }
-            catch ( Exception ex)
+            catch (Exception ex)
             {
-                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message +"\r\n"+ ex.StackTrace}");
+                Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
             }

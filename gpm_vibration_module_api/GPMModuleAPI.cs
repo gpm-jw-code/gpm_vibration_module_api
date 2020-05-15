@@ -184,7 +184,7 @@ namespace gpm_vibration_module_api
                 return module_base.module_settings.WifiControllUseHighSppedSensor;
             }
         }
-        internal event Action<string> ConnectEvent;
+        public event Action<string> ConnectEvent;
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
 
         public int AccDataRevTimeOut
@@ -406,13 +406,13 @@ namespace gpm_vibration_module_api
             else return false;
         }
 
-        private async Task<int> StartParamSetTaskAsync()
+        private async Task<int> StartParamSetTaskAsync(bool IsNeedReboot = true)
         {
             try
             {
                 module_base.acc_data_read_task_token_source.Cancel();
-
-                Tools.Logger.Event_Log.Log($"Reconnect Before Any Action TEST.{await Reconnect()}");
+                if (IsNeedReboot)
+                    Tools.Logger.Event_Log.Log($"Reconnect Before Any Action TEST.{await Reconnect()}");
                 WaitAsyncForParametersSet.Reset();
                 var _ret = await Task.Run(() => ParamSetTask());
                 Sensor_Config_Save();
@@ -551,14 +551,14 @@ namespace gpm_vibration_module_api
             //SamplingRate = Convert.ToDouble(_settings.sampling_rate_of_vibration_sensor);
         }
 
-        public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange)
+        public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange, bool IsNeedReboot = true)
         {
             setTaskObj = new ClsParamSetTaskObj
             {
                 SettingItem = 2,
                 SettingValue = MeasureRange
             };
-            var ret = await StartParamSetTaskAsync();
+            var ret = await StartParamSetTaskAsync(IsNeedReboot);
             module_base.module_settings.MeasureRange = ret == 0 ? MeasureRange : module_base.module_settings.MeasureRange;
             return ret;
         }
