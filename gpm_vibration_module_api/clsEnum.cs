@@ -19,7 +19,7 @@ namespace gpm_vibration_module_api
 
             public enum DATA_LENGTH
             {
-                x1 = 512, x2 = 1024, x4 = 2048, x8 = 4096,x16 = 8192
+                x1 = 512, x2 = 1024, x4 = 2048, x8 = 4096, x16 = 8192, Others
             }
 
             public enum ODR
@@ -29,10 +29,10 @@ namespace gpm_vibration_module_api
 
             public enum MEASURE_RANGE
             {
-                MR_2G = 16384,  
-                MR_4G = 8192, 
-                MR_8G = 4096, 
-                MR_16G = 2048, 
+                MR_2G = 16384,
+                MR_4G = 8192,
+                MR_8G = 4096,
+                MR_16G = 2048,
             }
         }
         /// <summary>
@@ -42,12 +42,12 @@ namespace gpm_vibration_module_api
         {
             internal enum ACC_CONVERT_ALGRIUM
             {
-                Old, New , Bulk
+                Old, New, Bulk
             }
 
         }
 
-       
+
 
         internal struct KeyPro
         {
