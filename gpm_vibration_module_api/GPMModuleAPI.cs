@@ -342,6 +342,8 @@ namespace gpm_vibration_module_api
                     return 0x04;
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
                     return 0x08;
+                case clsEnum.Module_Setting_Enum.DATA_LENGTH.x16:
+                    return 0x10;
                 default:
                     return 0x01;
             }
