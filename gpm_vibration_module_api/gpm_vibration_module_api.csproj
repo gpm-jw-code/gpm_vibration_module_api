@@ -68,6 +68,7 @@
     <Compile Include="sys\Utility.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\Logger.cs" />
+    <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

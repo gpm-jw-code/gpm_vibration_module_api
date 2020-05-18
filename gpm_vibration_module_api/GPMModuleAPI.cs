@@ -7,7 +7,9 @@ using gpm_vibration_module_api.Module;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -106,6 +108,65 @@ namespace gpm_vibration_module_api
             { return window_size; }
             set
             { window_size = value; }
+        }
+
+        /// <summary>
+        /// Sampling Rate計算結果儲存
+        /// </summary>
+        public struct Sampling_Rate_Cal_Result
+        {
+            public List<DataSet> Datasets_For_Cal;
+            public enum ERROR_CODE
+            {
+                DATA_LACK = 403, SETTING_ERROR = 404, OK = 0
+            }
+            public DateTime Test_Time;
+            public double[] Sampling_Rate;
+            public ERROR_CODE RESULT;
+        }
+
+        /// <summary>
+        /// 計算Sensor 取樣頻率
+        /// </summary>
+        /// <param name="ref_Frq">參考激振源頻率</param>
+        /// <param name="Period">測試秒數</param>
+        /// <returns></returns>
+        public async Task<Sampling_Rate_Cal_Result> Start_Sampling_Rate_Calculate(double ref_Frq, int Period)
+        {
+
+            Stop_All_Action();
+
+            var srcr_state = new Sampling_Rate_Cal_Result() { Datasets_For_Cal = new List<DataSet>(), Sampling_Rate = new double[3] };
+
+            if (ref_Frq <= 0 | Period <= 0)
+            {
+                srcr_state.RESULT = Sampling_Rate_Cal_Result.ERROR_CODE.SETTING_ERROR;
+                return srcr_state;
+            }
+
+            Stopwatch timer = new Stopwatch(); timer.Start();
+            while (timer.ElapsedMilliseconds < Period)
+            {
+                var dataset = await GetData(false, false);
+                srcr_state.Datasets_For_Cal.Add(dataset);
+            }
+
+            srcr_state.Datasets_For_Cal = (from dataset in srcr_state.Datasets_For_Cal
+                                           where dataset.ErrorCode == 0
+                                           select dataset).ToList();
+
+            srcr_state.RESULT = srcr_state.Datasets_For_Cal.Count < Tools.Sampling_Rate_Calculator.Datasets_minimum ? Sampling_Rate_Cal_Result.ERROR_CODE.DATA_LACK : Sampling_Rate_Cal_Result.ERROR_CODE.OK;
+            if(srcr_state.RESULT != Sampling_Rate_Cal_Result.ERROR_CODE.OK)
+            {
+                srcr_state.Sampling_Rate[0] = srcr_state.Sampling_Rate[1] = srcr_state.Sampling_Rate[2] = -1;
+                return srcr_state;
+            }
+            var ret = Tools.Sampling_Rate_Calculator.Calibration(srcr_state.Datasets_For_Cal, ref_Frq);
+            srcr_state.Sampling_Rate[0] = ret.X_SamplingRate;
+            srcr_state.Sampling_Rate[1] = ret.Y_SamplingRate;
+            srcr_state.Sampling_Rate[2] = ret.Z_SamplingRate;
+
+            return srcr_state;
         }
 
         /// <summary>
@@ -839,6 +900,7 @@ namespace gpm_vibration_module_api
             module_base.acc_data_read_task_token_source.Cancel();
             module_base.param_setting_task_cancel_token_Source?.Cancel();
             module_base.isBusy = false;
+            Thread.Sleep(500);
         }
         private void GetDataTask()
         {
