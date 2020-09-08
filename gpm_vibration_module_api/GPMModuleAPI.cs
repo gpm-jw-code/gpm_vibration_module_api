@@ -24,6 +24,23 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+        /// <summary>
+        /// 控制器底層控制
+        /// </summary>
+        private ClsModuleBase module_base = new ClsModuleBase();
+        public GPMModuleAPI(clsEnum.Module_Setting_Enum.SENSOR_TYPE sensorType)
+        {
+            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
+            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
+#if KeyproEnable
+            var ret = KeyproMdule.API.IsKeyInsert();
+#endif
+            WaitAsyncForGetDataTask = new ManualResetEvent(false);
+            WaitAsyncForParametersSet = new ManualResetEvent(true);
+            GetDataTaskPause = new ManualResetEvent(true);
+            module_base.module_settings.SensorType = sensorType;
+            module_base.DataRecieve += Module_base_DataReady;
+        }
 #if KeyproEnable
         private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
 #else
@@ -156,7 +173,7 @@ namespace gpm_vibration_module_api
                                            select dataset).ToList();
 
             srcr_state.RESULT = srcr_state.Datasets_For_Cal.Count < Tools.Sampling_Rate_Calculator.Datasets_minimum ? Sampling_Rate_Cal_Result.ERROR_CODE.DATA_LACK : Sampling_Rate_Cal_Result.ERROR_CODE.OK;
-            if(srcr_state.RESULT != Sampling_Rate_Cal_Result.ERROR_CODE.OK)
+            if (srcr_state.RESULT != Sampling_Rate_Cal_Result.ERROR_CODE.OK)
             {
                 srcr_state.Sampling_Rate[0] = srcr_state.Sampling_Rate[1] = srcr_state.Sampling_Rate[2] = -1;
                 return srcr_state;
@@ -169,23 +186,7 @@ namespace gpm_vibration_module_api
             return srcr_state;
         }
 
-        /// <summary>
-        /// 控制器底層控制
-        /// </summary>
-        private ClsModuleBase module_base = new ClsModuleBase();
-        public GPMModuleAPI(clsEnum.Module_Setting_Enum.SENSOR_TYPE sensorType)
-        {
-            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
-            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
-#if KeyproEnable
-            var ret = KeyproMdule.API.IsKeyInsert();
-#endif
-            WaitAsyncForGetDataTask = new ManualResetEvent(false);
-            WaitAsyncForParametersSet = new ManualResetEvent(true);
-            GetDataTaskPause = new ManualResetEvent(true);
-            module_base.module_settings.SensorType = sensorType;
-            module_base.DataRecieve += Module_base_DataReady;
-        }
+
 
         private void API_KeyProRemoveEvent(DateTime obj)
         {
@@ -379,15 +380,15 @@ namespace gpm_vibration_module_api
             switch (mr)
             {
                 case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G:
-                    return 0x00;
+                return 0x00;
                 case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G:
-                    return 0x10;
+                return 0x10;
                 case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G:
-                    return 0x20;
+                return 0x20;
                 case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G:
-                    return 0x30;
+                return 0x30;
                 default:
-                    return 0x00;
+                return 0x00;
             }
         }
 
@@ -396,17 +397,17 @@ namespace gpm_vibration_module_api
             switch (dl)
             {
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x1:
-                    return 0x01;
+                return 0x01;
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x2:
-                    return 0x02;
+                return 0x02;
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x4:
-                    return 0x04;
+                return 0x04;
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
-                    return 0x08;
+                return 0x08;
                 case clsEnum.Module_Setting_Enum.DATA_LENGTH.x16:
-                    return 0x10;
+                return 0x10;
                 default:
-                    return 0x01;
+                return 0x01;
             }
         }
 
@@ -501,17 +502,17 @@ namespace gpm_vibration_module_api
                 switch (Convert.ToInt32(setTaskObj.SettingItem))
                 {
                     case 0:
-                        ret = module_base.SettingToController((clsEnum.Module_Setting_Enum.SENSOR_TYPE)setTaskObj.SettingValue, null, null, null);
-                        break;
+                    ret = module_base.SettingToController((clsEnum.Module_Setting_Enum.SENSOR_TYPE) setTaskObj.SettingValue, null, null, null);
+                    break;
                     case 1:
-                        ret = module_base.SettingToController(null, (clsEnum.Module_Setting_Enum.DATA_LENGTH)setTaskObj.SettingValue, null, null);
-                        break;
+                    ret = module_base.SettingToController(null, (clsEnum.Module_Setting_Enum.DATA_LENGTH) setTaskObj.SettingValue, null, null);
+                    break;
                     case 2:
-                        ret = module_base.SettingToController(null, null, (clsEnum.Module_Setting_Enum.MEASURE_RANGE)setTaskObj.SettingValue, null);
-                        break;
+                    ret = module_base.SettingToController(null, null, (clsEnum.Module_Setting_Enum.MEASURE_RANGE) setTaskObj.SettingValue, null);
+                    break;
                     case 3:
-                        ret = module_base.SettingToController(null, null, null, (clsEnum.Module_Setting_Enum.ODR)setTaskObj.SettingValue);
-                        break;
+                    ret = module_base.SettingToController(null, null, null, (clsEnum.Module_Setting_Enum.ODR) setTaskObj.SettingValue);
+                    break;
                 }
 
             }
@@ -569,7 +570,7 @@ namespace gpm_vibration_module_api
                     using (FileStream fs = new FileStream(configpath, FileMode.Open))
                     {
                         XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
-                        clsModuleSettings setting = (clsModuleSettings)xs.Deserialize(fs);
+                        clsModuleSettings setting = (clsModuleSettings) xs.Deserialize(fs);
                         module_base.module_settings = setting;
                     };
 
@@ -678,20 +679,20 @@ namespace gpm_vibration_module_api
                 switch (value)
                 {
                     case 2:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
                     case 4:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
+                    break;
                     case 8:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
+                    break;
                     case 16:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
+                    break;
                     default:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
                 }
 
                 StartParamSetTaskAsync();
@@ -733,20 +734,20 @@ namespace gpm_vibration_module_api
                 switch (value)
                 {
                     case 512:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    break;
                     case 1024:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
+                    break;
                     case 2048:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
+                    break;
                     case 4096:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
+                    break;
                     default:
-                        setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                        break;
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    break;
                 }
                 StartParamSetTaskAsync();
             }
@@ -989,7 +990,7 @@ namespace gpm_vibration_module_api
             var FFTWindowSize = Convert.ToInt32(module_base.module_settings.DataLength) / 2;
             for (int i = 0; i < FFTWindowSize; i++)
             {
-                freqVec.Add((NysFreq / (double)FFTWindowSize) * (double)i);
+                freqVec.Add((NysFreq / (double) FFTWindowSize) * (double) i);
             }
             return freqVec;
         }
@@ -1000,13 +1001,13 @@ namespace gpm_vibration_module_api
             var NysFreq = module_base.module_settings.sampling_rate_ / 2;
             for (int i = 0; i < FFTWindowSize; i++)
             {
-                freqVec.Add((NysFreq / (double)FFTWindowSize) * (double)i);
+                freqVec.Add((NysFreq / (double) FFTWindowSize) * (double) i);
             }
             return freqVec;
         }
         public string GetIPFromSocketObj(Socket sensorSocket)
         {
-            IPEndPoint IPP = (IPEndPoint)sensorSocket.RemoteEndPoint;
+            IPEndPoint IPP = (IPEndPoint) sensorSocket.RemoteEndPoint;
             string Ip = IPP.Address.ToString();
             return Ip;
         }
