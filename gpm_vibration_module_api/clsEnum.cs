@@ -19,7 +19,7 @@ namespace gpm_vibration_module_api
 
             public enum DATA_LENGTH
             {
-                x1 = 512, x2 = 1024, x4 = 2048, x8 = 4096, x16 = 8192, Others
+                none = 0, x1 = 512, x2 = 1024, x4 = 2048, x8 = 4096, x16 = 8192, Others
             }
 
             public enum ODR

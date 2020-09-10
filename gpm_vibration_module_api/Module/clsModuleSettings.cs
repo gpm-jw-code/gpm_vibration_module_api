@@ -35,7 +35,7 @@ namespace gpm_vibration_module_api.Module
         }
 
 #if (ETH468)
-        public string ParametersStringType = "1,1,159,0,0,2,0,0";
+        public string ParametersStringType = "1,0,159,0,0,0,0,0";
 
 #else
           public string ParametersStringType = "1,0,159,0,0,0,0,0";
@@ -56,13 +56,13 @@ namespace gpm_vibration_module_api.Module
                 switch (value)
                 {
                     case clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal:
-                        byteval = 0x01;
-                        break;
+                    byteval = 0x01;
+                    break;
                     case clsEnum.Module_Setting_Enum.SENSOR_TYPE.High:
-                        byteval = 0x02;
-                        break;
+                    byteval = 0x02;
+                    break;
                     default:
-                        break;
+                    break;
                 }
                 var b = ByteAryOfParameters;
                 b[0] = byteval;
@@ -79,23 +79,26 @@ namespace gpm_vibration_module_api.Module
                 byte byteval = 0x00;
                 switch (value)
                 {
+                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.none:
+                    byteval = 0x00;
+                    break;
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x1:
-                        byteval = 0x01;
-                        break;
+                    byteval = 0x01;
+                    break;
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x2:
-                        byteval = 0x02;
-                        break;
+                    byteval = 0x02;
+                    break;
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x4:
-                        byteval = 0x04;
-                        break;
+                    byteval = 0x04;
+                    break;
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
-                        byteval = 0x08;
-                        break;
+                    byteval = 0x08;
+                    break;
                     case clsEnum.Module_Setting_Enum.DATA_LENGTH.x16:
-                        byteval = 0x10;
-                        break;
+                    byteval = 0x10;
+                    break;
                     default:
-                        break;
+                    break;
                 }
                 ByteAryOfParameters[1] = byteval;
                 pDataLength = value;
@@ -106,7 +109,7 @@ namespace gpm_vibration_module_api.Module
             get { return pODR; }
             set
             {
-                byte byteval = (byte)value;
+                byte byteval = (byte) value;
                 ByteAryOfParameters[2] = byteval;
                 pODR = value;
             }
@@ -120,17 +123,17 @@ namespace gpm_vibration_module_api.Module
                 switch (value)
                 {
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G:
-                        byteval = 0x00;
-                        break;
+                    byteval = 0x00;
+                    break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G:
-                        byteval = 0x10;
-                        break;
+                    byteval = 0x10;
+                    break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G:
-                        byteval = 0x20;
-                        break;
+                    byteval = 0x20;
+                    break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G:
-                        byteval = 0x30;
-                        break;
+                    byteval = 0x30;
+                    break;
                 }
                 ByteAryOfParameters[3] = byteval;
                 pMeasureRange = value;
@@ -161,7 +164,7 @@ namespace gpm_vibration_module_api.Module
                 formatter.Serialize(stream, obj);
                 stream.Position = 0;
 
-                return (T)formatter.Deserialize(stream);
+                return (T) formatter.Deserialize(stream);
             }
         }
     }

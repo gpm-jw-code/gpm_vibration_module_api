@@ -12,6 +12,8 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -40,9 +42,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\API_Example_Code_\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -53,8 +52,15 @@
     <Compile Include="clsEnum.cs" />
     <Compile Include="clsErrorCode.cs" />
     <Compile Include="DataSet.cs" />
+    <Compile Include="FftSharp\Complex.cs" />
+    <Compile Include="FftSharp\Experimental.cs" />
+    <Compile Include="FftSharp\Pad.cs" />
+    <Compile Include="FftSharp\SampleData.cs" />
+    <Compile Include="FftSharp\Transform.cs" />
+    <Compile Include="FftSharp\Window.cs" />
     <Compile Include="GpmMath\FFT.cs" />
     <Compile Include="GpmMath\Numeric.cs" />
+    <Compile Include="GpmMath\Window.cs" />
     <Compile Include="GPMModuleAPI.cs" />
     <Compile Include="KeyproMdule.cs" />
     <Compile Include="MeasureOption.cs" />
@@ -69,9 +75,16 @@
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\Logger.cs" />
     <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
+    <Compile Include="Tools\VersionManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>此專案參考這部電腦上所缺少的 NuGet 套件。請啟用 NuGet 套件還原，以下載該套件。如需詳細資訊，請參閱 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的檔案是 {0}。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\..\Program Develop\API_Example_Code_\packages\Accord.3.8.0\build\Accord.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\Program Develop\API_Example_Code_\packages\Accord.3.8.0\build\Accord.targets'))" />
+  </Target>
 </Project>

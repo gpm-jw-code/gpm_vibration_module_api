@@ -105,9 +105,12 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 byte[] ToWrite = new byte[11];
                 ToWrite[0] = 0x53;
+              
                 ToWrite[9] = 0x0d;
                 ToWrite[10] = 0x0a;
                 Array.Copy(Parameters, 0, ToWrite, 1, Parameters.Length);
+                ToWrite[1] = 0x01;
+                ToWrite[2] = 0x00;
                 return SendCommand(ToWrite, ExceptLength).Result;
             }
             catch (OperationCanceledException ex)
@@ -140,8 +143,8 @@ namespace gpm_vibration_module_api
             var returnBytes = _UserSetting.SensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High | sensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High ? 8 : 8;
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
-            _UserSetting.SensorType = sensorType != null ? (clsEnum.Module_Setting_Enum.SENSOR_TYPE) sensorType : module_settings.SensorType;
-            _UserSetting.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH) dataLength : module_settings.DataLength;
+            _UserSetting.SensorType =  clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
+            _UserSetting.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH) dataLength :  clsEnum.Module_Setting_Enum.DATA_LENGTH.none;
             _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE) measureRange : module_settings.MeasureRange;
             _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR) oDR : module_settings.ODR;
             var ParamReturn = WriteParameterToController(_UserSetting.ByteAryOfParameters, returnBytes);
@@ -610,7 +613,7 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = Convert.ToInt32(module_settings.DataLength) * 6;
+                var Datalength = 3072;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
                 state = new SocketState()
@@ -643,6 +646,8 @@ namespace gpm_vibration_module_api
                 return new byte[0];
             }
         }
+
+
 
 
         private enum TIMEOUT_CHEK_ITEM

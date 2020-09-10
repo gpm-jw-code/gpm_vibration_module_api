@@ -5,7 +5,7 @@ using static gpm_vibration_module_api.GpmMath.Numeric;
 
 namespace gpm_vibration_module_api.GpmMath
 {
-    public class Stastify
+    internal class Stastify
     {
         internal static double GetMean(List<double> data)
         {
@@ -71,7 +71,7 @@ namespace gpm_vibration_module_api.GpmMath
             return ppval;
         }
     }
-    public class FFT
+    internal class FFT
     {
         public static double[] GetFFT(double[] TD)
         {

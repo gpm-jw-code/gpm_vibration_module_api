@@ -3,6 +3,7 @@
 #define BR460800
 //#define BR921600
 
+using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
 using System;
 using System.Collections.Generic;
@@ -12,10 +13,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using FftSharp;
 
 namespace gpm_vibration_module_api
 {
@@ -28,6 +31,40 @@ namespace gpm_vibration_module_api
         /// 控制器底層控制
         /// </summary>
         private ClsModuleBase module_base = new ClsModuleBase();
+
+
+        #region Constructors
+        public GPMModuleAPI(string IP = null)
+        {
+            Sys_Config_Load();
+
+            if (IP != null)
+                SensorIP = IP;
+
+            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
+            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
+#if KeyproEnable
+            var ret = KeyproMdule.API.IsKeyInsert();
+#endif
+            WaitAsyncForGetDataTask = new ManualResetEvent(false);
+            WaitAsyncForParametersSet = new ManualResetEvent(true);
+            GetDataTaskPause = new ManualResetEvent(true);
+
+#if YCM
+            module_base.module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
+            WifiSensorUsing = false;
+
+#else
+            module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
+            WifiSensorUsing = true;
+
+            module_base.DataRecieve += Module_base_DataReady;
+#endif
+            module_base.DataRecieve += Module_base_DataReady;
+            Thread.Sleep(100);
+
+        }
+
         public GPMModuleAPI(clsEnum.Module_Setting_Enum.SENSOR_TYPE sensorType)
         {
             KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
@@ -41,6 +78,8 @@ namespace gpm_vibration_module_api
             module_base.module_settings.SensorType = sensorType;
             module_base.DataRecieve += Module_base_DataReady;
         }
+        #endregion
+
 #if KeyproEnable
         private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
 #else
@@ -198,36 +237,9 @@ namespace gpm_vibration_module_api
             KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
         }
 
-        public GPMModuleAPI(string IP = null)
-        {
-            Sys_Config_Load();
 
-            if (IP != null)
-                SensorIP = IP;
 
-            KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
-            KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
-#if KeyproEnable
-            var ret = KeyproMdule.API.IsKeyInsert();
-#endif
-            WaitAsyncForGetDataTask = new ManualResetEvent(false);
-            WaitAsyncForParametersSet = new ManualResetEvent(true);
-            GetDataTaskPause = new ManualResetEvent(true);
 
-#if YCM
-            module_base.module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.High;
-            WifiSensorUsing = false;
-
-#else
-            module_base.moduleSettings.SensorType = clsEnum.Module_Setting_Enum.SensorType.Genernal;
-            WifiSensorUsing = true;
-
-            module_base.DataRecieve += Module_base_DataReady;
-#endif
-            module_base.DataRecieve += Module_base_DataReady;
-            Thread.Sleep(100);
-
-        }
         public string SensorIP { get; private set; } = "";
         private int SensorPort;
         public enum Enum_AccGetMethod
@@ -418,7 +430,10 @@ namespace gpm_vibration_module_api
 
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
 
-            send_bytes[2] = GetByteValofDLDefine(module_base.module_settings.DataLength);
+            //send_bytes[2] = GetByteValofDLDefine(module_base.module_settings.DataLength);
+            send_bytes[1] = 0x01;
+            send_bytes[2] = 0x00;
+            send_bytes[6] = 0x00;
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
 
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
@@ -565,7 +580,7 @@ namespace gpm_vibration_module_api
             try
             {
                 var configpath = "SensorConfig\\" + SensorIP + "\\Controller_Parameters.xml";
-                if (File.Exists(configpath))
+                if (File.Exists(configpath) && Tools.VersionManager.JudgeSensorConfigVersion(configpath) == Tools.VersionManager.VERSION.NEW)
                 {
                     using (FileStream fs = new FileStream(configpath, FileMode.Open))
                     {
@@ -573,7 +588,6 @@ namespace gpm_vibration_module_api
                         clsModuleSettings setting = (clsModuleSettings) xs.Deserialize(fs);
                         module_base.module_settings = setting;
                     };
-
                 }
                 else
                 {
@@ -583,10 +597,11 @@ namespace gpm_vibration_module_api
                         DataLength = DataLength,
                         MeasureRange = MeasureRange,
                         ODR = ODR,
-                        sampling_rate_ = 5000
+                        sampling_rate_ = 8000
                     };
                     Sensor_Config_Save();
                 }
+                module_base.module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
             }
             catch (Exception ex)
             {
@@ -627,18 +642,16 @@ namespace gpm_vibration_module_api
 
         public async Task<int> Data_Length_Setting(clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength)
         {
-            setTaskObj = new ClsParamSetTaskObj
-            {
-                SettingItem = 1,
-                SettingValue = DataLength
-            };
-            var ret = await StartParamSetTaskAsync();
-            module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
-            if (ret == 0)
-            {
-                Freq_Vec = FreqVecCal();
-            }
-            return ret;
+            //setTaskObj = new ClsParamSetTaskObj
+            //{
+            //    SettingItem = 1,
+            //    SettingValue = DataLength
+            //};
+            //var ret = await StartParamSetTaskAsync();
+            //module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
+            this.DataLength = DataLength;
+            Freq_Vec = FreqVecCal();
+            return 0;
         }
 
         /// <summary>
@@ -710,11 +723,12 @@ namespace gpm_vibration_module_api
         {
             internal set
             {
-                if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
-                    return;
-                setTaskObj.SettingItem = 1;
-                setTaskObj.SettingValue = value;
-                StartParamSetTaskAsync();
+                //if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
+                //    return;
+                //setTaskObj.SettingItem = 1;
+                //setTaskObj.SettingValue = value;
+                //StartParamSetTaskAsync();
+                module_base.module_settings.DataLength = value;
             }
             get
             {
@@ -827,21 +841,21 @@ namespace gpm_vibration_module_api
         private void Module_base_DataReady(DataSet dataSet)
         {
             //Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.ffff"));
-            dataSet.FFTData.X = GpmMath.FFT.GetFFT(dataSet.AccData.X, IsZeroAdd: false);
-            dataSet.FFTData.Y = GpmMath.FFT.GetFFT(dataSet.AccData.Y, IsZeroAdd: false);
-            dataSet.FFTData.Z = GpmMath.FFT.GetFFT(dataSet.AccData.Z, IsZeroAdd: false);
-            dataSet.FFTData.FreqsVec = FreqVecCal(dataSet.FFTData.X.Count);
+            dataSet.FFTData.X = FFT.GetFFT(dataSet.AccData.X, IsZeroAdd: false);
+            dataSet.FFTData.Y = FFT.GetFFT(dataSet.AccData.Y, IsZeroAdd: false);
+            dataSet.FFTData.Z = FFT.GetFFT(dataSet.AccData.Z, IsZeroAdd: false);
+            dataSet.FFTData.FreqVec = Freq_Vec;
 
-            dataSet.Features.VibrationEnergy.X = GpmMath.Stastify.GetOA(dataSet.FFTData.X);
-            dataSet.Features.VibrationEnergy.Y = GpmMath.Stastify.GetOA(dataSet.FFTData.Y);
-            dataSet.Features.VibrationEnergy.Z = GpmMath.Stastify.GetOA(dataSet.FFTData.Z);
-            dataSet.Features.AccP2P.X = GpmMath.Stastify.GetPP(dataSet.AccData.X);
-            dataSet.Features.AccP2P.Y = GpmMath.Stastify.GetPP(dataSet.AccData.Y);
-            dataSet.Features.AccP2P.Z = GpmMath.Stastify.GetPP(dataSet.AccData.Z);
+            dataSet.Features.VibrationEnergy.X = Stastify.GetOA(dataSet.FFTData.X);
+            dataSet.Features.VibrationEnergy.Y = Stastify.GetOA(dataSet.FFTData.Y);
+            dataSet.Features.VibrationEnergy.Z = Stastify.GetOA(dataSet.FFTData.Z);
+            dataSet.Features.AccP2P.X = Stastify.GetPP(dataSet.AccData.X);
+            dataSet.Features.AccP2P.Y = Stastify.GetPP(dataSet.AccData.Y);
+            dataSet.Features.AccP2P.Z = Stastify.GetPP(dataSet.AccData.Z);
 
-            dataSet.Features.AccRMS.X = GpmMath.Stastify.RMS(dataSet.AccData.X);
-            dataSet.Features.AccRMS.Y = GpmMath.Stastify.RMS(dataSet.AccData.Y);
-            dataSet.Features.AccRMS.Z = GpmMath.Stastify.RMS(dataSet.AccData.Z);
+            dataSet.Features.AccRMS.X = Stastify.RMS(dataSet.AccData.X);
+            dataSet.Features.AccRMS.Y = Stastify.RMS(dataSet.AccData.Y);
+            dataSet.Features.AccRMS.Z = Stastify.RMS(dataSet.AccData.Z);
             DataRecieve?.Invoke(dataSet);
         }
         private void SendBulkDataStartCmd()
@@ -851,7 +865,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 取得三軸加速度量測值
         /// </summary>
-        public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
+        public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures, WINDOW window = WINDOW.none)
         {
             if (module_base.isBusy)
             {
@@ -872,23 +886,17 @@ namespace gpm_vibration_module_api
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
             this.IsGetOtherFeatures = IsGetOtherFeatures;
-            await Task.Run(() => GetDataTask());
+            await Task.Run(() =>
+            {
+                DataSetCnt = 0;//歸零
+                GetDataTask();
+            });
             WaitAsyncForGetDataTask.WaitOne();
             return DataSetRet;
 
         }
 
-        public UVDataSet GetUVSensingValue()
-        {
-            var _uvVal = module_base.GetUV();
-            UVDataSet _uvDataSet = new UVDataSet
-            {
-                UVValue = _uvVal,
-                ErrorCode = _uvVal == -1 ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0,
-                RecieveTime = DateTime.Now
-            };
-            return _uvDataSet;
-        }
+
 
         private ManualResetEvent GetDataTaskPause;
 
@@ -903,6 +911,22 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             Thread.Sleep(500);
         }
+
+        private DataSet ConvertToDataSet(byte[] AccPacket)
+        {
+            // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
+            var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old);
+            var DataSetRet = new DataSet(SamplingRate);
+            DataSetRet.AccData.X = datas[0];
+            DataSetRet.AccData.Y = datas[1];
+            DataSetRet.AccData.Z = datas[2];
+
+
+            return DataSetRet;
+        }
+
+        private int DataSetCnt = 0;
+
         private void GetDataTask()
         {
             //IsGetDataTaskPaused = true;
@@ -910,63 +934,69 @@ namespace gpm_vibration_module_api
             //WaitAsyncForParametersSet.WaitOne();
             //IsGetDataTaskPaused = false;
             DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
-            try
+            while (DataSetCnt < ((int) DataLength / 512))
             {
-                byte[] AccPacket;
-                bool IsTimeout;
-                AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
-                DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                module_base.isBusy = false;
-                if (AccPacket.Length < Convert.ToInt32(DataLength) * 6)
+                try
                 {
-                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
-                    WaitAsyncForGetDataTask.Set();
-                    return;
+                    byte[] AccPacket;
+                    bool IsTimeout;
+                    AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                    DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
+                    module_base.isBusy = false;
+                    if (AccPacket.Length < Convert.ToInt32(clsEnum.Module_Setting_Enum.DATA_LENGTH.x1) * 6)
+                    {
+                        DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
+                        WaitAsyncForGetDataTask.Set();
+                        return;
+                    }
+                    ///
+                    DataSetRet.AddData(ConvertToDataSet(AccPacket));
                 }
-                var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
-                DataSetRet.AccData.X = datas[0];
-                DataSetRet.AccData.Y = datas[1];
-                DataSetRet.AccData.Z = datas[2];
+                catch (SocketException exp)
+                {
+                    if (DisconnectEvent != null)
+                        DisconnectEvent.Invoke(DateTime.Now);
+                }
+                catch (Exception exp)
+                {
+                    DataSetRet.AccData.X.Clear();
+                    DataSetRet.AccData.Y.Clear();
+                    DataSetRet.AccData.Z.Clear();
+                    DataSetRet.AccData.X.Add(-99999);
+                    DataSetRet.AccData.Y.Add(-99999);
+                    DataSetRet.AccData.Z.Add(-99999);
+                }
+                DataSetCnt++;
+                Thread.Sleep(1);
+            }
+            if (IsGetFFT)
+            {
+                DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
+                DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
+                DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
+                DataSetRet.FFTData.FreqVec = Freq_Vec;
+                int melBinCount = 30;
+                DataSetRet.MelBankData.X = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.X.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
+                DataSetRet.MelBankData.Y = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Y.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
+                DataSetRet.MelBankData.Z = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Z.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
 
+            }
+
+            if (IsGetOtherFeatures)
+            {
                 if (IsGetFFT)
                 {
-                    DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
-                    DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
-                    DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
-                    DataSetRet.FFTData.FreqsVec = FreqVecCal(DataSetRet.FFTData.X.Count);
-                    //DataSetRet.FFTData.FreqsVec = Freq_Vec;
+                    DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
+                    DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
+                    DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
                 }
+                DataSetRet.Features.AccP2P.X = Stastify.GetPP(DataSetRet.AccData.X);
+                DataSetRet.Features.AccP2P.Y = Stastify.GetPP(DataSetRet.AccData.Y);
+                DataSetRet.Features.AccP2P.Z = Stastify.GetPP(DataSetRet.AccData.Z);
 
-                if (IsGetOtherFeatures)
-                {
-                    if (IsGetFFT)
-                    {
-                        DataSetRet.Features.VibrationEnergy.X = GpmMath.Stastify.GetOA(DataSetRet.FFTData.X);
-                        DataSetRet.Features.VibrationEnergy.Y = GpmMath.Stastify.GetOA(DataSetRet.FFTData.Y);
-                        DataSetRet.Features.VibrationEnergy.Z = GpmMath.Stastify.GetOA(DataSetRet.FFTData.Z);
-                    }
-                    DataSetRet.Features.AccP2P.X = GpmMath.Stastify.GetPP(DataSetRet.AccData.X);
-                    DataSetRet.Features.AccP2P.Y = GpmMath.Stastify.GetPP(DataSetRet.AccData.Y);
-                    DataSetRet.Features.AccP2P.Z = GpmMath.Stastify.GetPP(DataSetRet.AccData.Z);
-
-                    DataSetRet.Features.AccRMS.X = GpmMath.Stastify.RMS(DataSetRet.AccData.X);
-                    DataSetRet.Features.AccRMS.Y = GpmMath.Stastify.RMS(DataSetRet.AccData.Y);
-                    DataSetRet.Features.AccRMS.Z = GpmMath.Stastify.RMS(DataSetRet.AccData.Z);
-                }
-            }
-            catch (SocketException exp)
-            {
-                if (DisconnectEvent != null)
-                    DisconnectEvent.Invoke(DateTime.Now);
-            }
-            catch (Exception exp)
-            {
-                DataSetRet.AccData.X.Clear();
-                DataSetRet.AccData.Y.Clear();
-                DataSetRet.AccData.Z.Clear();
-                DataSetRet.AccData.X.Add(-99999);
-                DataSetRet.AccData.Y.Add(-99999);
-                DataSetRet.AccData.Z.Add(-99999);
+                DataSetRet.Features.AccRMS.X = Stastify.RMS(DataSetRet.AccData.X);
+                DataSetRet.Features.AccRMS.Y = Stastify.RMS(DataSetRet.AccData.Y);
+                DataSetRet.Features.AccRMS.Z = Stastify.RMS(DataSetRet.AccData.Z);
             }
 
             WaitAsyncForGetDataTask.Set();
@@ -985,14 +1015,7 @@ namespace gpm_vibration_module_api
 
         internal List<double> FreqVecCal()
         {
-            var freqVec = new List<double>();
-            var NysFreq = module_base.module_settings.sampling_rate_ / 2;
-            var FFTWindowSize = Convert.ToInt32(module_base.module_settings.DataLength) / 2;
-            for (int i = 0; i < FFTWindowSize; i++)
-            {
-                freqVec.Add((NysFreq / (double) FFTWindowSize) * (double) i);
-            }
-            return freqVec;
+            return FftSharp.Transform.FFTfreq(Convert.ToInt32(SamplingRate), Convert.ToInt32(DataLength)/2).ToList();
         }
 
         private List<double> FreqVecCal(int FFTWindowSize)

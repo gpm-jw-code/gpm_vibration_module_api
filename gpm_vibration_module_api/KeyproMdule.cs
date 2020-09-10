@@ -10,7 +10,7 @@ using gpm_vibration_module_api;
 
 namespace gpm_vibration_module_api
 {
-    public static class KeyproMdule
+    internal static class KeyproMdule
     {
         internal struct API
         {

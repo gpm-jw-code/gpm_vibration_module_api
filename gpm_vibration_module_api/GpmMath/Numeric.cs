@@ -9,7 +9,7 @@ using System.Text;
 
 namespace gpm_vibration_module_api.GpmMath
 {
-    public class Numeric
+    internal class Numeric
     {
 
         internal static class Tools

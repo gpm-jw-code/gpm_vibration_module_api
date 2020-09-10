@@ -15,10 +15,9 @@ namespace gpm_vibration_module_api.Tools
         internal static double bytesToDouble(byte HB, byte LB, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM _ALGRIUM)
         {
             if (_ALGRIUM == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Bulk | _ALGRIUM == clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New)
-                return HB + (sbyte)LB * 256;
+                return LB + (sbyte) HB * 256;
             else
-                return LB + (sbyte)HB * 256;
-
+                return HB + (sbyte) LB * 256;
 
         }
 
