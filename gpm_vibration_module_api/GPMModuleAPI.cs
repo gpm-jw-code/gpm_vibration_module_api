@@ -27,12 +27,47 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+        public string Location { get; set; }
+        public event Action<DateTime> DisconnectEvent;
+        public event Action<DataSet> DataRecieve;
+        public Action<string> ReConnectEvent { get; set; }
+        public string SensorIP { get; private set; } = "";
         /// <summary>
         /// 控制器底層控制
         /// </summary>
         private ClsModuleBase module_base = new ClsModuleBase();
+        /// <summary>
+        /// 設定感測器安裝位置名稱
+        /// </summary>
+        private MeasureOption option = new MeasureOption();
+        private DataSet DataSetRet = new DataSet(1000);
+        private ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj();
+        private bool IsGetFFT = false;
+        private bool IsGetOtherFeatures = false;
+        private ManualResetEvent WaitAsyncForGetDataTask;
+        private ManualResetEvent WaitAsyncForParametersSet;
+        private event Action<string> FunctionCalled;
+        /// <summary>
+        /// 斷線事件
+        /// </summary>
+      
+        private ManualResetEvent GetDataTaskPause;
+        private bool IsGetDataTaskPaused = true;
+        private List<double> Freq_Vec = new List<double>();
 
+        private int DataSetCnt = 0;
+       
+        private int SensorPort;
+        public enum Enum_AccGetMethod
+        {
+            Auto, Manual
+        }
+#if KeyproEnable
+        private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+#else
+        private clsEnum.KeyPro.KEYPRO_EXIST_STATE KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
 
+#endif
         #region Constructors
         public GPMModuleAPI(string IP = null)
         {
@@ -80,12 +115,6 @@ namespace gpm_vibration_module_api
         }
         #endregion
 
-#if KeyproEnable
-        private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
-#else
-        private clsEnum.KeyPro.KEYPRO_EXIST_STATE KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
-
-#endif
         /// <summary>
         /// 存放所有連線socket
         /// </summary>
@@ -143,18 +172,7 @@ namespace gpm_vibration_module_api
             public object SettingValue;
         }
 
-        private MeasureOption option = new MeasureOption();
-        private DataSet DataSetRet = new DataSet(1000);
-        private ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj();
-        private bool IsGetFFT = false;
-        private bool IsGetOtherFeatures = false;
-        private ManualResetEvent WaitAsyncForGetDataTask;
-        private ManualResetEvent WaitAsyncForParametersSet;
-        private event Action<string> FunctionCalled;
-        /// <summary>
-        /// 斷線事件
-        /// </summary>
-        public event Action<DateTime> DisconnectEvent;
+    
 
 
         private int window_size = 512;
@@ -225,8 +243,6 @@ namespace gpm_vibration_module_api
             return srcr_state;
         }
 
-
-
         private void API_KeyProRemoveEvent(DateTime obj)
         {
             KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
@@ -237,15 +253,7 @@ namespace gpm_vibration_module_api
             KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
         }
 
-
-
-
-        public string SensorIP { get; private set; } = "";
-        private int SensorPort;
-        public enum Enum_AccGetMethod
-        {
-            Auto, Manual
-        }
+       
 
         public bool WifiSensorUsing
         {
@@ -817,10 +825,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        /// <summary>
-        /// 設定感測器安裝位置名稱
-        /// </summary>
-        public string Location { get; set; }
+      
 
 
         public void StartDataRecieve(MeasureOption option)
@@ -837,7 +842,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public event Action<DataSet> DataRecieve;
+        
         private void Module_base_DataReady(DataSet dataSet)
         {
             //Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.ffff"));
@@ -896,13 +901,6 @@ namespace gpm_vibration_module_api
 
         }
 
-
-
-        private ManualResetEvent GetDataTaskPause;
-
-
-        private bool IsGetDataTaskPaused = true;
-
         public void Stop_All_Action()
         {
             module_base.timeout_task_cancel_source.Cancel();
@@ -911,7 +909,6 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             Thread.Sleep(500);
         }
-
         private DataSet ConvertToDataSet(byte[] AccPacket)
         {
             // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
@@ -924,8 +921,6 @@ namespace gpm_vibration_module_api
 
             return DataSetRet;
         }
-
-        private int DataSetCnt = 0;
 
         private void GetDataTask()
         {
@@ -1001,7 +996,6 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             WaitAsyncForGetDataTask.Set();
         }
-
         private clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM DeterminALG()
         {
             if (module_base.module_settings.ByteAryOfParameters[1] == 0x00)
@@ -1009,9 +1003,6 @@ namespace gpm_vibration_module_api
             else
                 return clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New;
         }
-
-        private List<double> Freq_Vec = new List<double>();
-
 
         internal List<double> FreqVecCal()
         {
@@ -1058,6 +1049,5 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public Action<string> ReConnectEvent { get; set; }
     }
 }
