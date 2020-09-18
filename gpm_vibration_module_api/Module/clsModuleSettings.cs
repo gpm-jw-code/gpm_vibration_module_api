@@ -10,6 +10,8 @@ namespace gpm_vibration_module_api.Module
     [Serializable]
     public class clsModuleSettings
     {
+        public DAQMode dAQMode = DAQMode.NonContinuous;
+
         public double sampling_rate_ = 5000;
 #if (ETH468)
         private byte[] byteAryOfParameters = new byte[] { 0x01, 0x01, 0x9F, 0x00, 0x00, 0x02, 0x00, 0x00 };
@@ -76,6 +78,7 @@ namespace gpm_vibration_module_api.Module
             get { return pDataLength; }
             set
             {
+
                 byte byteval = 0x00;
                 switch (value)
                 {
@@ -100,7 +103,7 @@ namespace gpm_vibration_module_api.Module
                     default:
                     break;
                 }
-                ByteAryOfParameters[1] = byteval;
+                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.NonContinuous ? 0x00 : byteval);
                 pDataLength = value;
             }
         }

@@ -51,6 +51,8 @@
   <ItemGroup>
     <Compile Include="clsEnum.cs" />
     <Compile Include="clsErrorCode.cs" />
+    <Compile Include="ClsParamSetTaskObj.cs" />
+    <Compile Include="DAQMode.cs" />
     <Compile Include="DataSet.cs" />
     <Compile Include="FftSharp\Complex.cs" />
     <Compile Include="FftSharp\Experimental.cs" />

@@ -26,11 +26,6 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
-        private class ClsParamSetTaskObj
-        {
-            public object SettingItem;
-            public object SettingValue;
-        }
 
         /// <summary>
         /// Sampling Rate計算結果儲存
@@ -46,13 +41,17 @@ namespace gpm_vibration_module_api
             public double[] Sampling_Rate;
             public ERROR_CODE RESULT;
         }
+        #region Public Property
         public string Location { get; set; }
         public event Action<DateTime> DisconnectEvent;
         public event Action<DataSet> DataRecieve;
         public Action<string> ReConnectEvent { get; set; }
         public string SensorIP { get; private set; } = "";
         public bool IsDataHandShakeNormal { private set; get; }
+        #endregion
 
+        #region Private Property
+        private clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM ACC_CONVERT_ALGRIUM = clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old;
         /// <summary>
         /// 控制器底層控制
         /// </summary>
@@ -62,7 +61,6 @@ namespace gpm_vibration_module_api
         /// </summary>
         private MeasureOption option = new MeasureOption();
         private DataSet DataSetRet = new DataSet(1000);
-        private ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj();
         private bool IsGetFFT = false;
         private bool IsGetOtherFeatures = false;
         private ManualResetEvent WaitAsyncForGetDataTask;
@@ -77,6 +75,21 @@ namespace gpm_vibration_module_api
         private int DataSetCnt = 0;
         private int SensorPort;
         private int window_size = 512;
+        #endregion
+
+        #region 存取子
+        /// <summary>
+        /// 取得數據封包擷取模式
+        /// </summary>
+        public DAQMode DAQMode
+        {
+            get
+            {
+                return module_base.module_settings.dAQMode;
+            }
+
+        }
+
         public Socket ModuleSocket
         {
             get
@@ -104,7 +117,7 @@ namespace gpm_vibration_module_api
         {
             internal set
             {
-                setTaskObj = new ClsParamSetTaskObj
+                module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
                 {
                     SettingItem = 2,
                     SettingValue = value
@@ -122,23 +135,23 @@ namespace gpm_vibration_module_api
             set
             {
                 //BULKBreak();
-                setTaskObj.SettingItem = 2;
+                module_base.setTaskObj.SettingItem = 2;
                 switch (value)
                 {
                     case 2:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                     break;
                     case 4:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
                     break;
                     case 8:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
                     break;
                     case 16:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
                     break;
                     default:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
                     break;
                 }
 
@@ -157,11 +170,7 @@ namespace gpm_vibration_module_api
         {
             internal set
             {
-                //if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
-                //    return;
-                //setTaskObj.SettingItem = 1;
-                //setTaskObj.SettingValue = value;
-                //StartParamSetTaskAsync();
+
                 module_base.module_settings.DataLength = value;
             }
             get
@@ -178,23 +187,23 @@ namespace gpm_vibration_module_api
             {
                 if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
                     return;
-                setTaskObj.SettingItem = 1;
+                module_base.setTaskObj.SettingItem = 1;
                 switch (value)
                 {
                     case 512:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                     break;
                     case 1024:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
                     break;
                     case 2048:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
                     break;
                     case 4096:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
                     break;
                     default:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    module_base.setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                     break;
                 }
                 StartParamSetTaskAsync();
@@ -212,8 +221,8 @@ namespace gpm_vibration_module_api
         {
             internal set
             {
-                setTaskObj.SettingItem = 0;
-                setTaskObj.SettingValue = value;
+                module_base.setTaskObj.SettingItem = 0;
+                module_base.setTaskObj.SettingValue = value;
                 StartParamSetTaskAsync();
             }
             get
@@ -228,8 +237,8 @@ namespace gpm_vibration_module_api
         {
             set
             {
-                setTaskObj.SettingItem = 3;
-                setTaskObj.SettingValue = value;
+                module_base.setTaskObj.SettingItem = 3;
+                module_base.setTaskObj.SettingValue = value;
                 StartParamSetTaskAsync();
             }
             get
@@ -293,8 +302,9 @@ namespace gpm_vibration_module_api
             }
             set
             {
-                Freq_Vec = FreqVecCal();
                 module_base.module_settings.sampling_rate_ = value;
+
+                Freq_Vec = FreqVecCal();
                 Sensor_Config_Save();
             }
         }
@@ -309,6 +319,8 @@ namespace gpm_vibration_module_api
                 return module_base.module_settings.WifiControllUseHighSppedSensor;
             }
         }
+        #endregion
+
         public enum Enum_AccGetMethod
         {
             Auto, Manual
@@ -397,7 +409,24 @@ namespace gpm_vibration_module_api
         }
 
 
-
+        public async Task<int> DAQModeSetting(DAQMode Mode)
+        {
+            if (Mode == module_base.module_settings.dAQMode)
+                return 0;
+            var ret = await Task<int>.Run(async () =>
+           {
+               var ret2 = await Data_Length_Setting(Mode);
+               if (ret2 == 0)
+               {
+                   SamplingRate = Convert.ToDouble(Mode);
+                   ACC_CONVERT_ALGRIUM = Mode == DAQMode.NonContinuous ? clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old : clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New;
+                   module_base.module_settings.dAQMode = Mode;
+                   Sensor_Config_Save();
+               }
+               return ret2;
+           });
+            return ret;
+        }
         private void UpdateParam()
         {
             var param = module_base.module_settings.ByteAryOfParameters;
@@ -537,7 +566,6 @@ namespace gpm_vibration_module_api
                         IsDataHandShakeNormal = await SelfTest();
                         ret = IsDataHandShakeNormal ? ret : Convert.ToInt32(clsErrorCode.Error.SelfTestFail);
                     }
-
                 }
                 else
                 {
@@ -603,15 +631,11 @@ namespace gpm_vibration_module_api
         {
             Tools.Logger.Event_Log.Log("[SelfTEst] Write..");
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
-
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
-
-            //send_bytes[2] = GetByteValofDLDefine(module_base.module_settings.DataLength);
             send_bytes[1] = 0x01;
-            send_bytes[2] = 0x00; //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
-            send_bytes[6] = 0x00;
+            send_bytes[2] = (byte) (module_base.module_settings.dAQMode == DAQMode.NonContinuous ? 0x00 : GetByteValofDLDefine(module_base.module_settings.DataLength)); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
-
+            send_bytes[6] = 0x00;
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
@@ -690,19 +714,19 @@ namespace gpm_vibration_module_api
                 try_time++; //first =1, second =2
                 Tools.Logger.Event_Log.Log($"[ParamSetTask] 寫入設定至控制器({try_time})");
 
-                switch (Convert.ToInt32(setTaskObj.SettingItem))
+                switch (Convert.ToInt32(module_base.setTaskObj.SettingItem))
                 {
                     case 0:
-                    ret = module_base.SettingToController((clsEnum.Module_Setting_Enum.SENSOR_TYPE) setTaskObj.SettingValue, null, null, null);
+                    ret = module_base.SettingToController((clsEnum.Module_Setting_Enum.SENSOR_TYPE) module_base.setTaskObj.SettingValue, null, null, null);
                     break;
                     case 1:
-                    ret = module_base.SettingToController(null, (clsEnum.Module_Setting_Enum.DATA_LENGTH) setTaskObj.SettingValue, null, null);
+                    ret = module_base.SettingToController(null, (clsEnum.Module_Setting_Enum.DATA_LENGTH) module_base.setTaskObj.SettingValue, null, null);
                     break;
                     case 2:
-                    ret = module_base.SettingToController(null, null, (clsEnum.Module_Setting_Enum.MEASURE_RANGE) setTaskObj.SettingValue, null);
+                    ret = module_base.SettingToController(null, null, (clsEnum.Module_Setting_Enum.MEASURE_RANGE) module_base.setTaskObj.SettingValue, null);
                     break;
                     case 3:
-                    ret = module_base.SettingToController(null, null, null, (clsEnum.Module_Setting_Enum.ODR) setTaskObj.SettingValue);
+                    ret = module_base.SettingToController(null, null, null, (clsEnum.Module_Setting_Enum.ODR) module_base.setTaskObj.SettingValue);
                     break;
                 }
 
@@ -777,7 +801,8 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
-                module_base.module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                if (module_base.module_settings.dAQMode == DAQMode.NonContinuous)
+                    module_base.module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
             }
             catch (Exception ex)
             {
@@ -806,7 +831,7 @@ namespace gpm_vibration_module_api
 
         public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange, bool IsNeedReboot = true)
         {
-            setTaskObj = new ClsParamSetTaskObj
+            module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
             {
                 SettingItem = 2,
                 SettingValue = MeasureRange
@@ -818,18 +843,32 @@ namespace gpm_vibration_module_api
 
         public async Task<int> Data_Length_Setting(clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength)
         {
-            //setTaskObj = new ClsParamSetTaskObj
-            //{
-            //    SettingItem = 1,
-            //    SettingValue = DataLength
-            //};
-            //var ret = await StartParamSetTaskAsync();
-            //module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
-            this.DataLength = DataLength;
+            if (module_base.module_settings.dAQMode == DAQMode.Continuous)
+            {
+                module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
+                {
+                    SettingItem = 1,
+                    SettingValue = DataLength
+                };
+                var ret = await StartParamSetTaskAsync();
+                module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
+            }
+            else
+                this.DataLength = DataLength;
             Freq_Vec = FreqVecCal();
             return 0;
         }
-
+        private async Task<int> Data_Length_Setting(DAQMode dAQMode)
+        {
+            module_base.setTaskObj = new ClsParamSetTaskObj(dAQMode)
+            {
+                SettingItem = 1,
+                SettingValue = DataLength,
+            };
+            var ret = await StartParamSetTaskAsync();
+            //module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
+            return ret;
+        }
 
 
         public async Task<byte[]> ReadStval()
@@ -929,7 +968,7 @@ namespace gpm_vibration_module_api
         private DataSet ConvertToDataSet(byte[] AccPacket)
         {
             // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
-            var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old);
+            var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode);
             var DataSetRet = new DataSet(SamplingRate);
             DataSetRet.AccData.X = datas[0];
             DataSetRet.AccData.Y = datas[1];
@@ -938,7 +977,39 @@ namespace gpm_vibration_module_api
 
             return DataSetRet;
         }
+        public void AccDataSetCreat()
+        {
+            try
+            {
+                byte[] AccPacket;
+                bool IsTimeout;
+                AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
+                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.NonContinuous ? 3072 : Convert.ToInt32(DataLength) * 6))
+                {
+                    DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
+                    WaitAsyncForGetDataTask.Set();
+                    return;
+                }
+                ///
+                DataSetRet.AddData(ConvertToDataSet(AccPacket));
 
+            }
+            catch (SocketException exp)
+            {
+                if (DisconnectEvent != null)
+                    DisconnectEvent.Invoke(DateTime.Now);
+            }
+            catch (Exception exp)
+            {
+                DataSetRet.AccData.X.Clear();
+                DataSetRet.AccData.Y.Clear();
+                DataSetRet.AccData.Z.Clear();
+                DataSetRet.AccData.X.Add(-99999);
+                DataSetRet.AccData.Y.Add(-99999);
+                DataSetRet.AccData.Z.Add(-99999);
+            }
+        }
         private void GetDataTask()
         {
             //IsGetDataTaskPaused = true;
@@ -946,46 +1017,26 @@ namespace gpm_vibration_module_api
             //WaitAsyncForParametersSet.WaitOne();
             //IsGetDataTaskPaused = false;
             DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
-            while (DataSetCnt < ((int) DataLength / 512))
-            {
-                try
-                {
-                    byte[] AccPacket;
-                    bool IsTimeout;
-                    AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
-                    DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                    if (AccPacket.Length < 3072)
-                    {
-                        DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
-                        WaitAsyncForGetDataTask.Set();
-                        return;
-                    }
-                    ///
-                    DataSetRet.AddData(ConvertToDataSet(AccPacket));
 
-                }
-                catch (SocketException exp)
+            if (module_base.module_settings.dAQMode == DAQMode.NonContinuous)
+                while (DataSetCnt < ((int) DataLength / 512))
                 {
-                    if (DisconnectEvent != null)
-                        DisconnectEvent.Invoke(DateTime.Now);
+                    AccDataSetCreat();
+                    DataSetCnt++;
+                    Thread.Sleep(50);
                 }
-                catch (Exception exp)
-                {
-                    DataSetRet.AccData.X.Clear();
-                    DataSetRet.AccData.Y.Clear();
-                    DataSetRet.AccData.Z.Clear();
-                    DataSetRet.AccData.X.Add(-99999);
-                    DataSetRet.AccData.Y.Add(-99999);
-                    DataSetRet.AccData.Z.Add(-99999);
-                }
-                DataSetCnt++;
-                Thread.Sleep(1);
-            }
-            if (IsGetFFT)
+            else
+                AccDataSetCreat();
+            if (IsGetFFT && Numeric.Tools.IsPowerOf2(DataSetRet.AccData.X.Count))
             {
                 DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
                 DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
                 DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
+
+                DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
+                DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
+                DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
+
                 DataSetRet.FFTData.FreqVec = Freq_Vec;
                 int melBinCount = 30;
                 DataSetRet.MelBankData.X = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.X.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
@@ -996,12 +1047,6 @@ namespace gpm_vibration_module_api
 
             if (IsGetOtherFeatures)
             {
-                if (IsGetFFT)
-                {
-                    DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
-                    DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
-                    DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
-                }
                 DataSetRet.Features.AccP2P.X = Stastify.GetPP(DataSetRet.AccData.X);
                 DataSetRet.Features.AccP2P.Y = Stastify.GetPP(DataSetRet.AccData.Y);
                 DataSetRet.Features.AccP2P.Z = Stastify.GetPP(DataSetRet.AccData.Z);

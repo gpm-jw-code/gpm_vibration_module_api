@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using static gpm_vibration_module_api.GpmMath.Numeric;
 
@@ -49,11 +50,13 @@ namespace gpm_vibration_module_api.GpmMath
 
         public static double GetOA(List<double> data)
         {
+            if (data == null)
+                return -1;
             return RMS(data);
         }
         public static double GetOA(double[] data)
         {
-            return RMS(data);
+            return GetOA(data.ToList());
         }
 
         public static double GetPP(double[] data)
@@ -62,13 +65,13 @@ namespace gpm_vibration_module_api.GpmMath
         }
         public static double GetPP(List<double> data)
         {
-            return PPValCal(data.ToArray());
+            return GetPP(data.ToArray());
         }
         private static double PPValCal(double[] data)
         {
-            var ppval = 0.0;
-            ppval = FindMax(data) - FindMin(data);
-            return ppval;
+            if (data.Length == 0)
+                return -1;
+            return FindMax(data) - FindMin(data); ;
         }
     }
     internal class FFT
@@ -89,11 +92,12 @@ namespace gpm_vibration_module_api.GpmMath
 
         public static List<double> GetFFT(List<double> TD, bool IsZeroAdd = false, int FFTWindow = 2048)
         {
+
             List<double> toConvertTimeData = new List<double>();
             toConvertTimeData.AddRange(TD);
             if (IsZeroAdd)
             {
-               
+
                 var numToAdd = FFTWindow - TD.Count;
                 toConvertTimeData.AddRange(new double[numToAdd]);
                 //var _window = WindowFun.Hamming(toConvertTimeData.Count);
@@ -166,7 +170,7 @@ namespace gpm_vibration_module_api.GpmMath
                 {
                     dst[i] = Numeric.Complex.Zero;
 
-                    arg = -(int)direction * 2.0 * System.Math.PI * (double)i / (double)n;
+                    arg = -(int) direction * 2.0 * System.Math.PI * (double) i / (double) n;
 
                     // sum source elements
                     for (int j = 0; j < data.Length; j++)
@@ -216,7 +220,7 @@ namespace gpm_vibration_module_api.GpmMath
                     {
                         dst[j] = Numeric.Complex.Zero;
 
-                        arg = -(int)direction * 2.0 * System.Math.PI * (double)j / (double)m;
+                        arg = -(int) direction * 2.0 * System.Math.PI * (double) j / (double) m;
 
                         // sum source elements
                         for (int k = 0; k < m; k++)
@@ -252,7 +256,7 @@ namespace gpm_vibration_module_api.GpmMath
                     {
                         dst[i] = Numeric.Complex.Zero;
 
-                        arg = -(int)direction * 2.0 * System.Math.PI * (double)i / (double)n;
+                        arg = -(int) direction * 2.0 * System.Math.PI * (double) i / (double) n;
 
                         // sum source elements
                         for (int k = 0; k < n; k++)
@@ -336,7 +340,7 @@ namespace gpm_vibration_module_api.GpmMath
                 {
                     for (int i = 0; i < data.Length; i++)
                     {
-                        data[i] = data[i] / (double)n;
+                        data[i] = data[i] / (double) n;
                     }
                 }
             }
@@ -450,7 +454,7 @@ namespace gpm_vibration_module_api.GpmMath
                     int n = 1 << (numberOfBits - 1);
                     double uR = 1.0;
                     double uI = 0.0;
-                    double angle = System.Math.PI / n * (int)direction;
+                    double angle = System.Math.PI / n * (int) direction;
                     double wR = System.Math.Cos(angle);
                     double wI = System.Math.Sin(angle);
                     double t;
@@ -470,7 +474,7 @@ namespace gpm_vibration_module_api.GpmMath
             }
 
             // Reorder data for FFT using
-            private static void ReorderData(Numeric.Complex[] data)
+            private static void ReorderData(Complex[] data)
             {
                 int len = data.Length;
 

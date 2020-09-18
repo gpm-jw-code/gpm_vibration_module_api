@@ -30,6 +30,7 @@ namespace gpm_vibration_module_api
             bulk_request_pause_signal = new ManualResetEvent(true);
             wait_for_data_get_signal = new ManualResetEvent(true);
         }
+        internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.NonContinuous);
 
         public Socket module_socket { get; internal set; }
         public bool is_bulk_break { get; private set; } = true;
@@ -105,12 +106,11 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 byte[] ToWrite = new byte[11];
                 ToWrite[0] = 0x53;
-              
+
                 ToWrite[9] = 0x0d;
                 ToWrite[10] = 0x0a;
                 Array.Copy(Parameters, 0, ToWrite, 1, Parameters.Length);
                 ToWrite[1] = 0x01;
-                ToWrite[2] = 0x00;
                 return SendCommand(ToWrite, ExceptLength).Result;
             }
             catch (OperationCanceledException ex)
@@ -139,12 +139,12 @@ namespace gpm_vibration_module_api
 
             Module.clsModuleSettings _UserSetting = new clsModuleSettings();
             _UserSetting = module_settings.DeepClone();
-
+            _UserSetting.dAQMode = setTaskObj.DAQMode;
             var returnBytes = _UserSetting.SensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High | sensorType == clsEnum.Module_Setting_Enum.SENSOR_TYPE.High ? 8 : 8;
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
-            _UserSetting.SensorType =  clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
-            _UserSetting.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH) dataLength :  clsEnum.Module_Setting_Enum.DATA_LENGTH.none;
+            _UserSetting.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
+            _UserSetting.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH) dataLength : module_settings.DataLength;
             _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE) measureRange : module_settings.MeasureRange;
             _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR) oDR : module_settings.ODR;
             var ParamReturn = WriteParameterToController(_UserSetting.ByteAryOfParameters, returnBytes);
@@ -229,6 +229,9 @@ namespace gpm_vibration_module_api
 
             switch (DataLengthByte)
             {
+                case 0x00:
+                module_settings.DataLength = module_settings.DataLength;
+                break;
                 case 0x01:
                 module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
                 break;
@@ -511,7 +514,7 @@ namespace gpm_vibration_module_api
                         Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
                         //var doubleOutput = BytesToDoubleList(rev, false);
-                        var doubleOutput = ConverterTools.AccPacketToListDouble(rev, module_settings.MeasureRange, clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New);
+                        var doubleOutput = ConverterTools.AccPacketToListDouble(rev, module_settings.MeasureRange, module_settings.dAQMode);
                         var dataset = new DataSet(module_settings.sampling_rate_);
                         dataset.AccData.X = (doubleOutput[0]);
                         dataset.AccData.Y = (doubleOutput[1]);
@@ -545,61 +548,6 @@ namespace gpm_vibration_module_api
             }
         }
 
-        private List<double>[] BytesToDoubleList(byte[] buffer, bool HeadExist)
-        {
-            var LSB = Convert.ToInt32(module_settings.MeasureRange);
-            clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM alg = clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Bulk;
-            int splitIndex = -1;
-            if (HeadExist == true)
-            {
-                try
-                {
-                    for (int i = 0; true; i++)
-                    {
-                        if (buffer[i] == 13)
-                        {
-                            if (buffer[i + 1] == 10)
-                            {
-                                splitIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    return new List<double>[3];
-                }
-            }
-            var x = new List<double>();
-            var y = new List<double>();
-            var z = new List<double>();
-            var startIndex = splitIndex == 6 ? 0 : splitIndex + 2;
-            startIndex = HeadExist ? startIndex : 0;
-            var multiple = HeadExist ? 8 : 6;
-            try
-            {
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    if (HeadExist)
-                        if ((8 * i) + startIndex + 0 + 5 >= buffer.Length)
-                            break;
-                    //x.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 0], buffer[(multiple * i) + startIndex + 1], alg) / LSB);
-                    //y.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 2], buffer[(multiple * i) + startIndex + 3], alg) / LSB);
-                    //z.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 4], buffer[(multiple * i) + startIndex + 5], alg) / LSB);
-
-                    x.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 0], buffer[(multiple * i) + startIndex + 1], alg) / LSB);
-                    y.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 2], buffer[(multiple * i) + startIndex + 3], alg) / LSB);
-                    z.Add(ConverterTools.bytesToDouble(buffer[(multiple * i) + startIndex + 4], buffer[(multiple * i) + startIndex + 5], alg) / LSB);
-                }
-            }
-            catch (Exception exp)
-            {
-
-            }
-            return new List<double>[3] { x, y, z };
-        }
-
         internal bool isBusy = false;
         internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
@@ -613,7 +561,7 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = 3072;
+                var Datalength = module_settings.dAQMode == DAQMode.NonContinuous ? 3072 : Convert.ToInt32(module_settings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
                 state = new SocketState()
