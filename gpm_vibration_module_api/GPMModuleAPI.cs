@@ -2,7 +2,6 @@
 //#define BR115200
 #define BR460800
 //#define BR921600
-
 using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
 using System;
@@ -27,11 +26,33 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+        private class ClsParamSetTaskObj
+        {
+            public object SettingItem;
+            public object SettingValue;
+        }
+
+        /// <summary>
+        /// Sampling Rate計算結果儲存
+        /// </summary>
+        public struct Sampling_Rate_Cal_Result
+        {
+            public List<DataSet> Datasets_For_Cal;
+            public enum ERROR_CODE
+            {
+                DATA_LACK = 403, SETTING_ERROR = 404, OK = 0
+            }
+            public DateTime Test_Time;
+            public double[] Sampling_Rate;
+            public ERROR_CODE RESULT;
+        }
         public string Location { get; set; }
         public event Action<DateTime> DisconnectEvent;
         public event Action<DataSet> DataRecieve;
         public Action<string> ReConnectEvent { get; set; }
         public string SensorIP { get; private set; } = "";
+        public bool IsDataHandShakeNormal { private set; get; }
+
         /// <summary>
         /// 控制器底層控制
         /// </summary>
@@ -46,18 +67,248 @@ namespace gpm_vibration_module_api
         private bool IsGetOtherFeatures = false;
         private ManualResetEvent WaitAsyncForGetDataTask;
         private ManualResetEvent WaitAsyncForParametersSet;
-        private event Action<string> FunctionCalled;
         /// <summary>
         /// 斷線事件
         /// </summary>
-      
+
         private ManualResetEvent GetDataTaskPause;
         private bool IsGetDataTaskPaused = true;
         private List<double> Freq_Vec = new List<double>();
-
         private int DataSetCnt = 0;
-       
         private int SensorPort;
+        private int window_size = 512;
+        public Socket ModuleSocket
+        {
+            get
+            {
+                return module_base.module_socket;
+            }
+            set
+            {
+                module_base.module_socket = value;
+                SensorIP = GetIPFromSocketObj(value);
+            }
+        }
+
+        public int WindowSize
+        {
+            get
+            { return window_size; }
+            set
+            { window_size = value; }
+        }
+        /// <summary>
+        /// 設定/取得量測範圍
+        /// </summary>
+        public clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange
+        {
+            internal set
+            {
+                setTaskObj = new ClsParamSetTaskObj
+                {
+                    SettingItem = 2,
+                    SettingValue = value
+                };
+                StartParamSetTaskAsync();
+            }
+            get
+            {
+                return module_base.module_settings.MeasureRange;
+            }
+        }
+        public int MeasureRange_IntType
+        {
+
+            set
+            {
+                //BULKBreak();
+                setTaskObj.SettingItem = 2;
+                switch (value)
+                {
+                    case 2:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
+                    case 4:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
+                    break;
+                    case 8:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
+                    break;
+                    case 16:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
+                    break;
+                    default:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
+                }
+
+                StartParamSetTaskAsync();
+            }
+            get
+            {
+                return 16384 / Convert.ToInt32(module_base.module_settings.MeasureRange) * 2;
+            }
+        }
+
+        /// <summary>
+        /// 設定/取得封包資料長度
+        /// </summary>
+        public clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength
+        {
+            internal set
+            {
+                //if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
+                //    return;
+                //setTaskObj.SettingItem = 1;
+                //setTaskObj.SettingValue = value;
+                //StartParamSetTaskAsync();
+                module_base.module_settings.DataLength = value;
+            }
+            get
+            {
+                return module_base.module_settings.DataLength;
+            }
+        }
+        /// <summary>
+        /// 設定/取得封包資料長度
+        /// </summary>
+        public int DataLength_IntType
+        {
+            set
+            {
+                if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
+                    return;
+                setTaskObj.SettingItem = 1;
+                switch (value)
+                {
+                    case 512:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    break;
+                    case 1024:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
+                    break;
+                    case 2048:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
+                    break;
+                    case 4096:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
+                    break;
+                    default:
+                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+                    break;
+                }
+                StartParamSetTaskAsync();
+            }
+            get
+            {
+                return Convert.ToInt32(module_base.module_settings.DataLength);
+            }
+        }
+
+        /// <summary>
+        /// 設定感測器類型
+        /// </summary>
+        public clsEnum.Module_Setting_Enum.SENSOR_TYPE SensorType
+        {
+            internal set
+            {
+                setTaskObj.SettingItem = 0;
+                setTaskObj.SettingValue = value;
+                StartParamSetTaskAsync();
+            }
+            get
+            {
+                return module_base.module_settings.SensorType;
+            }
+        }
+        /// <summary>
+        /// 設定加速規濾波設定
+        /// </summary>
+        public clsEnum.Module_Setting_Enum.ODR ODR
+        {
+            set
+            {
+                setTaskObj.SettingItem = 3;
+                setTaskObj.SettingValue = value;
+                StartParamSetTaskAsync();
+            }
+            get
+            {
+                return module_base.module_settings.ODR;
+            }
+        }
+
+        public int AccDataRevTimeOut
+        {
+            set
+            {
+                try
+                {
+                    Int32.TryParse(value + "", out int _result);
+                    module_base.acc_data_rev_timeout = _result;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
+
+        public int ParamRWTimeOut
+        {
+            set
+            {
+                try
+                {
+                    Int32.TryParse(value + "", out int _result);
+                    module_base.fw_parm_rw_timeout = _result;
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
+        /// <summary>
+        /// 取得連線狀態
+        /// </summary>
+        public bool Connected
+        {
+            get
+            {
+                if (module_base.module_socket == null)
+                    return false;
+                return module_base.module_socket.Connected;
+            }
+        }
+
+        /// <summary>
+        /// 設定/取得感測器取樣頻率
+        /// </summary>
+        public double SamplingRate
+        {
+            get
+            {
+                return module_base.module_settings.sampling_rate_;
+            }
+            set
+            {
+                Freq_Vec = FreqVecCal();
+                module_base.module_settings.sampling_rate_ = value;
+                Sensor_Config_Save();
+            }
+        }
+        public bool WifiSensorUsing
+        {
+            set
+            {
+                module_base.module_settings.WifiControllUseHighSppedSensor = value;
+            }
+            get
+            {
+                return module_base.module_settings.WifiControllUseHighSppedSensor;
+            }
+        }
         public enum Enum_AccGetMethod
         {
             Auto, Manual
@@ -145,18 +396,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public Socket ModuleSocket
-        {
-            get
-            {
-                return module_base.module_socket;
-            }
-            set
-            {
-                module_base.module_socket = value;
-                SensorIP = GetIPFromSocketObj(value);
-            }
-        }
+
 
         private void UpdateParam()
         {
@@ -164,39 +404,6 @@ namespace gpm_vibration_module_api
             var cmd = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(param, 0, cmd, 1, param.Length);
             module_base.SendCommand(cmd, 8);
-        }
-
-        private class ClsParamSetTaskObj
-        {
-            public object SettingItem;
-            public object SettingValue;
-        }
-
-    
-
-
-        private int window_size = 512;
-        public int WindowSize
-        {
-            get
-            { return window_size; }
-            set
-            { window_size = value; }
-        }
-
-        /// <summary>
-        /// Sampling Rate計算結果儲存
-        /// </summary>
-        public struct Sampling_Rate_Cal_Result
-        {
-            public List<DataSet> Datasets_For_Cal;
-            public enum ERROR_CODE
-            {
-                DATA_LACK = 403, SETTING_ERROR = 404, OK = 0
-            }
-            public DateTime Test_Time;
-            public double[] Sampling_Rate;
-            public ERROR_CODE RESULT;
         }
 
         /// <summary>
@@ -253,54 +460,15 @@ namespace gpm_vibration_module_api
             KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
         }
 
-       
 
-        public bool WifiSensorUsing
-        {
-            set
-            {
-                module_base.module_settings.WifiControllUseHighSppedSensor = value;
-            }
-            get
-            {
-                return module_base.module_settings.WifiControllUseHighSppedSensor;
-            }
-        }
+
+
         public event Action<string> ConnectEvent;
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
 
-        public int AccDataRevTimeOut
-        {
-            set
-            {
-                try
-                {
-                    Int32.TryParse(value + "", out int _result);
-                    module_base.acc_data_rev_timeout = _result;
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
-            }
-        }
 
 
-        public int ParamRWTimeOut
-        {
-            set
-            {
-                try
-                {
-                    Int32.TryParse(value + "", out int _result);
-                    module_base.fw_parm_rw_timeout = _result;
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
-            }
-        }
+
 
         public async Task<int> Connect(bool IsSelfTest = false)
         {
@@ -392,7 +560,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        public bool IsDataHandShakeNormal { private set; get; }
+
 
 
         private byte GetByteValofMRDefine(clsEnum.Module_Setting_Enum.MEASURE_RANGE mr)
@@ -662,25 +830,7 @@ namespace gpm_vibration_module_api
             return 0;
         }
 
-        /// <summary>
-        /// 設定/取得量測範圍
-        /// </summary>
-        public clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange
-        {
-            internal set
-            {
-                setTaskObj = new ClsParamSetTaskObj
-                {
-                    SettingItem = 2,
-                    SettingValue = value
-                };
-                StartParamSetTaskAsync();
-            }
-            get
-            {
-                return module_base.module_settings.MeasureRange;
-            }
-        }
+
 
         public async Task<byte[]> ReadStval()
         {
@@ -690,142 +840,9 @@ namespace gpm_vibration_module_api
             await _ret;
             return _ret.Result;
         }
-        public int MeasureRange_IntType
-        {
 
-            set
-            {
-                //BULKBreak();
-                setTaskObj.SettingItem = 2;
-                switch (value)
-                {
-                    case 2:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                    break;
-                    case 4:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
-                    break;
-                    case 8:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
-                    break;
-                    case 16:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
-                    break;
-                    default:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                    break;
-                }
 
-                StartParamSetTaskAsync();
-            }
-            get
-            {
-                return 16384 / Convert.ToInt32(module_base.module_settings.MeasureRange) * 2;
-            }
-        }
 
-        /// <summary>
-        /// 設定/取得封包資料長度
-        /// </summary>
-        public clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength
-        {
-            internal set
-            {
-                //if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
-                //    return;
-                //setTaskObj.SettingItem = 1;
-                //setTaskObj.SettingValue = value;
-                //StartParamSetTaskAsync();
-                module_base.module_settings.DataLength = value;
-            }
-            get
-            {
-                return module_base.module_settings.DataLength;
-            }
-        }
-        /// <summary>
-        /// 設定/取得封包資料長度
-        /// </summary>
-        public int DataLength_IntType
-        {
-            set
-            {
-                if (SensorType != clsEnum.Module_Setting_Enum.SENSOR_TYPE.High)
-                    return;
-                setTaskObj.SettingItem = 1;
-                switch (value)
-                {
-                    case 512:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                    break;
-                    case 1024:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
-                    break;
-                    case 2048:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
-                    break;
-                    case 4096:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
-                    break;
-                    default:
-                    setTaskObj.SettingValue = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                    break;
-                }
-                StartParamSetTaskAsync();
-            }
-            get
-            {
-                return Convert.ToInt32(module_base.module_settings.DataLength);
-            }
-        }
-
-        /// <summary>
-        /// 設定感測器類型
-        /// </summary>
-        public clsEnum.Module_Setting_Enum.SENSOR_TYPE SensorType
-        {
-            internal set
-            {
-                setTaskObj.SettingItem = 0;
-                setTaskObj.SettingValue = value;
-                StartParamSetTaskAsync();
-            }
-            get
-            {
-                return module_base.module_settings.SensorType;
-            }
-        }
-        /// <summary>
-        /// 設定加速規濾波設定
-        /// </summary>
-        public clsEnum.Module_Setting_Enum.ODR ODR
-        {
-            set
-            {
-                setTaskObj.SettingItem = 3;
-                setTaskObj.SettingValue = value;
-                StartParamSetTaskAsync();
-            }
-            get
-            {
-                return module_base.module_settings.ODR;
-            }
-        }
-
-        /// <summary>
-        /// 取得連線狀態
-        /// </summary>
-        public bool Connected
-        {
-            get
-            {
-                if (module_base.module_socket == null)
-                    return false;
-                return module_base.module_socket.Connected;
-            }
-        }
-
-      
 
 
         public void StartDataRecieve(MeasureOption option)
@@ -842,7 +859,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        
+
         private void Module_base_DataReady(DataSet dataSet)
         {
             //Console.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.ffff"));
@@ -1006,7 +1023,7 @@ namespace gpm_vibration_module_api
 
         internal List<double> FreqVecCal()
         {
-            return FftSharp.Transform.FFTfreq(Convert.ToInt32(SamplingRate), Convert.ToInt32(DataLength)/2).ToList();
+            return FftSharp.Transform.FFTfreq(Convert.ToInt32(SamplingRate), Convert.ToInt32(DataLength) / 2).ToList();
         }
 
         private List<double> FreqVecCal(int FFTWindowSize)
@@ -1032,22 +1049,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        /// <summary>
-        /// 設定/取得感測器取樣頻率
-        /// </summary>
-        public double SamplingRate
-        {
-            get
-            {
-                return module_base.module_settings.sampling_rate_;
-            }
-            set
-            {
-                Freq_Vec = FreqVecCal();
-                module_base.module_settings.sampling_rate_ = value;
-                Sensor_Config_Save();
-            }
-        }
+
 
     }
 }
