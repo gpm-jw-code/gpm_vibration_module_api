@@ -432,7 +432,7 @@ namespace gpm_vibration_module_api
 
             //send_bytes[2] = GetByteValofDLDefine(module_base.module_settings.DataLength);
             send_bytes[1] = 0x01;
-            send_bytes[2] = 0x00;
+            send_bytes[2] = 0x00; //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[6] = 0x00;
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
 
@@ -942,8 +942,7 @@ namespace gpm_vibration_module_api
                     bool IsTimeout;
                     AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
                     DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                    module_base.isBusy = false;
-                    if (AccPacket.Length < Convert.ToInt32(clsEnum.Module_Setting_Enum.DATA_LENGTH.x1) * 6)
+                    if (AccPacket.Length < 3072)
                     {
                         DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                         WaitAsyncForGetDataTask.Set();
@@ -951,6 +950,7 @@ namespace gpm_vibration_module_api
                     }
                     ///
                     DataSetRet.AddData(ConvertToDataSet(AccPacket));
+
                 }
                 catch (SocketException exp)
                 {
@@ -998,7 +998,7 @@ namespace gpm_vibration_module_api
                 DataSetRet.Features.AccRMS.Y = Stastify.RMS(DataSetRet.AccData.Y);
                 DataSetRet.Features.AccRMS.Z = Stastify.RMS(DataSetRet.AccData.Z);
             }
-
+            module_base.isBusy = false;
             WaitAsyncForGetDataTask.Set();
         }
 
