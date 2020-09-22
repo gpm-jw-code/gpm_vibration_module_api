@@ -408,7 +408,11 @@ namespace gpm_vibration_module_api
             }
         }
 
-
+        /// <summary>
+        /// 成功切換回傳0 否則 Error code
+        /// </summary>
+        /// <param name="Mode"></param>
+        /// <returns></returns>
         public async Task<int> DAQModeSetting(DAQMode Mode)
         {
             if (Mode == module_base.module_settings.dAQMode)
@@ -419,7 +423,7 @@ namespace gpm_vibration_module_api
                if (ret2 == 0)
                {
                    SamplingRate = Convert.ToDouble(Mode);
-                   ACC_CONVERT_ALGRIUM = Mode == DAQMode.NonContinuous ? clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old : clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New;
+                   ACC_CONVERT_ALGRIUM = Mode == DAQMode.High_Sampling ? clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.Old : clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM.New;
                    module_base.module_settings.dAQMode = Mode;
                    Sensor_Config_Save();
                }
@@ -633,7 +637,7 @@ namespace gpm_vibration_module_api
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
             send_bytes[1] = 0x01;
-            send_bytes[2] = (byte) (module_base.module_settings.dAQMode == DAQMode.NonContinuous ? 0x00 : GetByteValofDLDefine(module_base.module_settings.DataLength)); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
+            send_bytes[2] = (byte) (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0x00 : GetByteValofDLDefine(module_base.module_settings.DataLength)); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
@@ -801,7 +805,7 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
-                if (module_base.module_settings.dAQMode == DAQMode.NonContinuous)
+                if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
             }
             catch (Exception ex)
@@ -843,7 +847,7 @@ namespace gpm_vibration_module_api
 
         public async Task<int> Data_Length_Setting(clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength)
         {
-            if (module_base.module_settings.dAQMode == DAQMode.Continuous)
+            if (module_base.module_settings.dAQMode == DAQMode.Low_Sampling)
             {
                 module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
                 {
@@ -985,7 +989,7 @@ namespace gpm_vibration_module_api
                 bool IsTimeout;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
                 DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.NonContinuous ? 3072 : Convert.ToInt32(DataLength) * 6))
+                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : Convert.ToInt32(DataLength) * 6))
                 {
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
@@ -1018,7 +1022,7 @@ namespace gpm_vibration_module_api
             //IsGetDataTaskPaused = false;
             DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
 
-            if (module_base.module_settings.dAQMode == DAQMode.NonContinuous)
+            if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                 while (DataSetCnt < ((int) DataLength / 512))
                 {
                     AccDataSetCreat();

@@ -30,7 +30,7 @@ namespace gpm_vibration_module_api
             bulk_request_pause_signal = new ManualResetEvent(true);
             wait_for_data_get_signal = new ManualResetEvent(true);
         }
-        internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.NonContinuous);
+        internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.High_Sampling);
 
         public Socket module_socket { get; internal set; }
         public bool is_bulk_break { get; private set; } = true;
@@ -561,7 +561,7 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = module_settings.dAQMode == DAQMode.NonContinuous ? 3072 : Convert.ToInt32(module_settings.DataLength) * 6;
+                var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : Convert.ToInt32(module_settings.DataLength) * 6;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
                 state = new SocketState()

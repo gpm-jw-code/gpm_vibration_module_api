@@ -10,7 +10,7 @@ namespace gpm_vibration_module_api.Module
     [Serializable]
     public class clsModuleSettings
     {
-        public DAQMode dAQMode = DAQMode.NonContinuous;
+        public DAQMode dAQMode = DAQMode.High_Sampling;
 
         public double sampling_rate_ = 5000;
 #if (ETH468)
@@ -103,7 +103,7 @@ namespace gpm_vibration_module_api.Module
                     default:
                     break;
                 }
-                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.NonContinuous ? 0x00 : byteval);
+                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.High_Sampling ? 0x00 : byteval);
                 pDataLength = value;
             }
         }

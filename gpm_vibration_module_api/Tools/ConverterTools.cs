@@ -52,7 +52,7 @@ namespace gpm_vibration_module_api.Tools
                     Gz.Add(bytesToDouble(AccPacket[(8 * i) + 4], AccPacket[(8 * i) + 5]) / LSB);
                 }
             }
-            else if (dAQMode == DAQMode.NonContinuous)
+            else if (dAQMode == DAQMode.High_Sampling)
             {
                 for (int i = 0; i < N; i++)
                 {
@@ -61,7 +61,7 @@ namespace gpm_vibration_module_api.Tools
                     Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i]) / LSB);
                 }
             }
-            else if (dAQMode ==  DAQMode.Continuous)
+            else if (dAQMode ==  DAQMode.Low_Sampling)
             {
                 for (int i = 0; i < N; i++)
                 {
