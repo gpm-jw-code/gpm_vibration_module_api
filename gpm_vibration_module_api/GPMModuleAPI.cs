@@ -689,6 +689,16 @@ namespace gpm_vibration_module_api
 
         private async Task<int> StartParamSetTaskAsync(bool IsNeedReboot = true)
         {
+
+            await Task.Run(() =>
+            {
+                ParameterWriteInFlagOn = true;
+                while (GetDataWaitFlagOn == false)
+                {
+                    Thread.Sleep(1);
+                    Console.WriteLine("等待GET DATA TASK 完成...");
+                }
+            });
             try
             {
                 module_base.acc_data_read_task_token_source.Cancel();
@@ -698,6 +708,7 @@ namespace gpm_vibration_module_api
                 var _ret = await Task.Run(() => ParamSetTask());
                 Sensor_Config_Save();
                 WaitAsyncForParametersSet.Set();
+                ParameterWriteInFlagOn = false;
                 return _ret;
             }
             catch (Exception ex)
@@ -927,6 +938,9 @@ namespace gpm_vibration_module_api
         {
             module_base.SendBulkDataStartCmd();
         }
+
+        private bool ParameterWriteInFlagOn = false;
+        private bool GetDataWaitFlagOn = false;
         /// <summary>
         /// 取得三軸加速度量測值
         /// </summary>
@@ -951,6 +965,18 @@ namespace gpm_vibration_module_api
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
             this.IsGetOtherFeatures = IsGetOtherFeatures;
+
+            await Task.Run(() =>
+            {
+                while (ParameterWriteInFlagOn)
+                {
+                    GetDataWaitFlagOn = true;
+                    Thread.Sleep(1);
+                    Console.WriteLine("GET DATA任務暫停中>>等待參數寫入任務完成");
+                }
+
+            });
+            GetDataWaitFlagOn = false;
             await Task.Run(() =>
             {
                 DataSetCnt = 0;//歸零
