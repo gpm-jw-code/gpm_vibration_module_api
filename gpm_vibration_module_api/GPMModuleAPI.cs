@@ -535,7 +535,7 @@ namespace gpm_vibration_module_api
             }
             try
             {
-
+                GetDataWaitFlagOn = true;
                 if (socket_conected_list.ContainsKey(IP))
                 {
                     Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Detect Connection already , do Disconnect()");
@@ -698,6 +698,7 @@ namespace gpm_vibration_module_api
                     Thread.Sleep(1);
                     Console.WriteLine("等待GET DATA TASK 完成...");
                 }
+                GetDataWaitFlagOn = true;
             });
             try
             {
@@ -853,6 +854,8 @@ namespace gpm_vibration_module_api
             };
             var ret = await StartParamSetTaskAsync(IsNeedReboot);
             module_base.module_settings.MeasureRange = ret == 0 ? MeasureRange : module_base.module_settings.MeasureRange;
+  
+
             return ret;
         }
 
@@ -940,7 +943,7 @@ namespace gpm_vibration_module_api
         }
 
         private bool ParameterWriteInFlagOn = false;
-        private bool GetDataWaitFlagOn = false;
+        private bool GetDataWaitFlagOn = true;
         /// <summary>
         /// 取得三軸加速度量測值
         /// </summary>
@@ -965,7 +968,7 @@ namespace gpm_vibration_module_api
             WaitAsyncForGetDataTask.Reset();
             this.IsGetFFT = IsGetFFT;
             this.IsGetOtherFeatures = IsGetOtherFeatures;
-
+           
             await Task.Run(() =>
             {
                 while (ParameterWriteInFlagOn)
@@ -976,11 +979,13 @@ namespace gpm_vibration_module_api
                 }
 
             });
-            GetDataWaitFlagOn = false;
+            
             await Task.Run(() =>
             {
+                GetDataWaitFlagOn = false;
                 DataSetCnt = 0;//歸零
                 GetDataTask();
+                GetDataWaitFlagOn = true;
             });
             WaitAsyncForGetDataTask.WaitOne();
             return DataSetRet;
@@ -1027,11 +1032,13 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException exp)
             {
+                GetDataWaitFlagOn = true;
                 if (DisconnectEvent != null)
                     DisconnectEvent.Invoke(DateTime.Now);
             }
             catch (Exception exp)
             {
+                GetDataWaitFlagOn = true;
                 DataSetRet.AccData.X.Clear();
                 DataSetRet.AccData.Y.Clear();
                 DataSetRet.AccData.Z.Clear();
