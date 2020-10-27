@@ -2,6 +2,8 @@
 //#define BR115200
 #define BR460800
 //#define BR921600
+#define KeyproEnable
+
 using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
 using System;
@@ -326,7 +328,7 @@ namespace gpm_vibration_module_api
             Auto, Manual
         }
 #if KeyproEnable
-        private clsEnum.KeyPro.KeyProExisStatus KeyProExisStatus = clsEnum.KeyPro.KeyProExisStatus.NoInsert;
+        private clsEnum.KeyPro.KEYPRO_EXIST_STATE KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
 #else
         private clsEnum.KeyPro.KEYPRO_EXIST_STATE KeyProExisStatus = clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
 

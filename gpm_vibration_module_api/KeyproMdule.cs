@@ -143,8 +143,8 @@ namespace gpm_vibration_module_api
             {
                 try
                 {
-                    Assembly A = Assembly.LoadFrom(".\\Rockey4SClass_x64.dll");
-                    Type AT = A.GetType("Rockey4SmartClass.Rockey4Smart");
+                    Assembly A = Assembly.LoadFrom("Rockey4SClass_x86.dll");
+                    Type AT = A.GetType("R4SmartClass.Rockey4S");
                     object o = System.Activator.CreateInstance(AT);
                     Type t = o.GetType();
                     MethodInfo MI = AT.GetMethod("Rockey");
@@ -176,14 +176,14 @@ namespace gpm_vibration_module_api
 #endif
                     if (0 != Convert.ToInt32(ret))
                     {
-                        return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
+                        return clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
                     }
                     else
-                        return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
+                        return clsEnum.KeyPro.KEYPRO_EXIST_STATE.Exist;
                 }
                 catch (Exception EXP)
                 {
-                    return gpm_vibration_module_api.clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
+                    return clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert;
                 }
             }
 
