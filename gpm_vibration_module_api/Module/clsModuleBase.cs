@@ -106,7 +106,9 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 byte[] ToWrite = new byte[11];
                 ToWrite[0] = 0x53;
-
+                ///強制寫DELAY TIME
+                ToWrite[7] = 0x00;
+                ToWrite[8] = 0x19;
                 ToWrite[9] = 0x0d;
                 ToWrite[10] = 0x0a;
                 Array.Copy(Parameters, 0, ToWrite, 1, Parameters.Length);

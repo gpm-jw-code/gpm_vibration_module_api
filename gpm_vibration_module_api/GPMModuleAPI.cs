@@ -640,6 +640,9 @@ namespace gpm_vibration_module_api
             send_bytes[2] = (byte) (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0x00 : GetByteValofDLDefine(module_base.module_settings.DataLength)); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
+            ///強制寫DELAY TIME
+            send_bytes[7] = 0x00;
+            send_bytes[8] = 0x19;
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
