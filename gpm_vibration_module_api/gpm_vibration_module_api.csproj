@@ -54,6 +54,7 @@
     <Compile Include="ClsParamSetTaskObj.cs" />
     <Compile Include="DAQMode.cs" />
     <Compile Include="DataSet.cs" />
+    <Compile Include="Enviroment.cs" />
     <Compile Include="FftSharp\Complex.cs" />
     <Compile Include="FftSharp\Experimental.cs" />
     <Compile Include="FftSharp\Pad.cs" />
