@@ -132,9 +132,9 @@ namespace gpm_vibration_module_api
         /// <param name="oDR"></param>
         /// <returns></returns>
         public Tuple<byte[], int> SettingToController(clsEnum.Module_Setting_Enum.SENSOR_TYPE? sensorType,
-            clsEnum.Module_Setting_Enum.DATA_LENGTH? dataLength,
+
             clsEnum.Module_Setting_Enum.MEASURE_RANGE? measureRange,
-            clsEnum.Module_Setting_Enum.ODR? oDR)
+            clsEnum.Module_Setting_Enum.ODR? oDR, int dataLength = -1)
         {
 
             Module.clsModuleSettings _UserSetting = new clsModuleSettings();
@@ -144,9 +144,9 @@ namespace gpm_vibration_module_api
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
             _UserSetting.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
-            _UserSetting.DataLength = dataLength != null ? (clsEnum.Module_Setting_Enum.DATA_LENGTH) dataLength : module_settings.DataLength;
-            _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE) measureRange : module_settings.MeasureRange;
-            _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR) oDR : module_settings.ODR;
+            _UserSetting.DataLength = dataLength != -1 ? dataLength : module_settings.DataLength;
+            _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE)measureRange : module_settings.MeasureRange;
+            _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : module_settings.ODR;
             var ParamReturn = WriteParameterToController(_UserSetting.ByteAryOfParameters, returnBytes);
             Console.WriteLine($"Controller Return:{ObjectAryToString(" ", ParamReturn)}");
             if (Is_PARAM_Return_Correct(_UserSetting.ByteAryOfParameters, ParamReturn))
@@ -227,61 +227,39 @@ namespace gpm_vibration_module_api
             //        break;
             //}
 
-            switch (DataLengthByte)
-            {
-                case 0x00:
-                module_settings.DataLength = module_settings.DataLength;
-                break;
-                case 0x01:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                break;
-                case 0x02:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x2;
-                break;
-                case 0x04:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x4;
-                break;
-                case 0x08:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x8;
-                break;
-                case 0x10:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x16;
-                break;
-                default:
-                module_settings.DataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
-                break;
-            }
+            module_settings.DataLength = DataLengthByte ==0? 1:(int)DataLengthByte;
+
 
             switch (ODRByte)
             {
                 case 0x9F:
-                module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
-                break;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
+                    break;
                 case 0x87:
-                module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._87;
-                break;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._87;
+                    break;
                 default:
-                module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
-                break;
+                    module_settings.ODR = clsEnum.Module_Setting_Enum.ODR._9F;
+                    break;
             }
 
             switch (MeasureRangeByte)
             {
                 case 0x00:
-                module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                break;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
                 case 0x10:
-                module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
-                break;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
+                    break;
                 case 0x20:
-                module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
-                break;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
+                    break;
                 case 0x30:
-                module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
-                break;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
+                    break;
                 default:
-                module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-                break;
+                    module_settings.MeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+                    break;
             }
 
             module_settings.ByteAryOfParameters = Parameters;
@@ -450,7 +428,7 @@ namespace gpm_vibration_module_api
         private void receiveCallBack_Bulk(IAsyncResult ar)
         {
             //如果是巨量暫停狀態，收到的東西都是設定的東西
-            BulkState = (SocketState) ar.AsyncState;
+            BulkState = (SocketState)ar.AsyncState;
             BulkState.async_result_ = ar;
             bulk_request_pause_signal.WaitOne();
             var client = BulkState.work_socket_;
@@ -561,7 +539,7 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : Convert.ToInt32(module_settings.DataLength) * 6;
+                var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : module_settings.DataLength * 3072;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
                 state = new SocketState()
@@ -674,7 +652,7 @@ namespace gpm_vibration_module_api
         private void receiveCallBack(IAsyncResult ar)
         {
             isBusy = true;
-            SocketState state = (SocketState) ar.AsyncState;
+            SocketState state = (SocketState)ar.AsyncState;
             try
             {
                 if (acc_data_read_task_token_source.IsCancellationRequested)
@@ -804,7 +782,7 @@ namespace gpm_vibration_module_api
         {
             Stopwatch COUNTER = new Stopwatch();
             COUNTER.Start();
-            SocketState state = (SocketState) _state;
+            SocketState state = (SocketState)_state;
             state.is_data_recieve_done_flag_ = false;
             state.is_data_recieve_timeout_ = false;
 

@@ -43,7 +43,7 @@ namespace gpm_vibration_module_api.Module
           public string ParametersStringType = "1,0,159,0,0,0,0,0";
 #endif
 
-        private clsEnum.Module_Setting_Enum.DATA_LENGTH pDataLength = clsEnum.Module_Setting_Enum.DATA_LENGTH.x1;
+        private int pDataLength = 1;
         private clsEnum.Module_Setting_Enum.MEASURE_RANGE pMeasureRange = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
         private clsEnum.Module_Setting_Enum.ODR pODR = clsEnum.Module_Setting_Enum.ODR._9F;
         private clsEnum.Module_Setting_Enum.SENSOR_TYPE pSensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
@@ -73,37 +73,16 @@ namespace gpm_vibration_module_api.Module
             }
         }
 
-        public clsEnum.Module_Setting_Enum.DATA_LENGTH DataLength
+
+
+
+
+        public int DataLength
         {
             get { return pDataLength; }
             set
             {
-
-                byte byteval = 0x00;
-                switch (value)
-                {
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.none:
-                    byteval = 0x00;
-                    break;
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x1:
-                    byteval = 0x01;
-                    break;
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x2:
-                    byteval = 0x02;
-                    break;
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x4:
-                    byteval = 0x04;
-                    break;
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x8:
-                    byteval = 0x08;
-                    break;
-                    case clsEnum.Module_Setting_Enum.DATA_LENGTH.x16:
-                    byteval = 0x10;
-                    break;
-                    default:
-                    break;
-                }
-                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.High_Sampling ? 0x00 : byteval);
+                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.High_Sampling ? 0x00 : value);
                 pDataLength = value;
             }
         }
