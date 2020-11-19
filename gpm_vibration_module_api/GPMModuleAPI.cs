@@ -411,10 +411,11 @@ namespace gpm_vibration_module_api
         }
 
         /// <summary>
-        /// 成功切換回傳0 否則 Error code
+        /// 設定DAQ擷取模式 
         /// </summary>
         /// <param name="Mode"></param>
-        /// <returns></returns>
+        /// <returns><para> 0: 切換成功   </para> <para> Others: Error Code </para></returns>
+        /// 
         public async Task<int> DAQModeSetting(DAQMode Mode)
         {
             if (Mode == module_base.module_settings.dAQMode)
@@ -446,7 +447,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="ref_Frq">參考激振源頻率</param>
         /// <param name="Period">測試秒數</param>
-        /// <returns></returns>
+        /// <returns><para> 0: 切換成功   </para> <para> Others: Error Code </para></returns>
         public async Task<Sampling_Rate_Cal_Result> Start_Sampling_Rate_Calculate(double ref_Frq, int Period)
         {
 
@@ -516,7 +517,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
-        /// <returns></returns>
+        /// <returns><para> 0: 連線成功   </para> <para> Others: Error Code </para></returns>
         public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
         {
             Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
@@ -661,7 +662,7 @@ namespace gpm_vibration_module_api
                 var PARAM = _return2;
                 //module_base.CheckParamIllegeAndFixIt(ref PARAM);
                 module_base.DefineSettingByParameters(PARAM);
-                Freq_Vec = FreqVecCal(module_base.module_settings.DataLength*512 / 2);
+                Freq_Vec = FreqVecCal(module_base.module_settings.DataLength * 512 / 2);
                 return true;
             }
         }
@@ -850,6 +851,12 @@ namespace gpm_vibration_module_api
             //SamplingRate = Convert.ToDouble(_settings.sampling_rate_of_vibration_sensor);
         }
 
+        /// <summary>
+        /// 設定量測範圍
+        /// </summary>
+        /// <param name="MeasureRange"> 量測範圍列舉</param>
+        /// <param name="IsNeedReboot">是否要重新啟動模組</param>
+        /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
         public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange, bool IsNeedReboot = true)
         {
             module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
@@ -867,22 +874,24 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 設定資料擷取倍率
         /// </summary>
-        /// <param name="xN">資料倍率</param>
-        /// <returns></returns>
-        public async Task<int> Data_Length_Setting(int xN)
+        /// <param name="N">資料倍率,必須為2的指數</param>
+        /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
+        public async Task<int> Data_Length_Setting(int N)
         {
+            if (!GpmMath.Numeric.Tools.IsPowerOf2(N)) 
+                return Convert.ToInt32(clsErrorCode.Error.DATA_LENGTH_SETTING_VALUE_ILLEGAL);
             if (module_base.module_settings.dAQMode == DAQMode.Low_Sampling)
             {
                 module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
                 {
                     SettingItem = 1,
-                    SettingValue = xN
+                    SettingValue = N
                 };
                 var ret = await StartParamSetTaskAsync();
-                module_base.module_settings.DataLength = ret == 0 ? xN : module_base.module_settings.DataLength;
+                module_base.module_settings.DataLength = ret == 0 ? N : module_base.module_settings.DataLength;
             }
             else
-                this.DataLength = xN;
+                this.DataLength = N;
             Freq_Vec = FreqVecCal();
             return 0;
         }
@@ -1024,7 +1033,7 @@ namespace gpm_vibration_module_api
 
             return DataSetRet;
         }
-        public void AccDataSetCreat()
+        public void GenOneAccDataObject()
         {
             try
             {
@@ -1070,12 +1079,12 @@ namespace gpm_vibration_module_api
             if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                 while (DataSetCnt < ((int)DataLength))
                 {
-                    AccDataSetCreat();
+                    GenOneAccDataObject();
                     DataSetCnt++;
                     Thread.Sleep(50);
                 }
             else
-                AccDataSetCreat();
+                GenOneAccDataObject();
             if (IsGetFFT && Numeric.Tools.IsPowerOf2(DataSetRet.AccData.X.Count))
             {
                 DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
@@ -1087,10 +1096,10 @@ namespace gpm_vibration_module_api
                 DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
 
                 DataSetRet.FFTData.FreqVec = Freq_Vec;
-                int melBinCount = 30;
-                DataSetRet.MelBankData.X = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.X.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
-                DataSetRet.MelBankData.Y = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Y.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
-                DataSetRet.MelBankData.Z = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Z.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
+                //int melBinCount = 30;
+                //DataSetRet.MelBankData.X = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.X.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
+                //DataSetRet.MelBankData.Y = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Y.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
+                //DataSetRet.MelBankData.Z = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Z.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
 
             }
 
@@ -1117,7 +1126,7 @@ namespace gpm_vibration_module_api
 
         internal List<double> FreqVecCal()
         {
-            return FftSharp.Transform.FFTfreq(Convert.ToInt32(SamplingRate),DataLength*512 / 2).ToList();
+            return FftSharp.Transform.FFTfreq(Convert.ToInt32(SamplingRate), DataLength * 512 / 2).ToList();
         }
 
         private List<double> FreqVecCal(int FFTWindowSize)

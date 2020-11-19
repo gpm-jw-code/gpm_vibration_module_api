@@ -21,7 +21,8 @@ namespace gpm_vibration_module_api
             SelfTestFail = 1506,
             ModuleIsBusy = 16607,
             ERROR_PARAM_RETURN_FROM_CONTROLLER = 16608,
-            SYSTEM_ERROR = 144444
+            SYSTEM_ERROR = 144444,
+            DATA_LENGTH_SETTING_VALUE_ILLEGAL = 144445
         }
 
     }
