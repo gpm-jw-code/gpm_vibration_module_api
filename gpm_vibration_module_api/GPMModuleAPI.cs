@@ -878,7 +878,10 @@ namespace gpm_vibration_module_api
         /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
         public async Task<int> Data_Length_Setting(int N)
         {
-            if (!GpmMath.Numeric.Tools.IsPowerOf2(N)) 
+
+
+
+            if (!GpmMath.Numeric.Tools.IsPowerOf2(N) | N > 64)
                 return Convert.ToInt32(clsErrorCode.Error.DATA_LENGTH_SETTING_VALUE_ILLEGAL);
             if (module_base.module_settings.dAQMode == DAQMode.Low_Sampling)
             {

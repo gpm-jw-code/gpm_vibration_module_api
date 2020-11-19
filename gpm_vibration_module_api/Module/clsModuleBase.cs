@@ -16,7 +16,7 @@ namespace gpm_vibration_module_api
     /// </summary>
     internal class ClsModuleBase
     {
-        internal int acc_data_rev_timeout = 8000; //unit: ms
+        internal int acc_data_rev_timeout = 48000; //unit: ms
         internal int fw_parm_rw_timeout = 5000; //unit: ms
         public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
         private ManualResetEvent pause_signal;

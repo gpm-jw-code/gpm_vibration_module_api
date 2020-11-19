@@ -22,7 +22,7 @@ namespace gpm_vibration_module_api.Tools
         /// </summary>
         /// <param name="AccPacket"></param>
         /// <returns></returns>
-        internal static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
         {
             //Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
             var N = AccPacket.Length / 6;
