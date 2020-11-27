@@ -16,7 +16,7 @@ namespace gpm_vibration_module_api
     /// </summary>
     internal class ClsModuleBase
     {
-        internal int acc_data_rev_timeout = 48000; //unit: ms
+        internal int acc_data_rev_timeout = 8000; //unit: ms
         internal int fw_parm_rw_timeout = 5000; //unit: ms
         public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
         private ManualResetEvent pause_signal;
@@ -553,7 +553,8 @@ namespace gpm_vibration_module_api
                     is_data_recieve_done_flag_ = false,
                     time_spend_ = -1,
                 };
-                Tools.Logger.Event_Log.Log($"receiveCallBack_begining.");
+                Tools.Logger.Event_Log.Log($"receiveCallBack_begining."+$"window_size_ {Datalength}" +
+                    $"buffer_size_ {Datalength}");
                 module_socket.BeginReceive(state.buffer_, 0, state.buffer_size_, 0, new AsyncCallback(receiveCallBack), state);
                 var task = Task.Run(() => TimeoutCheck(state));
                 WaitForBufferRecieveDone.WaitOne();
@@ -564,6 +565,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception exp)
             {
+                Tools.Logger.Code_Error_Log.Log(exp);
                 isBusy = false;
                 state.is_data_recieve_done_flag_ = true;
                 timespend = -1;
@@ -651,6 +653,7 @@ namespace gpm_vibration_module_api
         private ManualResetEvent WaitForBufferRecieveDone;
         private void receiveCallBack(IAsyncResult ar)
         {
+            Tools.Logger.Event_Log.Log($"receiveCallBack process");
             isBusy = true;
             SocketState state = (SocketState)ar.AsyncState;
             try
@@ -659,6 +662,7 @@ namespace gpm_vibration_module_api
                     acc_data_read_task_token_source.Token.ThrowIfCancellationRequested();
                 var client = state.work_socket_;
                 int bytesRead = client.EndReceive(ar);
+                Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead}");
                 if (bytesRead > 0)
                 {
 
@@ -697,12 +701,16 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException ex)
             {
+                throw ex;
+                Tools.Logger.Event_Log.Log($"[receiveCallBack_SocketException] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] SocketException {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
             }
             catch (Exception ex)
             {
+                throw ex;
+                Tools.Logger.Event_Log.Log($"[receiveCallBack_Exception] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();

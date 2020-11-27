@@ -876,7 +876,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="N">資料倍率,必須為2的指數</param>
         /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Data_Length_Setting(int N)
+        public async Task<int> Data_Length_Setting(int N, bool IsNeedReboot = true)
         {
 
 
@@ -890,7 +890,7 @@ namespace gpm_vibration_module_api
                     SettingItem = 1,
                     SettingValue = N
                 };
-                var ret = await StartParamSetTaskAsync();
+                var ret = await StartParamSetTaskAsync(IsNeedReboot);
                 module_base.module_settings.DataLength = ret == 0 ? N : module_base.module_settings.DataLength;
             }
             else
@@ -995,8 +995,16 @@ namespace gpm_vibration_module_api
 
             await Task.Run(() =>
             {
+                var t = 0;
                 while (ParameterWriteInFlagOn)
                 {
+                    if (t > 5000)
+                    {
+                        Tools.Logger.Event_Log.Log("ParameterWriteInFlagOn 等待逾時");
+                        GetDataWaitFlagOn = false;
+                        ParameterWriteInFlagOn = false;
+                        break;
+                    }
                     GetDataWaitFlagOn = true;
                     Thread.Sleep(1);
                     Console.WriteLine("GET DATA任務暫停中>>等待參數寫入任務完成");
@@ -1007,7 +1015,7 @@ namespace gpm_vibration_module_api
             await Task.Run(() =>
             {
                 GetDataWaitFlagOn = false;
-                DataSetCnt = 0;//歸零
+
                 GetDataTask();
                 GetDataWaitFlagOn = true;
             });
@@ -1046,6 +1054,7 @@ namespace gpm_vibration_module_api
                 DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
                 {
+                    Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
                     return;
@@ -1056,12 +1065,14 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException exp)
             {
+                Tools.Logger.Code_Error_Log.Log(exp);
                 GetDataWaitFlagOn = true;
                 if (DisconnectEvent != null)
                     DisconnectEvent.Invoke(DateTime.Now);
             }
             catch (Exception exp)
             {
+                Tools.Logger.Code_Error_Log.Log(exp);
                 GetDataWaitFlagOn = true;
                 DataSetRet.AccData.X.Clear();
                 DataSetRet.AccData.Y.Clear();
@@ -1078,14 +1089,19 @@ namespace gpm_vibration_module_api
             //WaitAsyncForParametersSet.WaitOne();
             //IsGetDataTaskPaused = false;
             DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
-
             if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
-                while (DataSetCnt < ((int)DataLength))
+            {
+                DataSetCnt = 0;//歸零
+                Tools.Logger.Event_Log.Log($"Aim:{DataLength}");
+                while (DataSetCnt < DataLength)
                 {
+                    Tools.Logger.Event_Log.Log($"GenOneAccDataObject:{DataSetCnt}");
                     GenOneAccDataObject();
                     DataSetCnt++;
+                    Tools.Logger.Event_Log.Log($"ACQ Process:{DataSetCnt}/{DataLength}");
                     Thread.Sleep(50);
                 }
+            }
             else
                 GenOneAccDataObject();
             if (IsGetFFT && Numeric.Tools.IsPowerOf2(DataSetRet.AccData.X.Count))

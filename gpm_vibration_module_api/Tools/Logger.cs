@@ -12,7 +12,7 @@ namespace gpm_vibration_module_api.Tools
     {
         public static EventLog Event_Log = new EventLog();
         public static CodeErrorLog Code_Error_Log = new CodeErrorLog();
-        
+
 
         public class EventLog : LogFun
         {
@@ -38,8 +38,12 @@ namespace gpm_vibration_module_api.Tools
 
             public override void Log(string content)
             {
-                Console.WriteLine("***CODE ERROR >>>"+content);
+                Console.WriteLine("***CODE ERROR >>>" + content);
                 base.Log(content);
+            }
+            public void Log(Exception ex)
+            {
+                base.Log($"{ex.Message} { ex.StackTrace}");
             }
         }
     }
