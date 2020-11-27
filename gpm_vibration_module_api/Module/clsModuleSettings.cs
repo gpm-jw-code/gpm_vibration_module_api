@@ -4,12 +4,40 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using static gpm_vibration_module_api.ClsModuleBase;
 
 namespace gpm_vibration_module_api.Module
 {
     [Serializable]
     public class clsModuleSettings
     {
+
+        public int Packet_Receive_Size
+        {
+            get
+            {
+                return SocketState.Packet_Receive_Size;
+            }
+            set
+            {
+                SocketState.Packet_Receive_Size = value;
+            }
+        }
+
+        public int MCU_Delay_tune
+        {
+            get
+            {
+                return ClsModuleBase.delay_;
+            }
+            set
+            {
+                ClsModuleBase.delay_ = value;
+            }
+        }
+
+
+
         public DAQMode dAQMode = DAQMode.High_Sampling;
 
         public double sampling_rate_ = 5000;
@@ -58,13 +86,13 @@ namespace gpm_vibration_module_api.Module
                 switch (value)
                 {
                     case clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal:
-                    byteval = 0x01;
-                    break;
+                        byteval = 0x01;
+                        break;
                     case clsEnum.Module_Setting_Enum.SENSOR_TYPE.High:
-                    byteval = 0x02;
-                    break;
+                        byteval = 0x02;
+                        break;
                     default:
-                    break;
+                        break;
                 }
                 var b = ByteAryOfParameters;
                 b[0] = byteval;
@@ -82,7 +110,7 @@ namespace gpm_vibration_module_api.Module
             get { return pDataLength; }
             set
             {
-                ByteAryOfParameters[1] = (byte) (dAQMode == DAQMode.High_Sampling ? 0x00 : value);
+                ByteAryOfParameters[1] = (byte)(dAQMode == DAQMode.High_Sampling ? 0x00 : value);
                 pDataLength = value;
             }
         }
@@ -91,7 +119,7 @@ namespace gpm_vibration_module_api.Module
             get { return pODR; }
             set
             {
-                byte byteval = (byte) value;
+                byte byteval = (byte)value;
                 ByteAryOfParameters[2] = byteval;
                 pODR = value;
             }
@@ -105,17 +133,17 @@ namespace gpm_vibration_module_api.Module
                 switch (value)
                 {
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G:
-                    byteval = 0x00;
-                    break;
+                        byteval = 0x00;
+                        break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G:
-                    byteval = 0x10;
-                    break;
+                        byteval = 0x10;
+                        break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G:
-                    byteval = 0x20;
-                    break;
+                        byteval = 0x20;
+                        break;
                     case clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G:
-                    byteval = 0x30;
-                    break;
+                        byteval = 0x30;
+                        break;
                 }
                 ByteAryOfParameters[3] = byteval;
                 pMeasureRange = value;
@@ -146,7 +174,7 @@ namespace gpm_vibration_module_api.Module
                 formatter.Serialize(stream, obj);
                 stream.Position = 0;
 
-                return (T) formatter.Deserialize(stream);
+                return (T)formatter.Deserialize(stream);
             }
         }
     }

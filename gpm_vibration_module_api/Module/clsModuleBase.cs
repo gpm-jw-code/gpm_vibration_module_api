@@ -16,26 +16,24 @@ namespace gpm_vibration_module_api
     /// </summary>
     internal class ClsModuleBase
     {
-        internal int acc_data_rev_timeout = 8000; //unit: ms
-        internal int fw_parm_rw_timeout = 5000; //unit: ms
+        public Socket module_socket { get; internal set; }
+        public bool is_bulk_break { get; private set; } = true;
         public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
         private ManualResetEvent pause_signal;
         private bool is_pause_ready = true;
+        private string ip;
+        private int port;
+        internal static int delay_ = 1;
+        internal int acc_data_rev_timeout = 8000; //unit: ms
+        internal int fw_parm_rw_timeout = 5000; //unit: ms
         internal bool is_old_firmware_using = false;
+        internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.High_Sampling);
         public ClsModuleBase()
         {
             pause_signal = new ManualResetEvent(true);
             bulk_request_pause_signal = new ManualResetEvent(true);
             wait_for_data_get_signal = new ManualResetEvent(true);
         }
-        internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.High_Sampling);
-
-        public Socket module_socket { get; internal set; }
-        public bool is_bulk_break { get; private set; } = true;
-
-        private string ip;
-        private int port;
-
 
         public async Task<int> Connect()
         {
@@ -106,7 +104,7 @@ namespace gpm_vibration_module_api
                 ToWrite[0] = 0x53;
                 ///強制寫DELAY TIME
                 ToWrite[7] = 0x00;
-                ToWrite[8] = 0x19;
+                ToWrite[8] = Convert.ToByte(delay_);
                 ToWrite[9] = 0x0d;
                 ToWrite[10] = 0x0a;
                 Array.Copy(Parameters, 0, ToWrite, 1, Parameters.Length);
@@ -227,7 +225,7 @@ namespace gpm_vibration_module_api
             //        break;
             //}
 
-            module_settings.DataLength = DataLengthByte ==0? 1:(int)DataLengthByte;
+            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte;
 
 
             switch (ODRByte)
@@ -278,10 +276,10 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="Timespend">傳回耗時</param>
         /// <returns></returns>
-        private class SocketState
+        internal class SocketState
         {
             public Socket work_socket_ = null;
-            public int buffer_size_ = 256;
+            public static int Packet_Receive_Size = 256;
             public byte[] buffer_;
             public int window_size_ = 512;
             public StringBuilder string_builder_ = new StringBuilder();
@@ -336,8 +334,8 @@ namespace gpm_vibration_module_api
             if (THBulkProcess == null)
             {
                 Task.Run(() => BulkBufferProcess());
-                BulkState = new SocketState() { buffer_ = new byte[800000], work_socket_ = module_socket, buffer_size_ = 800000, window_size_ = option.WindowSize, task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data };
-                module_socket.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
+                BulkState = new SocketState() { buffer_ = new byte[800000], work_socket_ = module_socket, window_size_ = option.WindowSize, task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data };
+                module_socket.BeginReceive(BulkState.buffer_, 0, SocketState.Packet_Receive_Size, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
             Bulk_Buffer.Clear();
             Tools.Logger.Event_Log.Log($"[StartGetData_Bulk] Send:{clsEnum.ControllerCommand.BULKVALUE + "\r\n"}");
@@ -461,7 +459,7 @@ namespace gpm_vibration_module_api
             }
             try
             {
-                client.BeginReceive(BulkState.buffer_, 0, BulkState.buffer_size_, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
+                client.BeginReceive(BulkState.buffer_, 0, SocketState.Packet_Receive_Size, 0, new AsyncCallback(receiveCallBack_Bulk), BulkState);
             }
             catch (Exception exp)
             {
@@ -547,15 +545,15 @@ namespace gpm_vibration_module_api
                     window_size_ = Datalength,
                     buffer_ = new byte[Datalength],
                     work_socket_ = module_socket,
-                    buffer_size_ = Datalength,
+                    //buffer_size_ = Datalength / 512,
                     task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data,
                     data_rev_ = new byte[Datalength],
                     is_data_recieve_done_flag_ = false,
                     time_spend_ = -1,
                 };
-                Tools.Logger.Event_Log.Log($"receiveCallBack_begining."+$"window_size_ {Datalength}" +
+                Tools.Logger.Event_Log.Log($"receiveCallBack_begining." + $"window_size_ {Datalength}" +
                     $"buffer_size_ {Datalength}");
-                module_socket.BeginReceive(state.buffer_, 0, state.buffer_size_, 0, new AsyncCallback(receiveCallBack), state);
+                module_socket.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0, new AsyncCallback(receiveCallBack), state);
                 var task = Task.Run(() => TimeoutCheck(state));
                 WaitForBufferRecieveDone.WaitOne();
                 timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
@@ -578,7 +576,7 @@ namespace gpm_vibration_module_api
 
 
 
-        private enum TIMEOUT_CHEK_ITEM
+        internal enum TIMEOUT_CHEK_ITEM
         {
             Read_Acc_Data, FW_Param_RW
         }
@@ -662,10 +660,9 @@ namespace gpm_vibration_module_api
                     acc_data_read_task_token_source.Token.ThrowIfCancellationRequested();
                 var client = state.work_socket_;
                 int bytesRead = client.EndReceive(ar);
-                Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead}");
+                //Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead}");
                 if (bytesRead > 0)
                 {
-
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
@@ -675,19 +672,18 @@ namespace gpm_vibration_module_api
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         WaitForBufferRecieveDone.Set();
                         state.is_data_recieve_done_flag_ = true;
-
                     }
                     else
                     {
                         state.is_data_recieve_done_flag_ = false;
-                        client.BeginReceive(state.buffer_, 0, state.buffer_size_, 0,
+                        client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,
                              new AsyncCallback(receiveCallBack), state);
                     }
                 }
                 else
                 {
-                    Tools.Logger.Event_Log.Log($"封包接收,大小:{0}");
-                    client.BeginReceive(state.buffer_, 0, state.buffer_size_, 0,
+                    //Tools.Logger.Event_Log.Log($"封包接收,大小:{0}");
+                    client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,
                             new AsyncCallback(receiveCallBack), state);
                 }
 
@@ -701,7 +697,7 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException ex)
             {
-                throw ex;
+                //throw ex;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_SocketException] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] SocketException {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
@@ -709,7 +705,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception ex)
             {
-                throw ex;
+                //throw ex;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_Exception] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;

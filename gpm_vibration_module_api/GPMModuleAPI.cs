@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using FftSharp;
+using static gpm_vibration_module_api.ClsModuleBase;
 
 namespace gpm_vibration_module_api
 {
@@ -322,6 +323,31 @@ namespace gpm_vibration_module_api
             }
         }
         #endregion
+
+
+        public int Buffer_size
+        {
+            get
+            {
+                return SocketState.Packet_Receive_Size;
+            }
+            set
+            {
+                SocketState.Packet_Receive_Size = value;
+            }
+        }
+
+        public int Delay_Fine_tune
+        {
+            set
+            {
+                ClsModuleBase.delay_ = value;
+            }
+            get
+            {
+                return ClsModuleBase.delay_;
+            }
+        }
 
         public enum Enum_AccGetMethod
         {
@@ -645,7 +671,7 @@ namespace gpm_vibration_module_api
             send_bytes[6] = 0x00;
             ///強制寫DELAY TIME
             send_bytes[7] = 0x00;
-            send_bytes[8] = 0x19;
+            send_bytes[8] = Convert.ToByte(Delay_Fine_tune);
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
