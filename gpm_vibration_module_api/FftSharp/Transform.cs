@@ -218,7 +218,7 @@ namespace FftSharp
 
             double[] output = FFTmagnitude(input);
             if (IsdBUnit)
-                for (int i = 0; i < output.Length; i++)
+                for (int i = 1; i < output.Length; i++)
                     output[i] = 2 * 10 * Math.Log10(output[i]);
            
             return output;

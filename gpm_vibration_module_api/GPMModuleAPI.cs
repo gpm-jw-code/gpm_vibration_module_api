@@ -1044,7 +1044,6 @@ namespace gpm_vibration_module_api
             await Task.Run(() =>
             {
                 GetDataWaitFlagOn = false;
-
                 GetDataTask();
                 GetDataWaitFlagOn = true;
             });
@@ -1139,11 +1138,27 @@ namespace gpm_vibration_module_api
                 DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
                 DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
 
+                //var psdX = Transform.FFTpower(DataSetRet.AccData.X, false);
+                //psdX.RemoveAt(0);
+                //var psdY = Transform.FFTpower(DataSetRet.AccData.Y, false);
+                //psdY.RemoveAt(0);
+                //var psdZ = Transform.FFTpower(DataSetRet.AccData.Z, false);
+                //psdZ.RemoveAt(0);
+
+                //psdX[psdX.Count - 1] = 0;
+                //psdY[psdY.Count - 1] = 0;
+                //psdZ[psdZ.Count - 1] = 0;
+
+                //DataSetRet.FFTData.X = psdX;
+                //DataSetRet.FFTData.Y = psdY;
+                //DataSetRet.FFTData.Z = psdZ;
+
                 DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
                 DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
                 DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
 
                 DataSetRet.FFTData.FreqVec = Freq_Vec;
+
                 //int melBinCount = 30;
                 //DataSetRet.MelBankData.X = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.X.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();
                 //DataSetRet.MelBankData.Y = Transform.MelScale(Transform.FFTmagnitude(DataSetRet.AccData.Y.ToArray()), Convert.ToInt32(SamplingRate), melBinCount).ToList();

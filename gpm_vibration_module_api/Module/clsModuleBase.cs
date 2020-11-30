@@ -666,8 +666,10 @@ namespace gpm_vibration_module_api
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
+                    Console.WriteLine(state.temp_rev_data.Count);
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
+                       
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         WaitForBufferRecieveDone.Set();
