@@ -334,6 +334,7 @@ namespace gpm_vibration_module_api
             set
             {
                 SocketState.Packet_Receive_Size = value;
+                Sensor_Config_Save();
             }
         }
 
@@ -342,6 +343,7 @@ namespace gpm_vibration_module_api
             set
             {
                 ClsModuleBase.delay_ = value;
+                Sensor_Config_Save();
             }
             get
             {
@@ -546,6 +548,7 @@ namespace gpm_vibration_module_api
         /// <returns><para> 0: 連線成功   </para> <para> Others: Error Code </para></returns>
         public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
         {
+            IP = IP.Replace(" ", "");
             Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
             if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
             {
