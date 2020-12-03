@@ -46,6 +46,11 @@ namespace gpm_vibration_module_api.Module
 #else
          private byte[] byteAryOfParameters = new byte[] { 0x01, 0x01, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #endif
+
+        /// <summary>
+        /// 額外多收的資料量(單位3072)
+        /// </summary>
+        public int comp_len = 0;
         public byte[] ByteAryOfParameters
         {
             set

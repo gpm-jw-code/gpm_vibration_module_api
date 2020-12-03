@@ -106,6 +106,22 @@ namespace gpm_vibration_module_api
             }
         }
 
+
+        public int PacketNumComp
+        {
+            get
+            {
+                return module_base.module_settings.comp_len;
+            }
+            set
+            {
+                module_base.module_settings.comp_len = value;
+                Sensor_Config_Save();
+            }
+        }
+
+
+
         public int WindowSize
         {
             get
@@ -856,7 +872,7 @@ namespace gpm_vibration_module_api
                     Sensor_Config_Save();
                 }
                 if ((module_base.module_settings.DataLength & 2) != 0)
-                    module_base.module_settings.DataLength -= module_base.comp_len;
+                    module_base.module_settings.DataLength -= module_base.module_settings.comp_len;
                 if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = 1;
             }

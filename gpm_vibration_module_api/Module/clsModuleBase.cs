@@ -24,11 +24,8 @@ namespace gpm_vibration_module_api
         private string ip;
         private int port;
 
-        /// <summary>
-        /// 額外多收的資料量(單位3072)
-        /// </summary>
-        internal int comp_len = 1;
-        internal static int delay_ = 1;
+
+        internal static int delay_ = 30;
         internal int acc_data_rev_timeout = 8000; //unit: ms
         internal int fw_parm_rw_timeout = 5000; //unit: ms
         internal bool is_old_firmware_using = false;
@@ -154,7 +151,7 @@ namespace gpm_vibration_module_api
             _UserSetting.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
             var comp = 0;
             if (dataLength >= 16)
-                comp = comp_len;
+                comp = module_settings.comp_len;
             _UserSetting.DataLength = dataLength != -1 ? dataLength + comp : module_settings.DataLength + comp;
             _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE)measureRange : module_settings.MeasureRange;
             _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : module_settings.ODR;
@@ -239,7 +236,7 @@ namespace gpm_vibration_module_api
             //}
 
 
-            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte - (DataLengthByte >= 16 ?   comp_len:0);
+            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte - (DataLengthByte >= 16 ?  module_settings.comp_len:0);
 
 
             switch (ODRByte)
@@ -374,7 +371,7 @@ namespace gpm_vibration_module_api
         private void SendBulkBreakCmd()
         {
             bulk_request_pause_signal.Reset();
-            var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKBREAK + "\r\n");
+            var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKBREAK.ToString() + "\r\n");
             try
             {
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
@@ -683,7 +680,7 @@ namespace gpm_vibration_module_api
                     Console.WriteLine(state.temp_rev_data.Count);
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
-
+                        SendBulkBreakCmd();
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         WaitForBufferRecieveDone.Set();
@@ -713,7 +710,7 @@ namespace gpm_vibration_module_api
             }
             catch (SocketException ex)
             {
-                //throw ex;
+                state.is_data_recieve_done_flag_ = true;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_SocketException] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] SocketException {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
@@ -721,11 +718,12 @@ namespace gpm_vibration_module_api
             }
             catch (Exception ex)
             {
-                //throw ex;
+                state.is_data_recieve_done_flag_ = true;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_Exception] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
+              
             }
             //            AccDataBuffer.AddRange(state.buffer);
         }
