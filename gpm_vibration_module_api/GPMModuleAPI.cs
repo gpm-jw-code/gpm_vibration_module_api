@@ -669,12 +669,15 @@ namespace gpm_vibration_module_api
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
             send_bytes[1] = 0x01;
-            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
+            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength+1); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
             ///強制寫DELAY TIME
             send_bytes[7] = 0x00;
             send_bytes[8] = Convert.ToByte(Delay_Fine_tune);
+
+
+
             Tools.Logger.Event_Log.Log($"[SelfTEst] Write..{ClsModuleBase.ObjectAryToString(",", send_bytes)}");
             var _return1 = await module_base.SendCommand(send_bytes, 8); //Cover控制器在Socket連線後第一次寫參數會回傳錯的值
             var _return2 = await module_base.SendCommand(send_bytes, 8);
@@ -852,6 +855,7 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
+                module_base.module_settings.DataLength -= module_base.comp_len;
                 if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = 1;
             }
@@ -1022,7 +1026,7 @@ namespace gpm_vibration_module_api
             this.IsGetFFT = IsGetFFT;
             this.IsGetOtherFeatures = IsGetOtherFeatures;
 
-            await Task.Run(() =>
+           Thread th = new Thread (() =>
             {
                 var t = 0;
                 while (ParameterWriteInFlagOn)
@@ -1079,14 +1083,18 @@ namespace gpm_vibration_module_api
                 byte[] AccPacket;
                 bool IsTimeout;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                
                 DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
                 {
+                    
                     Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
                     return;
                 }
+                module_base.state = null;
+                module_base.SocketBufferClear();
                 ///
                 DataSetRet.AddData(ConvertToDataSet(AccPacket));
 
@@ -1127,7 +1135,7 @@ namespace gpm_vibration_module_api
                     GenOneAccDataObject();
                     DataSetCnt++;
                     Tools.Logger.Event_Log.Log($"ACQ Process:{DataSetCnt}/{DataLength}");
-                    Thread.Sleep(50);
+                    Thread.Sleep(1);
                 }
             }
             else

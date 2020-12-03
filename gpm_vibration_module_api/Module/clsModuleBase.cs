@@ -23,10 +23,16 @@ namespace gpm_vibration_module_api
         private bool is_pause_ready = true;
         private string ip;
         private int port;
+
+        /// <summary>
+        /// 額外多收的資料量(單位3072)
+        /// </summary>
+        internal int comp_len = 1;
         internal static int delay_ = 1;
         internal int acc_data_rev_timeout = 8000; //unit: ms
         internal int fw_parm_rw_timeout = 5000; //unit: ms
         internal bool is_old_firmware_using = false;
+
         internal ClsParamSetTaskObj setTaskObj = new ClsParamSetTaskObj(DAQMode.High_Sampling);
         public ClsModuleBase()
         {
@@ -51,8 +57,12 @@ namespace gpm_vibration_module_api
                 port = ModulePort;
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 module_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                module_socket.ReceiveBufferSize = 655350;
+                module_socket.ReceiveBufferSize =100000;
+                module_socket.DontFragment = false;
                 module_socket.ReceiveTimeout = 30000;
+                module_socket.Ttl = 125;
+                module_socket.NoDelay = true;
+                module_socket.Blocking = true;
                 module_socket.Connect(remoteEP);
                 if (module_socket.Connected)
                     return 0;
@@ -142,7 +152,7 @@ namespace gpm_vibration_module_api
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
             _UserSetting.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
-            _UserSetting.DataLength = dataLength != -1 ? dataLength : module_settings.DataLength;
+            _UserSetting.DataLength = dataLength != -1 ? dataLength+ comp_len : module_settings.DataLength+ comp_len;
             _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE)measureRange : module_settings.MeasureRange;
             _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : module_settings.ODR;
             var ParamReturn = WriteParameterToController(_UserSetting.ByteAryOfParameters, returnBytes);
@@ -225,7 +235,7 @@ namespace gpm_vibration_module_api
             //        break;
             //}
 
-            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte;
+            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte- comp_len;
 
 
             switch (ODRByte)
@@ -523,11 +533,11 @@ namespace gpm_vibration_module_api
                 Thread.Sleep(1);
             }
         }
-
+        internal SocketState state;
         internal bool isBusy = false;
         internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
-            SocketState state = new SocketState();
+            state = new SocketState();
             isBusy = true;
             acc_data_read_task_token_source = new CancellationTokenSource();
             bulk_use = false;
@@ -543,7 +553,7 @@ namespace gpm_vibration_module_api
                 state = new SocketState()
                 {
                     window_size_ = Datalength,
-                    buffer_ = new byte[Datalength],
+                    buffer_ = new byte[SocketState.Packet_Receive_Size],
                     work_socket_ = module_socket,
                     //buffer_size_ = Datalength / 512,
                     task_of_now = TIMEOUT_CHEK_ITEM.Read_Acc_Data,
