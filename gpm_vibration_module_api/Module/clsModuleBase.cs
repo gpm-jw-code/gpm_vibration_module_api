@@ -57,7 +57,7 @@ namespace gpm_vibration_module_api
                 port = ModulePort;
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(ModuleIP), ModulePort);
                 module_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                module_socket.ReceiveBufferSize =100000;
+                module_socket.ReceiveBufferSize = 100000;
                 module_socket.DontFragment = false;
                 module_socket.ReceiveTimeout = 30000;
                 module_socket.Ttl = 125;
@@ -152,7 +152,10 @@ namespace gpm_vibration_module_api
             //if (moduleSettings.WifiControllUseHighSppedSensor)
             //    returnBytes = 8;
             _UserSetting.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
-            _UserSetting.DataLength = dataLength != -1 ? dataLength+ comp_len : module_settings.DataLength+ comp_len;
+            var comp = 0;
+            if (dataLength >= 16)
+                comp = comp_len;
+            _UserSetting.DataLength = dataLength != -1 ? dataLength + comp : module_settings.DataLength + comp;
             _UserSetting.MeasureRange = measureRange != null ? (clsEnum.Module_Setting_Enum.MEASURE_RANGE)measureRange : module_settings.MeasureRange;
             _UserSetting.ODR = oDR != null ? (clsEnum.Module_Setting_Enum.ODR)oDR : module_settings.ODR;
             var ParamReturn = WriteParameterToController(_UserSetting.ByteAryOfParameters, returnBytes);
@@ -235,7 +238,8 @@ namespace gpm_vibration_module_api
             //        break;
             //}
 
-            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte- comp_len;
+
+            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte - (DataLengthByte >= 16 ?   comp_len:0);
 
 
             switch (ODRByte)
@@ -568,7 +572,7 @@ namespace gpm_vibration_module_api
                 WaitForBufferRecieveDone.WaitOne();
                 timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
                 IsTimeout = state.is_data_recieve_timeout_;
-                Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ state.task_of_now}..[In Time] , Spend:{timespend} ms");
+                Tools.Logger.Event_Log.Log($"Timeout Detector ..Task { state.task_of_now}..[In Time] , Spend:{timespend} ms");
                 return state.data_rev_;
             }
             catch (Exception exp)
@@ -679,7 +683,7 @@ namespace gpm_vibration_module_api
                     Console.WriteLine(state.temp_rev_data.Count);
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
-                       
+
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         WaitForBufferRecieveDone.Set();

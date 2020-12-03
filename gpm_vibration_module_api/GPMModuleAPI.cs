@@ -669,7 +669,7 @@ namespace gpm_vibration_module_api
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
             send_bytes[1] = 0x01;
-            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength+1); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
+            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength + 1); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
             ///強制寫DELAY TIME
@@ -855,7 +855,8 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
-                module_base.module_settings.DataLength -= module_base.comp_len;
+                if ((module_base.module_settings.DataLength & 2) != 0)
+                    module_base.module_settings.DataLength -= module_base.comp_len;
                 if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = 1;
             }
@@ -1026,7 +1027,7 @@ namespace gpm_vibration_module_api
             this.IsGetFFT = IsGetFFT;
             this.IsGetOtherFeatures = IsGetOtherFeatures;
 
-           Thread th = new Thread (() =>
+            Thread th = new Thread(() =>
             {
                 var t = 0;
                 while (ParameterWriteInFlagOn)
@@ -1083,11 +1084,11 @@ namespace gpm_vibration_module_api
                 byte[] AccPacket;
                 bool IsTimeout;
                 AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
-                
+
                 DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
                 {
-                    
+
                     Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
