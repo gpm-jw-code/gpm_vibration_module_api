@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0D025F6E-4663-4821-A7EC-69FB7D5C8599}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>gpm_module_api</RootNamespace>
+    <AssemblyName>gpm_module_api</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="clsEnum.cs" />
+    <Compile Include="Enviroment.cs" />
+    <Compile Include="ErrorCode.cs" />
+    <Compile Include="DataSet.cs" />
+    <Compile Include="FftSharp\Complex.cs" />
+    <Compile Include="FftSharp\Experimental.cs" />
+    <Compile Include="FftSharp\Pad.cs" />
+    <Compile Include="FftSharp\SampleData.cs" />
+    <Compile Include="FftSharp\Transform.cs" />
+    <Compile Include="FftSharp\Window.cs" />
+    <Compile Include="GpmMath\FFT.cs" />
+    <Compile Include="GpmMath\Numeric.cs" />
+    <Compile Include="IModuleClientMode.cs" />
+    <Compile Include="License\CHECK_RESULT.cs" />
+    <Compile Include="License\GPMLicenseKey.cs" />
+    <Compile Include="License\ICheckAction.cs" />
+    <Compile Include="License\LicenseCheck.cs" />
+    <Compile Include="License\LicenseCheckState.cs" />
+    <Compile Include="ModuelAccess\AccessOptions.cs" />
+    <Compile Include="ModuleAccess.cs" />
+    <Compile Include="ModuleType.cs" />
+    <Compile Include="ParticalSensor\Concentration.cs" />
+    <Compile Include="ParticalSensor\ParticleModuleAPI.cs" />
+    <Compile Include="ParticalSensor\ParticleModuleBase.cs" />
+    <Compile Include="ParticalSensor\PARTICLE_SIZE.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\ModuleWhoAreYou.cs" />
+    <Compile Include="UVSensor\UVSensorAPI.cs" />
+    <Compile Include="UVSensor\UVSensorBase.cs" />
+    <Compile Include="Version.cs" />
+    <Compile Include="VibrationSensor\ClsParamSetTaskObj.cs" />
+    <Compile Include="VibrationSensor\DAQMode.cs" />
+    <Compile Include="VibrationSensor\GPMModuleAPI.cs" />
+    <Compile Include="KeyproMdule.cs" />
+    <Compile Include="VibrationSensor\MeasureOption.cs" />
+    <Compile Include="VibrationSensor\clsModuleBase.cs" />
+    <Compile Include="VibrationSensor\clsModuleSettings.cs" />
+    <Compile Include="Module\ModulesServer.cs" />
+    <Compile Include="Module\TCPIPModule.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="sys\Setting_Items.cs" />
+    <Compile Include="sys\Settings_Ctrl.cs" />
+    <Compile Include="sys\Utility.cs" />
+    <Compile Include="Tools\ConverterTools.cs" />
+    <Compile Include="Tools\EthernetControllerTool.cs" />
+    <Compile Include="Tools\FirmwareBurning.cs" />
+    <Compile Include="Tools\Logger.cs" />
+    <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
+    <Compile Include="VibrationSensor\VersionManager.cs" />
+    <Compile Include="VibrationSensor\Window.cs" />
+    <Compile Include="Visualize\ParticleModuleView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Visualize\ParticleModuleView.Designer.cs">
+      <DependentUpon>ParticleModuleView.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Visualize\ParticleModuleView.resx">
+      <DependentUpon>ParticleModuleView.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>copy "$(ProjectDir)lib\Rockey4SClass_x86.dll" "$(TargetDir)"</PreBuildEvent>
+  </PropertyGroup>
+</Project>
