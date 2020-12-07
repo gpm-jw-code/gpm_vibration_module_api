@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.GpmMath
 {
-    public enum WINDOW
+   
+    public  class Window
     {
-        Hamming, Hanning, FlatTop, none
-    }
-    internal static class Window
-    {
+        public enum WINDOW
+        {
+            Hamming, Hanning, FlatTop, none
+        }
         internal static double[] WindowGen(WINDOW window, int width)
         {
             switch (window)

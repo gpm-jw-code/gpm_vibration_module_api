@@ -662,7 +662,7 @@ namespace gpm_vibration_module_api
         internal ManualResetEvent WaitForBufferRecieveDone;
         internal virtual void receiveCallBack(IAsyncResult ar)
         {
-            Tools.Logger.Event_Log.Log($"receiveCallBack process");
+            //Tools.Logger.Event_Log.Log($"receiveCallBack process");
             isBusy = true;
             SocketState state = (SocketState)ar.AsyncState;
             try
@@ -677,7 +677,7 @@ namespace gpm_vibration_module_api
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
-                    Console.WriteLine(state.temp_rev_data.Count);
+                    //Console.WriteLine(state.temp_rev_data.Count);
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
                         SendBulkBreakCmd();

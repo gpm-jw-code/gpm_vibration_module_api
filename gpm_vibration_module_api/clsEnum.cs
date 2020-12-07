@@ -4,7 +4,7 @@ using System.Text;
 
 namespace gpm_vibration_module_api
 {
-    public static class clsEnum
+    public  class clsEnum
     {
         internal enum ControllerCommand
         {

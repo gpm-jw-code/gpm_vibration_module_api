@@ -20,6 +20,8 @@ using System.Xml.Serialization;
 using FftSharp;
 using static gpm_vibration_module_api.ClsModuleBase;
 using Accord.Audio.Filters;
+using static gpm_vibration_module_api.GpmMath.Window;
+using gpm_vibration_module_api.sys;
 
 namespace gpm_vibration_module_api
 {
@@ -496,7 +498,7 @@ namespace gpm_vibration_module_api
         /// <param name="Mode"></param>
         /// <returns><para> 0: 切換成功   </para> <para> Others: Error Code </para></returns>
         /// 
-        public async Task<int> DAQModeSetting(DAQMode Mode)
+        public virtual async Task<int> DAQModeSetting(DAQMode Mode)
         {
             if (Mode == module_base.module_settings.dAQMode)
                 return 0;
@@ -514,6 +516,10 @@ namespace gpm_vibration_module_api
            });
             return ret;
         }
+
+
+
+
         private void UpdateParam()
         {
             var param = module_base.module_settings.ByteAryOfParameters;
@@ -966,7 +972,13 @@ namespace gpm_vibration_module_api
             }
 
         }
-
+        public Settings_Items Sys_Setting
+        {
+            get
+            {
+                return sys.Utility.my_setting;
+            }
+        }
 
         private void Sys_Config_Load()
         {
@@ -1200,7 +1212,7 @@ namespace gpm_vibration_module_api
                 if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
                 {
 
-                    Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
+                    //Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
                     return;

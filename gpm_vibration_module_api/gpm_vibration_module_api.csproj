@@ -73,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="gpm_module_api_namespace.cs" />
     <Compile Include="clsEnum.cs" />
     <Compile Include="clsErrorCode.cs" />
     <Compile Include="ClsParamSetTaskObj.cs" />
