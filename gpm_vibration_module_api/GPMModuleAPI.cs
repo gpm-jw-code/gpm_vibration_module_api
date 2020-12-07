@@ -1,6 +1,5 @@
 ﻿#define YCM
 #define BR460800
-//#define KeyproEnable
 
 using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
@@ -22,6 +21,7 @@ using static gpm_vibration_module_api.ClsModuleBase;
 using Accord.Audio.Filters;
 using static gpm_vibration_module_api.GpmMath.Window;
 using gpm_vibration_module_api.sys;
+using gpm_module_api.License;
 
 namespace gpm_vibration_module_api
 {
@@ -31,6 +31,8 @@ namespace gpm_vibration_module_api
     public class GPMModuleAPI
     {
 
+        const string LicenseFilePath = "license.lic";
+        internal bool LicenseCheck = false;
         /// <summary>
         /// Sampling Rate計算結果儲存
         /// </summary>
@@ -610,6 +612,26 @@ namespace gpm_vibration_module_api
             var IPPortCheckResult = IPPortCheck(IP, Port);
             if (IPPortCheckResult != 0)
                 return IPPortCheckResult;
+
+            if (LicenseCheck)
+            {
+                LicenseCheck licenseChecker = new LicenseCheck();
+                LicenseCheckState check_state = licenseChecker.Check(LicenseFilePath);
+                switch (check_state.CHECK_RESULT)
+                {
+                    case CHECK_RESULT.PASS:
+                        break;
+                    case CHECK_RESULT.EXPIRED:
+                        return (int)clsErrorCode.Error.LicenseExpired;
+                    case CHECK_RESULT.FAIL:
+                        return (int)clsErrorCode.Error.LicenseCheckFail;
+                    case CHECK_RESULT.LOSS:
+                        return (int)clsErrorCode.Error.LicenseFileNoExist;
+                    default:
+                        break;
+                }
+            }
+
             try
             {
                 SocketInitialize(IP, Port);

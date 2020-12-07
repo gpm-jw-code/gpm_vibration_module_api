@@ -28,6 +28,10 @@ namespace gpm_module_api.VibrationSensor
     }
     public class GPMModuleAPI : gpm_vibration_module_api.GPMModuleAPI
     {
+        public GPMModuleAPI()
+        {
+            base.LicenseCheck = true;
+        }
         public async Task<int> DAQModeSetting(DAQMode Mode)
         {
             return await base.DAQModeSetting((gpm_vibration_module_api.DAQMode)Mode);
