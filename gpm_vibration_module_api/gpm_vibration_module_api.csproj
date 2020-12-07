@@ -67,7 +67,9 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +90,10 @@
     <Compile Include="Module\clsModuleBase.cs" />
     <Compile Include="Module\clsModuleSettings.cs" />
     <Compile Include="Module\ModulesServer.cs" />
+    <Compile Include="ParticalSensor\Concentration.cs" />
+    <Compile Include="ParticalSensor\ParticleModuleAPI.cs" />
+    <Compile Include="ParticalSensor\ParticleModuleBase.cs" />
+    <Compile Include="ParticalSensor\PARTICLE_Size.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="sys\Setting_Items.cs" />
@@ -97,6 +103,14 @@
     <Compile Include="Tools\Logger.cs" />
     <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
     <Compile Include="Tools\VersionManager.cs" />
+    <Compile Include="UVSensor\UVSensorAPI.cs" />
+    <Compile Include="UVSensor\UVSensorBase.cs" />
+    <Compile Include="Visualize\ParticleModuleView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Visualize\ParticleModuleView.Designer.cs">
+      <DependentUpon>ParticleModuleView.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -104,7 +118,11 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Visualize\ParticleModuleView.resx">
+      <DependentUpon>ParticleModuleView.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

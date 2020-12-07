@@ -22,7 +22,11 @@ namespace gpm_vibration_module_api
             ModuleIsBusy = 16607,
             ERROR_PARAM_RETURN_FROM_CONTROLLER = 16608,
             SYSTEM_ERROR = 144444,
-            DATA_LENGTH_SETTING_VALUE_ILLEGAL = 144445
+            DATA_LENGTH_SETTING_VALUE_ILLEGAL = 144445,
+            ParticleSensorConvertError_Source_Data_Insufficient = 52110,
+            LicenseFileNoExist = 704,
+            LicenseExpired = 705,
+            LicenseCheckFail = 706,
         }
 
     }

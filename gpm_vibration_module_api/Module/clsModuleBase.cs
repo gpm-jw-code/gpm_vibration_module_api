@@ -536,7 +536,7 @@ namespace gpm_vibration_module_api
         }
         internal SocketState state;
         internal bool isBusy = false;
-        internal byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
+        internal virtual byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
             state = new SocketState();
             isBusy = true;
@@ -592,7 +592,7 @@ namespace gpm_vibration_module_api
             Read_Acc_Data, FW_Param_RW
         }
 
-        private async Task<long> TimeoutCheck(SocketState _state)
+        internal async Task<long> TimeoutCheck(SocketState _state)
         {
             timeout_task_cancel_source = new CancellationTokenSource();
 
@@ -659,8 +659,8 @@ namespace gpm_vibration_module_api
 
         internal CancellationTokenSource acc_data_read_task_token_source = new CancellationTokenSource();
 
-        private ManualResetEvent WaitForBufferRecieveDone;
-        private void receiveCallBack(IAsyncResult ar)
+        internal ManualResetEvent WaitForBufferRecieveDone;
+        internal virtual void receiveCallBack(IAsyncResult ar)
         {
             Tools.Logger.Event_Log.Log($"receiveCallBack process");
             isBusy = true;
@@ -788,7 +788,7 @@ namespace gpm_vibration_module_api
             return state.data_rev_;
         }
         private byte[] DataFromSensor = new byte[0];
-        private bool bulk_use = false;
+        internal bool bulk_use = false;
 
         internal class CommandTask
         {

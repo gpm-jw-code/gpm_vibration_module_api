@@ -1,4 +1,5 @@
-﻿using gpm_vibration_module_api.GpmMath;
+﻿using gpm_module_api.ParticalSensor;
+using gpm_vibration_module_api.GpmMath;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -114,4 +115,42 @@ namespace gpm_vibration_module_api
 
 
     }
+
+    public class ParticleDataSet
+    {
+        public double Temperature;
+        public double Humidity;
+        public double Illuminance;
+        public double TypicalParticleSize;
+        public Dictionary<PARTICLE_SIZE, Concentration> ParticalValueDict = new Dictionary<PARTICLE_SIZE, Concentration>();
+        public double Res1;
+        public double Res2;
+        internal long TimeSpend;
+
+        public int ErrorCode { get; internal set; }
+        public ParticleDataSet()
+        {
+
+        }
+        public ParticleDataSet(int ErrorCode)
+        {
+            this.ErrorCode = ErrorCode;
+            Temperature = Humidity = Illuminance = Res1 = Res2 = ErrorCode;
+        }
+
+    }
+
+
+    public class UVDataSet : ParticleDataSet
+    {
+        public double UVValue = -1;
+        public int ErrorCode = 0;
+        public DateTime RecieveTime;
+
+        public UVDataSet(int ErrorCode) : base(ErrorCode)
+        {
+            this.ErrorCode = ErrorCode;
+        }
+    }
+
 }

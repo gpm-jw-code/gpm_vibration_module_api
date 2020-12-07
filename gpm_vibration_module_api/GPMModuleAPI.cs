@@ -57,7 +57,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 控制器底層控制
         /// </summary>
-        private ClsModuleBase module_base = new ClsModuleBase();
+        internal ClsModuleBase module_base = new ClsModuleBase();
         /// <summary>
         /// 設定感測器安裝位置名稱
         /// </summary>
@@ -65,8 +65,8 @@ namespace gpm_vibration_module_api
         private DataSet DataSetRet = new DataSet(1000);
         private bool IsGetFFT = false;
         private bool IsGetOtherFeatures = false;
-        private ManualResetEvent WaitAsyncForGetDataTask;
-        private ManualResetEvent WaitAsyncForParametersSet;
+        internal ManualResetEvent WaitAsyncForGetDataTask;
+        internal ManualResetEvent WaitAsyncForParametersSet;
         /// <summary>
         /// 斷線事件
         /// </summary>
@@ -701,10 +701,10 @@ namespace gpm_vibration_module_api
                 else
                     socket_conected_list.Add(IP, null);
             }
-            catch (Exception ex )
+            catch (Exception ex)
             {
             }
-           
+
         }
 
         private byte GetByteValofMRDefine(clsEnum.Module_Setting_Enum.MEASURE_RANGE mr)
@@ -749,7 +749,7 @@ namespace gpm_vibration_module_api
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
             send_bytes[1] = 0x01;
-            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength +module_base.module_settings.comp_len); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
+            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength + module_base.module_settings.comp_len); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
             ///強制寫DELAY TIME
@@ -946,7 +946,7 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
-                if(module_base.module_settings.DataLength!=1 && (module_base.module_settings.DataLength & 2) != 0)
+                if (module_base.module_settings.DataLength != 1 && (module_base.module_settings.DataLength & 2) != 0)
                     module_base.module_settings.DataLength -= module_base.module_settings.comp_len;
                 if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = 1;
@@ -1230,7 +1230,7 @@ namespace gpm_vibration_module_api
                 DataSetRet.AccData.Z.Add(-99999);
             }
         }
-        private void GetDataTask()
+        internal virtual void GetDataTask()
         {
             //IsGetDataTaskPaused = true;
             //GetDataTaskPause.WaitOne();
