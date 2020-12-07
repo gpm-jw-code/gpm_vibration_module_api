@@ -1,7 +1,5 @@
 ﻿#define YCM
-//#define BR115200
 #define BR460800
-//#define BR921600
 //#define KeyproEnable
 
 using gpm_vibration_module_api.GpmMath;

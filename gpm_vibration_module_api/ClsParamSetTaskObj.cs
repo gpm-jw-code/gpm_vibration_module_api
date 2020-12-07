@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api
 {
-    public class ClsParamSetTaskObj
+    internal class ClsParamSetTaskObj
     {
         public readonly DAQMode DAQMode;
 
