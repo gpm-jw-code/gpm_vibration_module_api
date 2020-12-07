@@ -62,7 +62,7 @@ namespace gpm_module_api.UVSensor
                 AddNewDataToTempData(PreDataSet);
                 WaitAsyncForGetDataTask.Set();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 if (DisconnectEvent != null)
                     DisconnectEvent.Invoke(DateTime.Now);

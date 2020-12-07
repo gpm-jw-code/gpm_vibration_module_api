@@ -25,6 +25,7 @@ namespace gpm_module_api.UVSensor
                 var cmdbytes = Encoding.ASCII.GetBytes("READUVVAL\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
                 var Datalength = 4;
+                SocketState.Packet_Receive_Size = Datalength;
                 state = new SocketState()
                 {
                     window_size_ = Datalength,

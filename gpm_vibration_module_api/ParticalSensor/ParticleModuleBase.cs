@@ -100,6 +100,7 @@ namespace gpm_module_api.ParticalSensor
                 var sendNum = module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
                 Logger.Event_Log.Log($"Send Num: {sendNum}");
                 var Datalength = 62;
+                SocketState.Packet_Receive_Size = Datalength;
                 byte[] Datas = new byte[Datalength];
                 state = new SocketState()
                 {
