@@ -91,13 +91,15 @@ namespace gpm_vibration_module_api
             {
                 return module_base.module_settings.dAQMode;
             }
-             
+
         }
 
         public bool LowPassFilterActive
         {
             get
             {
+                if (module_base.module_settings.lowPassFilter == null)
+                    return false;
                 return module_base.module_settings.lowPassFilter.Active;
             }
             set
@@ -111,6 +113,8 @@ namespace gpm_vibration_module_api
         {
             get
             {
+                if (module_base.module_settings.lowPassFilter == null)
+                    return 1700;
                 return module_base.module_settings.lowPassFilter.CutOffFreq;
             }
             set
@@ -304,8 +308,11 @@ namespace gpm_vibration_module_api
                 }
                 catch (Exception ex)
                 {
-                    throw;
                 }
+            }
+            get
+            {
+                return module_base.acc_data_rev_timeout;
             }
         }
 
@@ -322,6 +329,10 @@ namespace gpm_vibration_module_api
                 {
                     throw;
                 }
+            }
+            get
+            {
+                return module_base.fw_parm_rw_timeout;
             }
         }
         /// <summary>
@@ -592,46 +603,13 @@ namespace gpm_vibration_module_api
         public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
         {
             IP = IP.Replace(" ", "");
-            Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
-            if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
-            {
-                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Keypro Not Found");
-                return Convert.ToInt32(clsErrorCode.Error.KEYPRO_NOT_FOUND);
-            }
-            if (IP.Split('.').Length != 4 | IP == "")
-            {
-                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, IP Illegal");
-                return Convert.ToInt32(clsErrorCode.Error.IPIllegal);
-            }
-            if (Port <= 0)
-            {
-                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Port Illegal");
-                return Convert.ToInt32(clsErrorCode.Error.PortIllegal);
-            }
+            var IPPortCheckResult = IPPortCheck(IP, Port);
+            if (IPPortCheckResult != 0)
+                return IPPortCheckResult;
             try
             {
+                SocketInitialize(IP, Port);
                 GetDataWaitFlagOn = true;
-                if (socket_conected_list.ContainsKey(IP))
-                {
-                    Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Detect Connection already , do Disconnect()");
-                    Disconnect();
-                }
-                SensorIP = IP;
-                SensorPort = Port;
-                Socket _socket = null;
-                if (socket_conected_list.TryGetValue(IP, out _socket))
-                {
-                    try
-                    {
-                        _socket.Shutdown(SocketShutdown.Both);
-                        _socket.Dispose();
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-                else
-                    socket_conected_list.Add(IP, null);
                 Stop_All_Action();
                 module_base.acc_data_read_task_token_source.Cancel();
                 var ret = await module_base.Connect(IP, Port);
@@ -667,8 +645,69 @@ namespace gpm_vibration_module_api
             }
         }
 
+        /// <summary>
+        /// 檢查IP跟Port傳入值是否合法
+        /// </summary>
+        /// <param name="IP"></param>
+        /// <param name="Port"></param>
+        /// <returns></returns>
+        private int IPPortCheck(string IP, int Port)
+        {
+            Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] IP:{IP}, Port:{Port}");
+            if (KeyProExisStatus == clsEnum.KeyPro.KEYPRO_EXIST_STATE.NoInsert)
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Keypro Not Found");
+                return Convert.ToInt32(clsErrorCode.Error.KEYPRO_NOT_FOUND);
+            }
+            if (IP.Split('.').Length != 4 | IP == "")
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, IP Illegal");
+                return Convert.ToInt32(clsErrorCode.Error.IPIllegal);
+            }
+            if (Port <= 0)
+            {
+                Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Connect Fail, Port Illegal");
+                return Convert.ToInt32(clsErrorCode.Error.PortIllegal);
+            }
+            return 0;
+        }
 
-
+        /// <summary>
+        /// 初始化Socket物件
+        /// </summary>
+        /// <param name="IP"></param>
+        /// <param name="Port"></param>
+        private void SocketInitialize(string IP, int Port)
+        {
+            try
+            {
+                if (socket_conected_list.ContainsKey(IP))
+                {
+                    Tools.Logger.Event_Log.Log($"[Fun: Connecnt() ] Detect Connection already , do Disconnect()");
+                    Disconnect();
+                }
+                SensorIP = IP;
+                SensorPort = Port;
+                Socket _socket = null;
+                if (socket_conected_list.TryGetValue(IP, out _socket))
+                {
+                    try
+                    {
+                        _socket.Shutdown(SocketShutdown.Both);
+                        _socket.Dispose();
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                else
+                    socket_conected_list.Add(IP, null);
+            }
+            catch (Exception ex )
+            {
+            }
+           
+        }
 
         private byte GetByteValofMRDefine(clsEnum.Module_Setting_Enum.MEASURE_RANGE mr)
         {
@@ -712,7 +751,7 @@ namespace gpm_vibration_module_api
             byte[] send_bytes = new byte[11] { 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a };
             Array.Copy(module_base.module_settings.ByteAryOfParameters, 0, send_bytes, 1, module_base.module_settings.ByteAryOfParameters.Length);
             send_bytes[1] = 0x01;
-            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength + 1); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
+            send_bytes[2] = (byte)(module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 0 : module_base.module_settings.DataLength +module_base.module_settings.comp_len); //此版本強制寫0 僅用單次傳一包(大小個軸為512筆)
             send_bytes[4] = GetByteValofMRDefine(module_base.module_settings.MeasureRange);
             send_bytes[6] = 0x00;
             ///強制寫DELAY TIME
@@ -909,7 +948,7 @@ namespace gpm_vibration_module_api
                     };
                     Sensor_Config_Save();
                 }
-                if ((module_base.module_settings.DataLength & 2) != 0)
+                if(module_base.module_settings.DataLength!=1 && (module_base.module_settings.DataLength & 2) != 0)
                     module_base.module_settings.DataLength -= module_base.module_settings.comp_len;
                 if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
                     module_base.module_settings.DataLength = 1;
