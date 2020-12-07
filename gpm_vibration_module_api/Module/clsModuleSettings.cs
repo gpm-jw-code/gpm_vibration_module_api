@@ -15,7 +15,7 @@ namespace gpm_vibration_module_api.Module
         public class LowPassFilterParam
         {
             public bool Active { get; set; } = false;
-            public double CutOffFreq { get; set; } = 1000;
+            public double CutOffFreq { get; set; } = 1700;
         }
 
         public LowPassFilterParam lowPassFilter { get; set; }
