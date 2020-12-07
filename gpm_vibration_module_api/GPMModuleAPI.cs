@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using FftSharp;
 using static gpm_vibration_module_api.ClsModuleBase;
+using Accord.Audio.Filters;
 
 namespace gpm_vibration_module_api
 {
@@ -90,7 +91,33 @@ namespace gpm_vibration_module_api
             {
                 return module_base.module_settings.dAQMode;
             }
+             
+        }
 
+        public bool LowPassFilterActive
+        {
+            get
+            {
+                return module_base.module_settings.lowPassFilter.Active;
+            }
+            set
+            {
+
+                module_base.module_settings.lowPassFilter.Active = value;
+                Sensor_Config_Save();
+            }
+        }
+        public double LowPassFilterCutOffFreq
+        {
+            get
+            {
+                return module_base.module_settings.lowPassFilter.CutOffFreq;
+            }
+            set
+            {
+                module_base.module_settings.lowPassFilter.CutOffFreq = value;
+                Sensor_Config_Save();
+            }
         }
 
         public Socket ModuleSocket
@@ -721,6 +748,8 @@ namespace gpm_vibration_module_api
         /// </summary>
         public int Disconnect()
         {
+            Stop_All_Action();
+            BULKBreak();
             return module_base.Disconnect();
         }
 
@@ -816,33 +845,41 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 儲存控制器參數到硬碟 路徑: Environment.CurrentDirectory + $@"\SensorConfig\{moduleIP}\"
         /// </summary>
-        public int Sensor_Config_Save()
+        public void Sensor_Config_Save()
         {
-            try
+            Thread th = new Thread(() =>
             {
-                var ModelSavePath = "SensorConfig\\" + SensorIP;
-                if (!Directory.Exists(ModelSavePath))
-                    Directory.CreateDirectory(ModelSavePath);
-                var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
-                if (!File.Exists(filepath))
-                    File.Create(filepath).Close();
-                using (FileStream fs = new FileStream(filepath, FileMode.Create))
+
+                try
                 {
-                    XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
-                    xs.Serialize(fs, module_base.module_settings);
+                    var ModelSavePath = "SensorConfig\\" + SensorIP;
+                    if (!Directory.Exists(ModelSavePath))
+                        Directory.CreateDirectory(ModelSavePath);
+                    var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
+                    if (!File.Exists(filepath))
+                        File.Create(filepath).Close();
+                    using (FileStream fs = new FileStream(filepath, FileMode.Create))
+                    {
+                        XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                        xs.Serialize(fs, module_base.module_settings);
+                    }
+                    return;
                 }
-                return 0;
-            }
-            catch (IOException ex)
+                catch (IOException ex)
+                {
+                    Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
+                    return;
+                }
+            })
             {
-                Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
-                return -1;
-            }
-            catch (Exception ex)
-            {
-                Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
-                return -1;
-            }
+                IsBackground = true
+            };
+            th.Start();
         }
 
         private void Sensor_Config_Load()
@@ -867,7 +904,8 @@ namespace gpm_vibration_module_api
                         DataLength = DataLength,
                         MeasureRange = MeasureRange,
                         ODR = ODR,
-                        sampling_rate_ = 8000
+                        sampling_rate_ = 8000,
+                        lowPassFilter = new clsModuleSettings.LowPassFilterParam()
                     };
                     Sensor_Config_Save();
                 }
@@ -1081,10 +1119,29 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             Thread.Sleep(500);
         }
-        private DataSet ConvertToDataSet(byte[] AccPacket)
+        private DataSet ConvertToDataSet(byte[] AccPacket, bool lowPassFilter = false)
         {
             // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
             var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode);
+
+            if (lowPassFilter)
+            {
+                LowPassFilter passFilter = new LowPassFilter(module_base.module_settings.lowPassFilter.CutOffFreq, module_base.module_settings.sampling_rate_);
+                var alpha = passFilter.Alpha;
+                for (int i = 0; i < 3; i++)
+                {
+                    List<double> real_data = datas[i];
+                    List<double> y = new List<double>() { real_data[0] };
+                    for (int t = 1; t < real_data.Count; t++)
+                    {
+                        var _y = y[t - 1] + alpha * (real_data[t] - y[t - 1]);
+                        y.Add(_y);
+                    }
+                    datas[i] = y;
+                }
+
+            }
+
             var DataSetRet = new DataSet(SamplingRate);
             DataSetRet.AccData.X = datas[0];
             DataSetRet.AccData.Y = datas[1];
@@ -1093,6 +1150,7 @@ namespace gpm_vibration_module_api
 
             return DataSetRet;
         }
+
         public void GenOneAccDataObject()
         {
             try
@@ -1113,7 +1171,7 @@ namespace gpm_vibration_module_api
                 module_base.state = null;
                 module_base.SocketBufferClear();
                 ///
-                DataSetRet.AddData(ConvertToDataSet(AccPacket));
+                DataSetRet.AddData(ConvertToDataSet(AccPacket, lowPassFilter: module_base.module_settings.lowPassFilter.Active));
 
             }
             catch (SocketException exp)

@@ -11,6 +11,14 @@ namespace gpm_vibration_module_api.Module
     [Serializable]
     public class clsModuleSettings
     {
+        [Serializable]
+        public class LowPassFilterParam
+        {
+            public bool Active { get; set; } = false;
+            public double CutOffFreq { get; set; } = 1000;
+        }
+
+        public LowPassFilterParam lowPassFilter { get; set; }
 
         public int Packet_Receive_Size
         {

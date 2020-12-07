@@ -88,6 +88,7 @@
     <Compile Include="GpmMath\Window.cs" />
     <Compile Include="GPMModuleAPI.cs" />
     <Compile Include="KeyproMdule.cs" />
+    <Compile Include="LowPassFilter.cs" />
     <Compile Include="MeasureOption.cs" />
     <Compile Include="Module\clsModuleBase.cs" />
     <Compile Include="Module\clsModuleSettings.cs" />
@@ -104,6 +105,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

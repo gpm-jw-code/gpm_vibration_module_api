@@ -368,7 +368,7 @@ namespace gpm_vibration_module_api
 
         }
 
-        private void SendBulkBreakCmd()
+        internal void SendBulkBreakCmd()
         {
             bulk_request_pause_signal.Reset();
             var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.BULKBREAK.ToString() + "\r\n");
