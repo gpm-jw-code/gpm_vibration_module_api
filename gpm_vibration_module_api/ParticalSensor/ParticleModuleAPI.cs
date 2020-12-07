@@ -30,7 +30,7 @@ namespace gpm_module_api.ParticalSensor
 
         public ParticleModuleView View;
         internal ParticleDataSet _ParticleDataSet;
-        internal ParticleDataSet PreDataSet=new ParticleDataSet();
+        internal ParticleDataSet PreDataSet = new ParticleDataSet();
         public DataTemporary TempData = new DataTemporary();
         public ParticleModuleView.DetailType NowDataType = ParticleModuleView.DetailType.None;
 
@@ -59,7 +59,7 @@ namespace gpm_module_api.ParticalSensor
             };
         }
 
-        public ParticleModuleAPI()
+        public ParticleModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null) : base(_ConnectObj)
         {
             base.module_base = new ParticleModuleBase();
             View = new ParticleModuleView();
@@ -73,7 +73,7 @@ namespace gpm_module_api.ParticalSensor
 
         private void ParticleDetailShow(ParticleModuleAPI obj)
         {
-            UpdateDetailShow(ParticleModuleView.DetailType.Particle,View.DetailParticleDataType,View.DetailParticleSize);
+            UpdateDetailShow(ParticleModuleView.DetailType.Particle, View.DetailParticleDataType, View.DetailParticleSize);
         }
 
         private void IlluminanceDetailShow(ParticleModuleAPI obj)

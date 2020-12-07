@@ -15,7 +15,7 @@ namespace gpm_module_api.UVSensor
         private UVDataSet uv_dataset = new UVDataSet(0);
         public new event Action<DateTime> DisconnectEvent;
 
-        public UVSensorAPI()
+        public UVSensorAPI(GPMModulesServer.ConnectInState _ConnectObj=null):base(_ConnectObj)
         {
             base.module_base = new UVSensorBase();
         }

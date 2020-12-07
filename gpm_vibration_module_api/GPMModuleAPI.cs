@@ -22,6 +22,8 @@ using Accord.Audio.Filters;
 using static gpm_vibration_module_api.GpmMath.Window;
 using gpm_vibration_module_api.sys;
 using gpm_module_api.License;
+using gpm_module_api;
+using WINDOW = gpm_vibration_module_api.GpmMath.Window.WINDOW;
 
 namespace gpm_vibration_module_api
 {
@@ -30,6 +32,35 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+        public GPMModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null)
+        {
+            if (_ConnectObj != null)
+            {
+                this.SensorIP = _ConnectObj.IP;
+                this.ModuleSocket = _ConnectObj.ClientSocket;
+            }
+            DataSet.AutoDelete();
+            Sys_Config_Load();
+
+            // stake.API.KeyProInsertEvent += API_KeyProInsertEvent;
+            //  KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
+#if KeyproEnable
+            KeyProExisStatus = Enviroment.IsNoNeedKey ? staKeypro.KeyProCheckStatus.Exist : staKeypro.KeyproCheck().ExistSttate;
+#endif
+            WaitAsyncForGetDataTask = new ManualResetEvent(false);
+            WaitAsyncForParametersSet = new ManualResetEvent(true);
+            GetDataTaskPause = new ManualResetEvent(true);
+
+            module_base.module_settings.SensorType = clsEnum.Module_Setting_Enum.SENSOR_TYPE.Genernal;
+            WifiSensorUsing = true;
+
+            module_base.DataRecieve += Module_base_DataReady;
+            Thread.Sleep(100);
+
+            if (_ConnectObj != null)
+                Connect(SensorIP, SensorPort, ModuleSocket, true);
+
+        }
 
         const string LicenseFilePath = "license.lic";
         internal bool LicenseCheck = false;
@@ -591,7 +622,16 @@ namespace gpm_vibration_module_api
         public Enum_AccGetMethod NowAccGetMethod = Enum_AccGetMethod.Manual;
 
 
-
+        /// <summary>
+        /// 與控制器進行連線
+        /// </summary>
+        /// <param name="IP">控制器IP</param>
+        /// <param name="Port">控制器Port</param>
+        /// <returns></returns>
+        public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
+        {
+            return await Connect(IP, Port, null, IsSelfTest);
+        }
 
 
         public async Task<int> Connect(bool IsSelfTest = false)
@@ -606,7 +646,7 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns><para> 0: 連線成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
+        public async Task<int> Connect(string IP, int Port = -1, Socket module_Socket = null, bool IsSelfTest = true)
         {
             IP = IP.Replace(" ", "");
             var IPPortCheckResult = IPPortCheck(IP, Port);

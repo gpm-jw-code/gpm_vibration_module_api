@@ -6,6 +6,13 @@ namespace gpm_vibration_module_api
 {
     public  class clsEnum
     {
+        public enum MODULE_TYPE
+        {
+            VIBRATION,
+            UV,
+            PARTICAL,
+            UNKNOW
+        }
         internal enum ControllerCommand
         {
             READVALUE, READSTVAL, BULKVALUE, BULKBREAK

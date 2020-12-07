@@ -2,13 +2,16 @@
 using gpm_vibration_module_api.GpmMath;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api
 {
   
     public class DataSet
     {
+        private const string DataSaveDir = "./Log/Data/";
         public DataSet(double samplingRate)
         {
             this.FFTData.SamplingRate = samplingRate;
@@ -40,6 +43,19 @@ namespace gpm_vibration_module_api
             this.FFTData.X.AddRange(NewData.FFTData.X);
             this.FFTData.Y.AddRange(NewData.FFTData.Y);
             this.FFTData.Z.AddRange(NewData.FFTData.Z);
+        }
+
+        internal static void AutoDelete()
+        {
+            Task.Run(() =>
+            {
+                int delete_cnt = 0;
+                foreach (var filePath in Directory.GetFiles(DataSaveDir))
+                {
+                    if ((DateTime.Now - new FileInfo(filePath).LastWriteTime).TotalDays > 7)
+                    { File.Delete(filePath); delete_cnt++; }
+                }
+            });
         }
 
         internal void AddData(DataSet NewData, double[] _window)

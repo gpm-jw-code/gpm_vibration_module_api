@@ -1,4 +1,6 @@
 ﻿using gpm_module_api.Data;
+using gpm_module_api.ParticalSensor;
+using gpm_module_api.UVSensor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +30,12 @@ namespace gpm_module_api.VibrationSensor
     }
     public class GPMModuleAPI : gpm_vibration_module_api.GPMModuleAPI
     {
-        public GPMModuleAPI()
+        public async Task<int> Connect(string IP, int Port)
+        {
+            return await base.Connect(IP, Port, true);
+        }
+
+        public GPMModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null) : base(_ConnectObj)
         {
             base.LicenseCheck = true;
         }
@@ -56,10 +63,19 @@ namespace gpm_module_api.VibrationSensor
                 IsReady = DataSet_base.IsReady,
                 MelBankData = DataSet_base.MelBankData
 
-        };
-    }
+            };
+        }
 
-}
+        public static implicit operator GPMModuleAPI(UVSensorAPI v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static implicit operator GPMModuleAPI(ParticleModuleAPI v)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
 
 namespace gpm_module_api.Data

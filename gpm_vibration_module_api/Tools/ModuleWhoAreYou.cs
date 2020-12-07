@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static gpm_vibration_module_api.clsEnum;
+using static gpm_vibration_module_api.ClsModuleBase;
 
 namespace gpm_module_api.Tools
 {
@@ -28,40 +30,40 @@ namespace gpm_module_api.Tools
             {
                 RecieveSckVM = new SocketState()
                 {
-                    socket = socket,
-                    Buffer = new byte[3072],
+                    work_socket_ = socket,
+                    buffer_ = new byte[3072],
                 };
 
                 WaitEvent = new ManualResetEvent(false);
                 SocketState ClinetSckVM = new SocketState()
                 {
-                    Buffer = Encoding.ASCII.GetBytes("READVALUE\r\n"),
-                    socket = socket
+                    buffer_ = Encoding.ASCII.GetBytes("READVALUE\r\n"),
+                    work_socket_ = socket
                 };
                 var offset = 0;
-                var size = ClinetSckVM.Buffer.Length;
-                socket.BeginReceive(RecieveSckVM.Buffer, 0, 0, SocketFlags.None, RecieveCallBack, RecieveSckVM);
-                socket.BeginSend(ClinetSckVM.Buffer, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
+                var size = ClinetSckVM.buffer_.Length;
+                socket.BeginReceive(RecieveSckVM.buffer_, 0, 0, SocketFlags.None, RecieveCallBack, RecieveSckVM);
+                socket.BeginSend(ClinetSckVM.buffer_, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
                 WaitEvent.WaitOne();
                 if (DetectedType != MODULE_TYPE.UNKNOW)
                     return DetectedType;
                 WaitEvent.Reset();
                 ClinetSckVM = new SocketState()
                 {
-                    Buffer = Encoding.ASCII.GetBytes("READUVVAL\r\n"),
-                    socket = socket
+                    buffer_ = Encoding.ASCII.GetBytes("READUVVAL\r\n"),
+                    work_socket_ = socket
                 };
-                socket.BeginSend(ClinetSckVM.Buffer, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
+                socket.BeginSend(ClinetSckVM.buffer_, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
                 WaitEvent.WaitOne();
                 if (DetectedType != MODULE_TYPE.UNKNOW)
                     return DetectedType;
 
                 ClinetSckVM = new SocketState()
                 {
-                    Buffer = Encoding.ASCII.GetBytes("READALVAL\r\n"),
-                    socket = socket
+                    buffer_ = Encoding.ASCII.GetBytes("READALVAL\r\n"),
+                    work_socket_ = socket
                 };
-                socket.BeginSend(ClinetSckVM.Buffer, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
+                socket.BeginSend(ClinetSckVM.buffer_, 0, size, SocketFlags.None, SendCallBack, ClinetSckVM);
                 WaitEvent.WaitOne();
                 if (DetectedType != MODULE_TYPE.UNKNOW)
                     return DetectedType;
@@ -96,7 +98,7 @@ namespace gpm_module_api.Tools
         private static void RecieveCallBack(IAsyncResult ar)
         {
             var State = (SocketState)ar.AsyncState;
-            var availabel = State.socket.Available;
+            var availabel = State.work_socket_.Available;
             switch (availabel)
             {
                 case 3072:
@@ -118,7 +120,7 @@ namespace gpm_module_api.Tools
             byte[] buff = new byte[availabel];
             try
             {
-                State.socket.Receive(buff, availabel, SocketFlags.None);
+                State.work_socket_.Receive(buff, availabel, SocketFlags.None);
             }
             catch (Exception ex)
             {

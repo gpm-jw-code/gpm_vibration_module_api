@@ -105,8 +105,10 @@
     <Compile Include="sys\Setting_Items.cs" />
     <Compile Include="sys\Settings_Ctrl.cs" />
     <Compile Include="sys\Utility.cs" />
+    <Compile Include="sys\Version.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\Logger.cs" />
+    <Compile Include="Tools\ModuleWhoAreYou.cs" />
     <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
     <Compile Include="Tools\VersionManager.cs" />
     <Compile Include="UVSensor\UVSensorAPI.cs" />
