@@ -336,7 +336,8 @@ namespace gpm_vibration_module_api
             {
                 try
                 {
-                    Int32.TryParse(value + "", out int _result);
+                    int _result;
+                    Int32.TryParse(value + "", out _result);
                     module_base.acc_data_rev_timeout = _result;
                 }
                 catch (Exception ex)
@@ -355,7 +356,8 @@ namespace gpm_vibration_module_api
             {
                 try
                 {
-                    Int32.TryParse(value + "", out int _result);
+                    int _result;
+                    Int32.TryParse(value + "", out  _result);
                     module_base.fw_parm_rw_timeout = _result;
                 }
                 catch (Exception ex)
