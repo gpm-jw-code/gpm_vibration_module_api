@@ -4,6 +4,7 @@ using gpm_module_api.UVSensor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,6 +34,11 @@ namespace gpm_module_api.VibrationSensor
         public async Task<int> Connect(string IP, int Port)
         {
             return await base.Connect(IP, Port, true);
+        }
+
+        public GPMModuleAPI(Socket socket) : base(socket)
+        {
+
         }
 
         public GPMModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null) : base(_ConnectObj)

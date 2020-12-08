@@ -32,12 +32,20 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI
     {
+        public Socket Socket { get; }
+        public GPMModuleAPI(Socket socket)
+        {
+            Socket = socket;
+        }
+
         public GPMModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null)
         {
             if (_ConnectObj != null)
             {
                 this.SensorIP = _ConnectObj.IP;
                 this.ModuleSocket = _ConnectObj.ClientSocket;
+                Sensor_Config_Load();
+                bool ret= SelfTest().Result;
             }
             DataSet.AutoDelete();
             Sys_Config_Load();
@@ -57,7 +65,7 @@ namespace gpm_vibration_module_api
             module_base.DataRecieve += Module_base_DataReady;
             Thread.Sleep(100);
 
-            if (_ConnectObj != null)
+            if (_ConnectObj == null)
                 Connect(SensorIP, SensorPort, ModuleSocket, true);
 
         }
@@ -495,6 +503,8 @@ namespace gpm_vibration_module_api
             module_base.module_settings.SensorType = sensorType;
             module_base.DataRecieve += Module_base_DataReady;
         }
+
+       
         #endregion
 
         /// <summary>
@@ -1139,6 +1149,7 @@ namespace gpm_vibration_module_api
             }
         }
 
+        
 
         private void Module_base_DataReady(DataSet dataSet)
         {
