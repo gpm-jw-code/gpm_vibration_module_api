@@ -11,6 +11,12 @@ namespace gpm_vibration_module_api.Module
     [Serializable]
     public class clsModuleSettings
     {
+
+        public clsModuleSettings()
+        {
+            lowPassFilter = new LowPassFilterParam();
+        }
+
         [Serializable]
         public class LowPassFilterParam
         {
@@ -50,7 +56,7 @@ namespace gpm_vibration_module_api.Module
 
         public double sampling_rate_ = 5000;
 #if (ETH468)
-        private byte[] byteAryOfParameters = new byte[] { 0x01, 0x01, 0x9F, 0x00, 0x00, 0x02, 0x00, 0x00 };
+        private byte[] byteAryOfParameters = new byte[] { 0x01, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #else
          private byte[] byteAryOfParameters = new byte[] { 0x01, 0x01, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #endif

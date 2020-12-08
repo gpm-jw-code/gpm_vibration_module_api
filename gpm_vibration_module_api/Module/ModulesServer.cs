@@ -77,7 +77,7 @@ namespace gpm_module_api
             GPMModuleAPI api_module = null;
             var module_type = Tools.ModuleWhoAreYou.Judege(ref obj.ClientSocket);
             obj.CLIENT_MODULE_TYPE = module_type;
-
+            
             switch (module_type)
             {
                 case MODULE_TYPE.VIBRATION:
@@ -90,19 +90,24 @@ namespace gpm_module_api
                     obj.ClientModuleAPI = new ParticalSensor.ParticleModuleAPI();
                     break;
                 case MODULE_TYPE.UNKNOW:
+                    obj.ClientModuleAPI = new VibrationSensor.GPMModuleAPI(obj);
                     break;
                 default:
                     break;
             }
-
+            obj.CLIENT_MODULE_TYPE = obj.CLIENT_MODULE_TYPE == MODULE_TYPE.UNKNOW ?  MODULE_TYPE.VIBRATION : obj.CLIENT_MODULE_TYPE;
             var module_api_ls = new Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>();
-            ModuleClientList.TryGetValue(module_type, out module_api_ls);
+            ModuleClientList.TryGetValue(obj.CLIENT_MODULE_TYPE, out module_api_ls);
             if (module_api_ls != null)
             {
                 if (!module_api_ls.ContainsKey(obj.IP))
                     module_api_ls.Add(obj.IP, obj.ClientModuleAPI);
                 else
                     module_api_ls[obj.IP] = obj.ClientModuleAPI;
+            }
+            else
+            {
+
             }
             ModuleConnected.BeginInvoke(obj, null, null);
         }
@@ -184,6 +189,8 @@ namespace gpm_module_api
                     Socket SensorSocket = listener.EndAccept(ar);
                     SensorSocket.ReceiveBufferSize = 655350;
                     SensorSocket.ReceiveTimeout = 30000;
+                    SensorSocket.Blocking = true;
+                    SensorSocket.NoDelay = true;
                     IP = GetIPFromSocketObj(SensorSocket);
                     SensorConnectInEvent.Invoke(new ConnectInState { IP = IP, ClientSocket = SensorSocket });
                 }

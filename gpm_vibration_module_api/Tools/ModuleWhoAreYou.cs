@@ -114,7 +114,7 @@ namespace gpm_module_api.Tools
                     DetectedType = MODULE_TYPE.UNKNOW;
                     break;
                 default:
-                    DetectedType = MODULE_TYPE.UNKNOW;
+                    DetectedType = MODULE_TYPE.VIBRATION;
                     break;
             }
             byte[] buff = new byte[availabel];
