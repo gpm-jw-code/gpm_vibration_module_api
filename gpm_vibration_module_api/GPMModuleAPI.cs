@@ -533,13 +533,13 @@ namespace gpm_vibration_module_api
         /// <param name="Mode"></param>
         /// <returns><para> 0: 切換成功   </para> <para> Others: Error Code </para></returns>
         /// 
-        public virtual async Task<int> DAQModeSetting(DAQMode Mode)
+        public virtual async Task<int> DAQModeSetting(DAQMode Mode,bool IsNeedReboot=false)
         {
             if (Mode == module_base.module_settings.dAQMode)
                 return 0;
             var ret = await Task<int>.Run(async () =>
            {
-               var ret2 = await Data_Length_Setting(Mode);
+               var ret2 = await Data_Length_Setting(Mode, IsNeedReboot);
                if (ret2 == 0)
                {
                    SamplingRate = Convert.ToDouble(Mode);
@@ -1077,10 +1077,8 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="N">資料倍率,必須為2的指數</param>
         /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Data_Length_Setting(int N, bool IsNeedReboot = true)
+        public async Task<int> Data_Length_Setting(int N, bool IsNeedReboot = false)
         {
-
-
 
             if (!GpmMath.Numeric.Tools.IsPowerOf2(N) | N > 64)
                 return Convert.ToInt32(clsErrorCode.Error.DATA_LENGTH_SETTING_VALUE_ILLEGAL);
@@ -1101,14 +1099,14 @@ namespace gpm_vibration_module_api
         }
 
 
-        private async Task<int> Data_Length_Setting(DAQMode dAQMode)
+        private async Task<int> Data_Length_Setting(DAQMode dAQMode, bool IsNeedReboot = false)
         {
             module_base.setTaskObj = new ClsParamSetTaskObj(dAQMode)
             {
                 SettingItem = 1,
                 SettingValue = DataLength,
             };
-            var ret = await StartParamSetTaskAsync();
+            var ret = await StartParamSetTaskAsync(IsNeedReboot);
             //module_base.module_settings.DataLength = ret == 0 ? DataLength : module_base.module_settings.DataLength;
             return ret;
         }

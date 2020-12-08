@@ -80,7 +80,7 @@
     <Compile Include="DAQMode.cs" />
     <Compile Include="DataSet.cs" />
     <Compile Include="Enviroment.cs" />
-    <Compile Include="GpmMath\Transform.cs" />
+    <Compile Include="GpmMath\FFTSharp.cs" />
     <Compile Include="GpmMath\FFT.cs" />
     <Compile Include="GpmMath\Numeric.cs" />
     <Compile Include="GpmMath\Window.cs" />
