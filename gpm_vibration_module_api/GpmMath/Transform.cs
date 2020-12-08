@@ -39,7 +39,8 @@ namespace FftSharp
                 }
             }
         }
-
+       
+      
         /// <summary>
         /// Compute the inverse discrete Fourier Transform (in-place) using the FFT algorithm
         /// </summary>

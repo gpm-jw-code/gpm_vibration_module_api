@@ -1330,9 +1330,9 @@ namespace gpm_vibration_module_api
                 GenOneAccDataObject();
             if (IsGetFFT && Numeric.Tools.IsPowerOf2(DataSetRet.AccData.X.Count))
             {
-                DataSetRet.FFTData.X = GpmMath.FFT.GetFFT(DataSetRet.AccData.X);
-                DataSetRet.FFTData.Y = GpmMath.FFT.GetFFT(DataSetRet.AccData.Y);
-                DataSetRet.FFTData.Z = GpmMath.FFT.GetFFT(DataSetRet.AccData.Z);
+                DataSetRet.FFTData.X = FFT.GetFFT(DataSetRet.AccData.X);
+                DataSetRet.FFTData.Y = FFT.GetFFT(DataSetRet.AccData.Y);
+                DataSetRet.FFTData.Z = FFT.GetFFT(DataSetRet.AccData.Z);
 
                 DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
                 DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
