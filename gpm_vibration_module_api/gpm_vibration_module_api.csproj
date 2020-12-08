@@ -96,6 +96,7 @@
     <Compile Include="Module\clsModuleBase.cs" />
     <Compile Include="Module\clsModuleSettings.cs" />
     <Compile Include="Module\ModulesServer.cs" />
+    <Compile Include="Module\TCPIPModule.cs" />
     <Compile Include="ParticalSensor\Concentration.cs" />
     <Compile Include="ParticalSensor\ParticleModuleAPI.cs" />
     <Compile Include="ParticalSensor\ParticleModuleBase.cs" />
@@ -107,6 +108,8 @@
     <Compile Include="sys\Utility.cs" />
     <Compile Include="sys\Version.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
+    <Compile Include="Tools\EthernetControllerTool.cs" />
+    <Compile Include="Tools\FirmwareBurning.cs" />
     <Compile Include="Tools\Logger.cs" />
     <Compile Include="Tools\ModuleWhoAreYou.cs" />
     <Compile Include="Tools\Sampling_Rate_Calculator.cs" />

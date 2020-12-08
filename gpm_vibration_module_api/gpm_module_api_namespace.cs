@@ -112,5 +112,8 @@ namespace gpm_module_api
     }
     public class clsEnum : gpm_vibration_module_api.clsEnum
     {
+        
     }
+
+
 }

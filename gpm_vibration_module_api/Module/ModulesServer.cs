@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using gpm_vibration_module_api;
+using  gpm_module_api;
 using static gpm_vibration_module_api.clsEnum;
 
 namespace gpm_module_api

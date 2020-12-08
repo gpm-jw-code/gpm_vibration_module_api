@@ -29,7 +29,7 @@ namespace gpm_module_api.Tools
             }
             catch (Exception ex)
             {
-                Logger.Code_Error_Log.Log(ex.Message + ex.StackTrace);
+                //Logger.Code_Error_Log.Log(ex.Message + ex.StackTrace);
             }
 
         }
@@ -68,7 +68,7 @@ namespace gpm_module_api.Tools
             }
             catch (Exception ex)
             {
-                Logger.Code_Error_Log.Log(ex.Message + ex.StackTrace);
+                //Logger.Code_Error_Log.Log(ex.Message + ex.StackTrace);
             }
             finally
             {
@@ -87,7 +87,7 @@ namespace gpm_module_api.Tools
             }
             catch (Exception exp)
             {
-                Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+               // Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
             }
             IntPtr buffer = Marshal.AllocHGlobal(size);
             Marshal.StructureToPtr(sec, buffer, true);
@@ -177,7 +177,7 @@ namespace gpm_module_api.Tools
                 }
                 catch (Exception exp)
                 {
-                    Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                   // Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                 }
 
             }
@@ -193,7 +193,7 @@ namespace gpm_module_api.Tools
                 }
                 catch (Exception exp)
                 {
-                    Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                   //Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                 }
             }
 
@@ -217,7 +217,7 @@ namespace gpm_module_api.Tools
                     }
                     catch (Exception exp)
                     {
-                        Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                      //  Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                     }
                 }
             }
@@ -230,7 +230,7 @@ namespace gpm_module_api.Tools
                 }
                 catch (Exception exp)
                 {
-                    Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                    //Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                 }
             }
 
@@ -246,13 +246,13 @@ namespace gpm_module_api.Tools
                     }
                     catch (SocketException ex)
                     {
-                        Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + ex.Message);
+                       // Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + ex.Message);
                         Console.WriteLine(ex.Message);
                         Initialize();
                     }
                     catch(Exception ex)
                     {
-                        Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + ex.Message);
+                       // Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + ex.Message);
                         Console.WriteLine(ex.Message);
                         Initialize();
                     }
@@ -307,7 +307,7 @@ namespace gpm_module_api.Tools
             }
             catch (Exception exp)
             {
-                Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                //Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                 return false;
             }
 
@@ -394,7 +394,7 @@ namespace gpm_module_api.Tools
             }
             catch (Exception exp)
             {
-                Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
+                //Tools.Logger.Code_Error_Log.Log($"[{ClassName}] " + exp.Message);
                 return false;
             }
         }
