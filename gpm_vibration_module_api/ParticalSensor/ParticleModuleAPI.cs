@@ -190,8 +190,9 @@ namespace gpm_module_api.ParticalSensor
             {
                 byte[] dataByteAry;
                 bool IsTimeout;
-                dataByteAry = module_base.GetAccData_HighSpeedWay(out _ParticleDataSet.TimeSpend, out IsTimeout);
-                _ParticleDataSet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
+                var SCK_STATE = module_base.GetAccData_HighSpeedWay(out _ParticleDataSet.TimeSpend, out IsTimeout);
+                dataByteAry = SCK_STATE.data_rev_;
+               _ParticleDataSet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 module_base.isBusy = false;
                 if (dataByteAry.Length < 62)
                 {

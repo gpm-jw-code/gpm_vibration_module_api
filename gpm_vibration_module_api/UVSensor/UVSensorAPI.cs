@@ -41,8 +41,9 @@ namespace gpm_module_api.UVSensor
             bool IsTimeout;
             try
             {
-                dataByteAry = module_base.GetAccData_HighSpeedWay(out uv_dataset.TimeSpend, out IsTimeout);
-                uv_dataset.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
+                var SCK_STATE =module_base.GetAccData_HighSpeedWay(out uv_dataset.TimeSpend, out IsTimeout);
+                dataByteAry = SCK_STATE.data_rev_;
+               uv_dataset.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 module_base.isBusy = false;
 
                 if (dataByteAry.Length < 4)

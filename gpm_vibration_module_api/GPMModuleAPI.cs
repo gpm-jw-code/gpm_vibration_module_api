@@ -1276,12 +1276,30 @@ namespace gpm_vibration_module_api
             {
                 byte[] AccPacket;
                 bool IsTimeout;
-                AccPacket = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                var SCK_STATE = module_base.GetAccData_HighSpeedWay(out DataSetRet.TimeSpend, out IsTimeout);
+                AccPacket = SCK_STATE.data_rev_;
 
-                DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
+                switch (SCK_STATE.Abnormal_Type)
+                {
+                    case SocketState.ABNORMAL.Normal:
+                        DataSetRet.ErrorCode = 0;
+                        break;
+                    case SocketState.ABNORMAL.Timeout:
+                        DataSetRet.ErrorCode = (int) clsErrorCode.Error.DATA_GET_TIMEOUT;
+                        break;
+                    case SocketState.ABNORMAL.Disconnect:
+                        DataSetRet.ErrorCode = (int)clsErrorCode.Error.CONNECT_FAIL;
+                        break;
+                    case SocketState.ABNORMAL.Cancel:
+                        DataSetRet.ErrorCode = (int)clsErrorCode.Error.Cancel;
+                        break;
+                    default:
+                        break;
+                }
+
+                //DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
                 if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
                 {
-
                     //Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
                     WaitAsyncForGetDataTask.Set();
@@ -1312,6 +1330,9 @@ namespace gpm_vibration_module_api
                 DataSetRet.AccData.Z.Add(-99999);
             }
         }
+
+
+
         internal virtual void GetDataTask()
         {
             //IsGetDataTaskPaused = true;

@@ -23,6 +23,7 @@
             LicenseFileNoExist = 704,
             LicenseExpired = 705,
             LicenseCheckFail = 706,
+            Cancel = 144446,
         }
 
     }

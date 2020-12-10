@@ -12,7 +12,7 @@ namespace gpm_module_api.UVSensor
 {
     internal class UVSensorBase : ClsModuleBase
     {
-        internal override byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
+        internal override SocketState GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
             SocketState state = new SocketState();
             isBusy = true;
@@ -43,7 +43,7 @@ namespace gpm_module_api.UVSensor
                 timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
                 IsTimeout = state.is_data_recieve_timeout_;
                 Logger.Event_Log.Log($"Timeout Detector ..Task{ state.task_of_now}..[In Time] , Spend:{timespend} ms");
-                return state.data_rev_;
+                return state;
 
             }
             catch (Exception exp)
@@ -53,7 +53,7 @@ namespace gpm_module_api.UVSensor
                 timespend = -1;
                 WaitForBufferRecieveDone.Set();
                 IsTimeout = false;
-                return new byte[0];
+                return state;
             }
         }
     }

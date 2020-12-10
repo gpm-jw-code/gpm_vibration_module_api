@@ -236,7 +236,7 @@ namespace gpm_vibration_module_api
             //}
 
 
-            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte - (DataLengthByte >= 16 ?  module_settings.comp_len:0);
+            module_settings.DataLength = DataLengthByte == 0 ? 1 : (int)DataLengthByte - (DataLengthByte >= 16 ? module_settings.comp_len : 0);
 
 
             switch (ODRByte)
@@ -289,6 +289,13 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         internal class SocketState
         {
+            public enum ABNORMAL
+            {
+                Normal, Timeout, Disconnect ,Cancel
+
+            }
+
+            public ABNORMAL Abnormal_Type = ABNORMAL.Normal;
             public Socket work_socket_ = null;
             public static int Packet_Receive_Size = 256;
             public byte[] buffer_;
@@ -536,7 +543,7 @@ namespace gpm_vibration_module_api
         }
         internal SocketState state;
         internal bool isBusy = false;
-        internal virtual byte[] GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
+        internal virtual SocketState GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
             state = new SocketState();
             isBusy = true;
@@ -570,7 +577,7 @@ namespace gpm_vibration_module_api
                 timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
                 IsTimeout = state.is_data_recieve_timeout_;
                 Tools.Logger.Event_Log.Log($"Timeout Detector ..Task { state.task_of_now}..[In Time] , Spend:{timespend} ms");
-                return state.data_rev_;
+                return state;
             }
             catch (Exception exp)
             {
@@ -580,7 +587,7 @@ namespace gpm_vibration_module_api
                 timespend = -1;
                 WaitForBufferRecieveDone.Set();
                 IsTimeout = false;
-                return new byte[0];
+                return state;
             }
         }
 
@@ -621,6 +628,7 @@ namespace gpm_vibration_module_api
                 }
                 catch (OperationCanceledException ex)
                 {
+                    _state.Abnormal_Type = SocketState.ABNORMAL.Cancel;
                     _state.is_data_recieve_done_flag_ = true;
                     _state.is_data_recieve_timeout_ = false;
                     Tools.Logger.Event_Log.Log("[TimeoutCheck]使用者中斷");
@@ -637,6 +645,7 @@ namespace gpm_vibration_module_api
                 {
                     timer.Stop();
                     _state.time_spend_ = timer.ElapsedMilliseconds;
+                    _state.Abnormal_Type = SocketState.ABNORMAL.Timeout;
                     Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ _state.task_of_now}..[Timeout] , Spend:{timer.ElapsedMilliseconds} ms");
                     _state.is_data_recieve_timeout_ = true;
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data)
@@ -654,6 +663,7 @@ namespace gpm_vibration_module_api
             }
             timer.Stop();
 
+            _state.Abnormal_Type = SocketState.ABNORMAL.Normal;
             return timer.ElapsedMilliseconds;
         }
 
@@ -706,10 +716,12 @@ namespace gpm_vibration_module_api
                 Tools.Logger.Event_Log.Log("[receiveCallBack] OperationCanceledException 使用者中斷");
                 isBusy = false;
                 state.is_data_recieve_done_flag_ = true;
+                state.Abnormal_Type = SocketState.ABNORMAL.Disconnect;
                 WaitForBufferRecieveDone.Set();
             }
             catch (SocketException ex)
             {
+                state.Abnormal_Type = SocketState.ABNORMAL.Disconnect;
                 state.is_data_recieve_done_flag_ = true;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_SocketException] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] SocketException {ex.Message + "\r\n" + ex.StackTrace}");
@@ -718,12 +730,13 @@ namespace gpm_vibration_module_api
             }
             catch (Exception ex)
             {
+                state.Abnormal_Type = SocketState.ABNORMAL.Disconnect;
                 state.is_data_recieve_done_flag_ = true;
                 Tools.Logger.Event_Log.Log($"[receiveCallBack_Exception] Exception {ex.Message }");
                 Tools.Logger.Code_Error_Log.Log($"[receiveCallBack] Exception {ex.Message + "\r\n" + ex.StackTrace}");
                 isBusy = false;
                 WaitForBufferRecieveDone.Set();
-              
+
             }
             //            AccDataBuffer.AddRange(state.buffer);
         }
