@@ -647,6 +647,7 @@ namespace gpm_vibration_module_api
                     _state.time_spend_ = timer.ElapsedMilliseconds;
                     _state.Abnormal_Type = SocketState.ABNORMAL.Timeout;
                     Tools.Logger.Event_Log.Log($"Timeout Detector ..Task{ _state.task_of_now}..[Timeout] , Spend:{timer.ElapsedMilliseconds} ms");
+                    Console.WriteLine(_state.data_rev_.Length);
                     _state.is_data_recieve_timeout_ = true;
                     if (_state.task_of_now == TIMEOUT_CHEK_ITEM.Read_Acc_Data)
                     {
@@ -693,8 +694,9 @@ namespace gpm_vibration_module_api
                         SendBulkBreakCmd();
                         state.data_rev_ = new byte[state.window_size_];
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
+
                         WaitForBufferRecieveDone.Set();
-                        state.is_data_recieve_done_flag_ = true;
+						state.is_data_recieve_done_flag_ = true;
                     }
                     else
                     {

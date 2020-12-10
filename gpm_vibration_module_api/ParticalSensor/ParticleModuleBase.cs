@@ -151,7 +151,6 @@ namespace gpm_module_api.ParticalSensor
 
                 if (bytesRead > 0)
                 {
-
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
