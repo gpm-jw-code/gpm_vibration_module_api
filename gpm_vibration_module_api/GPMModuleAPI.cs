@@ -1068,7 +1068,7 @@ namespace gpm_vibration_module_api
         /// <param name="MeasureRange"> 量測範圍列舉</param>
         /// <param name="IsNeedReboot">是否要重新啟動模組</param>
         /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange, bool IsNeedReboot = true)
+        public virtual async Task<int> Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE MeasureRange, bool IsNeedReboot = true)
         {
             module_base.setTaskObj = new ClsParamSetTaskObj(module_base.module_settings.dAQMode)
             {
@@ -1087,7 +1087,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="N">資料倍率,必須為2的指數</param>
         /// <returns><para> 0: 設定成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Data_Length_Setting(int N, bool IsNeedReboot = false)
+        public virtual async Task<int> Data_Length_Setting(int N, bool IsNeedReboot = false)
         {
 
             if (!GpmMath.Numeric.Tools.IsPowerOf2(N) | N > 64)
@@ -1109,7 +1109,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        private async Task<int> Data_Length_Setting(DAQMode dAQMode, bool IsNeedReboot = false)
+        private virtual async Task<int> Data_Length_Setting(DAQMode dAQMode, bool IsNeedReboot = false)
         {
             module_base.setTaskObj = new ClsParamSetTaskObj(dAQMode)
             {

@@ -45,14 +45,19 @@ namespace gpm_module_api.VibrationSensor
         {
             base.LicenseCheck = true;
         }
-        public async Task<int> DAQModeSetting(DAQMode Mode)
+        public  async Task<int> DAQModeSetting(DAQMode Mode)
         {
-            return await base.DAQModeSetting((gpm_vibration_module_api.DAQMode)Mode,false);
+            return await base.DAQModeSetting((gpm_vibration_module_api.DAQMode)Mode, false);
         }
 
-        public async Task<int> Measure_Range_Setting(gpm_module_api.clsEnum.Module_Setting_Enum.MEASURE_RANGE range)
+        public  async Task<int> Measure_Range_Setting(gpm_module_api.clsEnum.Module_Setting_Enum.MEASURE_RANGE range)
         {
             return await base.Measure_Range_Setting(range, false);
+        }
+
+        public   async Task<int> Data_Length_Setting(int N)
+        {
+            return await base.Data_Length_Setting(N, false);
         }
 
         public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
@@ -118,7 +123,7 @@ namespace gpm_module_api
     }
     public class clsEnum : gpm_vibration_module_api.clsEnum
     {
-        
+
     }
 
 

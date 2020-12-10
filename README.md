@@ -10,9 +10,10 @@
 | ------ | ------ | ----- | ----- |
 |  2019/7/25  | J.W.H | V1.0 | Document Release. | 
 |  2020/7/21 | J.W.H | V1.1 | Update content follow newest API design. |
-|  2020/7/22 | J.W.H | V1.2 |Update 物件宣告/Connect 說明  Update ErrorCode content. |
+|  2020/7/22 | J.W.H | V1.2 |- Update 物件宣告<br>- Connect 說明  Update ErrorCode content. |
 |  2020/10/14 | J.W.H | V1.10.14.0 |新增ACC RAW DATA可自動儲存功能(Option) |
-|  2020/11/09 | J.W.H | V1.11.09.0 |Timeout相關參數新增get屬性、修正Keypro檢查邏輯、修改參數讀寫重試次數預設值為2、優化韌體燒錄功能流程 |
+|  2020/11/09 | J.W.H | V1.11.09.0 |- Timeout相關參數新增get屬性<br>- 修正Keypro檢查邏輯<br>- 修改參數讀寫重試次數預設值為2<br> - 優化韌體燒錄功能流程 |
+|  2020/12/10 | J.W.H | V1.12.10.1 | - 新增取樣模式設定、資料長度設定、低通濾波器設定、取樣率存取等API說明<br> - 更新Error Code Table |
 
 # Overview
 
@@ -20,7 +21,10 @@
 ### Programming 
 - [物件宣告](#宣告虛擬感測器物件)
 - [連線](#連線)
+- [取樣模式設定](#設定取樣模式)
 - [量測範圍設定](#量測範圍設定)
+- [取樣資料(單軸)長度設定](#設定取樣資料長度)
+- [低通濾波器設定](#低通濾波器設定)
 - [獲取數據](#獲取數據)
 
 
@@ -66,11 +70,33 @@
       }
 
 ---
+
+## **設定取樣模式** <a name="設定取樣模式"></a>
+
+確認步驟B. Module連線成功後，設定取樣模式。
+
+   Task< int > GPMModuleAPI.DAQModeSetting(DAQMode mode)
+
+DAQMode **為取樣模式列舉**
+- High_Sampling : 用較高取樣頻率進行採樣，如量測倍數長度在x2以上，會有明顯的GAP產生。
+- Low_Sampling : 用較低區樣頻率進行採樣，可獲得沒有GAP的連續數據。
+
+### Example:
+    var retCode;
+    if (retCode = await module.DAQModeSetting(DAQMode.Low_Sampling) == 0) 
+        MessageBox.Show("OK");
+    else //返回值非0,表示設定異常
+        MessageBox.Show("Error_Code:" + retCode);
+
+---
+
+
+
 ## **設定量測範圍** <a name="量測範圍設定"></a>
 
 確認步驟B. Module連線成功後，設定量測範圍。
 
-   Task<int> GPMModuleAPI.Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE Range)
+   Task < int > GPMModuleAPI.Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE Range)
 
 clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
 
@@ -79,9 +105,45 @@ clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
     if (retCode = await module.Measure_Range_Setting(clsEnum.Module_Setting_Enum.MEASURE_RANGE._2g) == 0) 
         MessageBox.Show("OK");
     else //返回值非0,表示設定異常
-        MessageBox.Show("ERROR");
+        MessageBox.Show("Error_Code:" + retCode);
 
 ---
+## **設定取樣資料長度(單軸)** <a name="設定取樣資料長度"></a>
+
+確認步驟B. Module連線成功後，設定取樣資料長度。    
+- 以 **'512'** 為基底，使用 **'倍率'** 的方式進行設定。
+
+   Task< int > GPMModuleAPI.Data_Length_Setting(int N)
+
+- 回傳值(int) : Error Code 
+- 輸入參數(int) : 倍率。
+
+### Example:
+    //設定為單軸資料點數為 1024 ( = 512 x 2) 
+    var retCode;
+    if (retCode = await module.Data_Length_Setting(2) 
+        MessageBox.Show("OK");
+    else //返回值非0,表示設定異常
+        MessageBox.Show("Error_Code:" + retCode);
+
+---
+## **設定低通濾波器** <a name="設定低通濾波器"></a>
+- 設定低通濾波器開啟與關閉。
+
+   bool LowPassFilterActive { get; set; }
+
+    ###
+        module.LowPassFilterActive = true; //開啟
+        module.LowPassFilterActive = false; //關閉
+    
+- 設定低通路波器截止頻率(Cutoff Frequency)。
+
+   double LowPassFilterCutOffFreq { get; set; }
+    ###
+        module.LowPassFilterCutOffFreq = 1000.0; //Unit:Hz
+
+---
+
 ## **讀取感測數據** <a name="獲取數據"></a>
 
 - 使用 GPMModuleAPI中的 **GetData** 方法。該方法將返回一 **DataSet** 物件。DataSet中的 **ErrorCode** 回傳值為0表示數據可讀取；回傳非0表示異常，可參考Error Code說明。
@@ -110,11 +172,16 @@ clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
     }
     else
     {
-        //
+        MessageBox.Show("Error_Code:" + retCode);
     }
 
+## **修改/獲取取樣頻率** <a name="獲取數據"></a>
 
+double SamplingRate { get; set; }
 
+### 
+    var sampling_rate_of_sensor = module.SamplingRate; //取得取樣頻率
+    module.samplingRate = 3200; //設定取樣頻率
 
 ## **Error Code**
 
