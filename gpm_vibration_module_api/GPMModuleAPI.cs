@@ -459,12 +459,9 @@ namespace gpm_vibration_module_api
 
 #endif
         #region Constructors
-        public GPMModuleAPI(string IP = null)
+        public GPMModuleAPI()
         {
             Sys_Config_Load();
-
-            if (IP != null)
-                SensorIP = IP;
 
             KeyproMdule.API.KeyProInsertEvent += API_KeyProInsertEvent;
             KeyproMdule.API.KeyProRemoveEvent += API_KeyProRemoveEvent;
@@ -640,15 +637,15 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns></returns>
-        public async Task<int> Connect(string IP, int Port, bool IsSelfTest = true)
+        public async Task<int> Connect(string IP, int Port)
         {
-            return await Connect(IP, Port, null, IsSelfTest);
+            return await Connect(IP, Port, null, true);
         }
 
 
         public async Task<int> Connect(bool IsSelfTest = false)
         {
-            var task = Connect(SensorIP, SensorPort, IsSelfTest);
+            var task = Connect(SensorIP, SensorPort,null, true);
             await task;
             return task.Result;
         }
@@ -658,7 +655,7 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns><para> 0: 連線成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Connect(string IP, int Port = -1, Socket module_Socket = null, bool IsSelfTest = true)
+        public async Task<int> Connect(string IP, int Port , Socket module_Socket = null, bool IsSelfTest = true)
         {
             IP = IP.Replace(" ", "");
             var IPPortCheckResult = IPPortCheck(IP, Port);
@@ -1109,7 +1106,7 @@ namespace gpm_vibration_module_api
         }
 
 
-        private virtual async Task<int> Data_Length_Setting(DAQMode dAQMode, bool IsNeedReboot = false)
+        public virtual async Task<int> Data_Length_Setting(DAQMode dAQMode, bool IsNeedReboot = false)
         {
             module_base.setTaskObj = new ClsParamSetTaskObj(dAQMode)
             {

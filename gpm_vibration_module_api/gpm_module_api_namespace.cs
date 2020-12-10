@@ -33,7 +33,7 @@ namespace gpm_module_api.VibrationSensor
     {
         public async Task<int> Connect(string IP, int Port)
         {
-            return await base.Connect(IP, Port, true);
+            return await base.Connect(IP, Port);
         }
 
         public GPMModuleAPI(Socket socket) : base(socket)
