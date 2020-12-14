@@ -45,7 +45,7 @@ namespace gpm_vibration_module_api
                 this.SensorIP = _ConnectObj.IP;
                 this.ModuleSocket = _ConnectObj.ClientSocket;
                 Sensor_Config_Load();
-                bool ret= SelfTest().Result;
+                bool ret = SelfTest().Result;
             }
             DataSet.AutoDelete();
             Sys_Config_Load();
@@ -365,7 +365,7 @@ namespace gpm_vibration_module_api
                 try
                 {
                     int _result;
-                    Int32.TryParse(value + "", out  _result);
+                    Int32.TryParse(value + "", out _result);
                     module_base.fw_parm_rw_timeout = _result;
                 }
                 catch (Exception ex)
@@ -501,7 +501,7 @@ namespace gpm_vibration_module_api
             module_base.DataRecieve += Module_base_DataReady;
         }
 
-       
+
         #endregion
 
         /// <summary>
@@ -540,7 +540,7 @@ namespace gpm_vibration_module_api
         /// <param name="Mode"></param>
         /// <returns><para> 0: 切換成功   </para> <para> Others: Error Code </para></returns>
         /// 
-        public virtual async Task<int> DAQModeSetting(DAQMode Mode,bool IsNeedReboot=false)
+        public virtual async Task<int> DAQModeSetting(DAQMode Mode, bool IsNeedReboot = false)
         {
             if (Mode == module_base.module_settings.dAQMode)
                 return 0;
@@ -637,15 +637,15 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns></returns>
-        public async Task<int> Connect(string IP, int Port)
+        public async Task<int> Connect(string IP, int Port, bool LoadSettingFromConfig = true)
         {
-            return await Connect(IP, Port, null, true);
+            return await Connect(IP, Port, null, LoadSettingFromConfig);
         }
 
 
         public async Task<int> Connect(bool IsSelfTest = false)
         {
-            var task = Connect(SensorIP, SensorPort,null, true);
+            var task = Connect(SensorIP, SensorPort, null, true);
             await task;
             return task.Result;
         }
@@ -655,7 +655,7 @@ namespace gpm_vibration_module_api
         /// <param name="IP">控制器IP</param>
         /// <param name="Port">控制器Port</param>
         /// <returns><para> 0: 連線成功   </para> <para> Others: Error Code </para></returns>
-        public async Task<int> Connect(string IP, int Port , Socket module_Socket = null, bool IsSelfTest = true)
+        private async Task<int> Connect(string IP, int Port, Socket module_Socket = null, bool IsSelfTest = true)
         {
             IP = IP.Replace(" ", "");
             var IPPortCheckResult = IPPortCheck(IP, Port);
@@ -1146,7 +1146,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        
+
 
         private void Module_base_DataReady(DataSet dataSet)
         {
@@ -1285,7 +1285,7 @@ namespace gpm_vibration_module_api
                         DataSetRet.ErrorCode = 0;
                         break;
                     case SocketState.ABNORMAL.Timeout:
-                        DataSetRet.ErrorCode = (int) clsErrorCode.Error.DATA_GET_TIMEOUT;
+                        DataSetRet.ErrorCode = (int)clsErrorCode.Error.DATA_GET_TIMEOUT;
                         break;
                     case SocketState.ABNORMAL.Disconnect:
                         DataSetRet.ErrorCode = (int)clsErrorCode.Error.CONNECT_FAIL;
