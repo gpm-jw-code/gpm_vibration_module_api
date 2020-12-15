@@ -1309,6 +1309,7 @@ namespace gpm_vibration_module_api
                 module_base.SocketBufferClear();
                 ///
                 DataSetRet.AddData(ConvertToDataSet(AccPacket, lowPassFilter: module_base.module_settings.lowPassFilter.Active));
+                module_base.state = null;
 
             }
             catch (SocketException exp)

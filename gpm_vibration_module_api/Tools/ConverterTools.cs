@@ -66,6 +66,9 @@ namespace gpm_vibration_module_api.Tools
             {
                 for (int i = 0; i < N; i++)
                 {
+                    //0,1
+                    //2,3
+                    //4,5
                     Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1]) / LSB);
                     Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3]) / LSB);
                     Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5]) / LSB);

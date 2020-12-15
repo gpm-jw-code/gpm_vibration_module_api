@@ -291,7 +291,7 @@ namespace gpm_vibration_module_api
         {
             public enum ABNORMAL
             {
-                Normal, Timeout, Disconnect ,Cancel
+                Normal, Timeout, Disconnect, Cancel
 
             }
 
@@ -543,8 +543,12 @@ namespace gpm_vibration_module_api
         }
         internal SocketState state;
         internal bool isBusy = false;
+        AsyncCallback RevCallBack;
+
         internal virtual SocketState GetAccData_HighSpeedWay(out long timespend, out bool IsTimeout)
         {
+            if (RevCallBack == null)
+                RevCallBack = new AsyncCallback(receiveCallBack);
             state = new SocketState();
             isBusy = true;
             acc_data_read_task_token_source = new CancellationTokenSource();
@@ -558,6 +562,7 @@ namespace gpm_vibration_module_api
                 var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : module_settings.DataLength * 3072;
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
+                module_socket.ReceiveBufferSize = Datalength;
                 state = new SocketState()
                 {
                     window_size_ = Datalength,
@@ -568,10 +573,11 @@ namespace gpm_vibration_module_api
                     data_rev_ = new byte[Datalength],
                     is_data_recieve_done_flag_ = false,
                     time_spend_ = -1,
+                    temp_rev_data = new List<byte>()
                 };
                 Tools.Logger.Event_Log.Log($"receiveCallBack_begining." + $"window_size_ {Datalength}" +
                     $"buffer_size_ {Datalength}");
-                module_socket.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0, new AsyncCallback(receiveCallBack), state);
+                module_socket.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0, RevCallBack, state);
                 var task = Task.Run(() => TimeoutCheck(state));
                 WaitForBufferRecieveDone.WaitOne();
                 timespend = task.Result; //1 tick = 100 nanosecond  = 0.0001 毫秒
@@ -682,32 +688,36 @@ namespace gpm_vibration_module_api
                 var client = state.work_socket_;
                 int bytesRead = client.EndReceive(ar);
                 //Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead}");
+               
+              
                 if (bytesRead > 0)
                 {
                     var rev = new byte[bytesRead];
                     Array.Copy(state.buffer_, 0, rev, 0, bytesRead);
                     state.temp_rev_data.AddRange(rev);
                     //Console.WriteLine(state.temp_rev_data.Count);
+                    state.is_data_recieve_done_flag_ = false;
+                    //client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,  RevCallBack, state);
+                    Console.WriteLine(bytesRead + "/" + state.temp_rev_data.Count + "");
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
-                        SendBulkBreakCmd();
-                        state.data_rev_ = new byte[state.window_size_];
+                       
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
+                        state.temp_rev_data.Clear();
+                        SendBulkBreakCmd();
                         WaitForBufferRecieveDone.Set();
                         state.is_data_recieve_done_flag_ = true;
+                        return;
                     }
                     else
                     {
-                        state.is_data_recieve_done_flag_ = false;
-                        client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,
-                             new AsyncCallback(receiveCallBack), state);
+                        client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,RevCallBack, state);
                     }
                 }
                 else
                 {
                     //Tools.Logger.Event_Log.Log($"封包接收,大小:{0}");
-                    client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,
-                            new AsyncCallback(receiveCallBack), state);
+                    
                 }
 
             }
