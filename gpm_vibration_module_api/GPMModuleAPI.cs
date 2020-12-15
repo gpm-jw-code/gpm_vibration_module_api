@@ -1340,7 +1340,7 @@ namespace gpm_vibration_module_api
             //GetDataTaskPause.WaitOne();
             //WaitAsyncForParametersSet.WaitOne();
             //IsGetDataTaskPaused = false;
-            DataSetRet = new DataSet(module_base.module_settings.sampling_rate_);
+            DataSetRet = new DataSet(module_base.module_settings.sampling_rate_) { RecieveTime = DateTime.Now };
             if (module_base.module_settings.dAQMode == DAQMode.High_Sampling)
             {
                 DataSetCnt = 0;//歸零
