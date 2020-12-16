@@ -11,19 +11,25 @@ namespace gpm_vibration_module_api.Module
     [Serializable]
     public class clsModuleSettings
     {
-
-        public clsModuleSettings()
-        {
-            lowPassFilter = new LowPassFilterParam();
-        }
-
         [Serializable]
         public class LowPassFilterParam
         {
             public bool Active { get; set; } = false;
             public double CutOffFreq { get; set; } = 1700;
         }
+        public clsModuleSettings()
+        {
+            lowPassFilter = new LowPassFilterParam();
+        }
 
+        /// <summary>
+        /// 控制器回傳的資料封包總長度
+        /// </summary>
+        public int DataBytesSize { get; set; } = 6000;
+        /// <summary>
+        /// 
+        /// </summary>
+        internal int Min_Single_Axis_Sapmle_Num { get; set; } = 100;
         public LowPassFilterParam lowPassFilter { get; set; }
 
         public int Packet_Receive_Size

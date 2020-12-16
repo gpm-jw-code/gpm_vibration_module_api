@@ -1,6 +1,6 @@
 ﻿#define YCM
 #define BR460800
-
+#define DAUL_MCU //最新版本，兩個MCU交互讀取的模式
 using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
 using System;
@@ -123,6 +123,45 @@ namespace gpm_vibration_module_api
         #endregion
 
         #region 存取子
+
+        /// <summary>
+        /// 韌體是否為一次送出 3072*N bytes的版本
+        /// </summary>
+        public bool Is_Daul_MCU_Mode
+        {
+            get
+            {
+                return module_base.Is_Daul_MCU_Mode;
+            }
+            set { module_base.Is_Daul_MCU_Mode = value; }
+        }
+        /// <summary>
+        /// 設定要接收控制器傳來數據封包的總長度 ::: 控制器回傳一個bytes[長度]
+        /// </summary>
+        public int DataBytesLength
+        {
+            get
+            {
+                return module_base.module_settings.DataBytesSize;
+            }
+            set
+            {
+                if (value % 6 != 00)
+                    throw new Exception("數據封包總長度須為 '6' 的倍數");
+                module_base.module_settings.DataBytesSize = value;
+                FreqVecCal(value / 6 / 2 / 2);
+                Sensor_Config_Save();
+            }
+        }
+        public int Min_Single_Axis_Sapmle_Num
+        {
+            get { return module_base.module_settings.Min_Single_Axis_Sapmle_Num; }
+            set
+            {
+                module_base.module_settings.Min_Single_Axis_Sapmle_Num = value;
+                Sensor_Config_Save();
+            }
+        }
         /// <summary>
         /// 取得數據封包擷取模式
         /// </summary>
@@ -1240,8 +1279,13 @@ namespace gpm_vibration_module_api
         }
         private DataSet ConvertToDataSet(byte[] AccPacket, bool lowPassFilter = false)
         {
+
             // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
-            var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode);
+            List<List<double>> datas;
+            if (!Is_Daul_MCU_Mode)
+                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode);
+            else
+                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode, min_axis_sample_num: module_base.module_settings.Min_Single_Axis_Sapmle_Num, High_Rich_Data: module_base.Is_Daul_MCU_Mode);
 
             if (lowPassFilter)
             {
@@ -1297,8 +1341,7 @@ namespace gpm_vibration_module_api
                         break;
                 }
 
-                //DataSetRet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : (DataLength) * 3072))
+                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? (Is_Daul_MCU_Mode ? (DataLength * 3072) : 3072) : Is_Daul_MCU_Mode? module_base.module_settings.DataBytesSize : (DataLength) * 3072))
                 {
                     //Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);

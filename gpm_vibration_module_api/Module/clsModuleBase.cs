@@ -18,6 +18,7 @@ namespace gpm_vibration_module_api
     {
         public Socket module_socket { get; internal set; }
         public bool is_bulk_break { get; private set; } = true;
+        internal bool Is_Daul_MCU_Mode = false;
         public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
         private ManualResetEvent pause_signal;
         private bool is_pause_ready = true;
@@ -559,7 +560,7 @@ namespace gpm_vibration_module_api
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
                 module_socket.Send(cmdbytes, 0, cmdbytes.Length, SocketFlags.None);
-                var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? 3072 : module_settings.DataLength * 3072;
+                var Datalength = module_settings.dAQMode == DAQMode.High_Sampling ? (Is_Daul_MCU_Mode ? module_settings.DataLength * 3072 : 3072) : (Is_Daul_MCU_Mode ? module_settings.DataBytesSize : module_settings.DataLength * 3072);
                 byte[] Datas = new byte[Datalength];
                 SocketBufferClear();
                 module_socket.ReceiveBufferSize = Datalength;
@@ -688,8 +689,8 @@ namespace gpm_vibration_module_api
                 var client = state.work_socket_;
                 int bytesRead = client.EndReceive(ar);
                 //Tools.Logger.Event_Log.Log($"封包接收,大小:{bytesRead}");
-               
-              
+
+
                 if (bytesRead > 0)
                 {
                     var rev = new byte[bytesRead];
@@ -701,7 +702,7 @@ namespace gpm_vibration_module_api
                     Console.WriteLine(bytesRead + "/" + state.temp_rev_data.Count + "");
                     if (state.temp_rev_data.Count >= state.window_size_)
                     {
-                       
+
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         state.temp_rev_data.Clear();
                         SendBulkBreakCmd();
@@ -711,13 +712,13 @@ namespace gpm_vibration_module_api
                     }
                     else
                     {
-                        client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0,RevCallBack, state);
+                        client.BeginReceive(state.buffer_, 0, SocketState.Packet_Receive_Size, 0, RevCallBack, state);
                     }
                 }
                 else
                 {
                     //Tools.Logger.Event_Log.Log($"封包接收,大小:{0}");
-                    
+
                 }
 
             }
