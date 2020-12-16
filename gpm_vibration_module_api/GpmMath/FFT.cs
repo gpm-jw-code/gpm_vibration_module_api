@@ -394,9 +394,9 @@ namespace gpm_vibration_module_api.GpmMath
 
 
             private const int minLength = 2;
-            private const int maxLength = 16384;
+            private const int maxLength = 999999;
             private const int minBits = 1;
-            private const int maxBits = 14;
+            private const int maxBits = 20;
             private static int[][] reversedBits = new int[maxBits][];
             private static Numeric.Complex[,][] complexRotation = new Numeric.Complex[maxBits, 2][];
 
