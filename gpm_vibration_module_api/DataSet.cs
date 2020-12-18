@@ -31,8 +31,10 @@ namespace gpm_vibration_module_api
         public clsFFTData FFTData = new clsFFTData();
         public clsFFTData MelBankData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();
+        public ADCError DATAERROR = new ADCError();
         public long TimeSpend;
         public DateTime RecieveTime;
+        
 
         internal void AddData(DataSet NewData)
         {
@@ -43,6 +45,9 @@ namespace gpm_vibration_module_api
             this.FFTData.X.AddRange(NewData.FFTData.X);
             this.FFTData.Y.AddRange(NewData.FFTData.Y);
             this.FFTData.Z.AddRange(NewData.FFTData.Z);
+            this.DATAERROR.X.AddRange(NewData.DATAERROR.X);
+            this.DATAERROR.Y.AddRange(NewData.DATAERROR.Y);
+            this.DATAERROR.Z.AddRange(NewData.DATAERROR.Z);
         }
 
         internal static void AutoDelete()
@@ -129,6 +134,26 @@ namespace gpm_vibration_module_api
             public double Z = 0;
         }
 
+        public class ADCError
+        {
+
+            public int ErrorSumCount
+            {
+                get
+                {
+                    return X.Count + Y.Count + Z.Count;
+                }
+            }
+
+            public List<ErrorValue> X = new List<ErrorValue>();
+            public List<ErrorValue> Y = new List<ErrorValue>();
+            public List<ErrorValue> Z = new List<ErrorValue>();
+        }
+
+        public class ErrorValue
+        {
+            public int Index;
+        }
 
     }
 

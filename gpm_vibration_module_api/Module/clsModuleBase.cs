@@ -18,7 +18,7 @@ namespace gpm_vibration_module_api
     {
         public Socket module_socket { get; internal set; }
         public bool is_bulk_break { get; private set; } = true;
-        internal bool Is_Daul_MCU_Mode = false;
+       
         public Module.clsModuleSettings module_settings = new Module.clsModuleSettings();
         private ManualResetEvent pause_signal;
         private bool is_pause_ready = true;
@@ -508,8 +508,9 @@ namespace gpm_vibration_module_api
                         byte[] rev = new byte[condition];
                         Array.Copy(Bulk_Buffer.ToArray(), startIndex, rev, 0, rev.Length);
                         Bulk_Buffer.RemoveRange(0, condition + startIndex);
+                        DataSet.ADCError _adcError;
                         //var doubleOutput = BytesToDoubleList(rev, false);
-                        var doubleOutput = ConverterTools.AccPacketToListDouble(rev, module_settings.MeasureRange, module_settings.dAQMode);
+                        var doubleOutput = ConverterTools.AccPacketToListDouble(rev, out _adcError, module_settings.MeasureRange, module_settings.dAQMode);
                         var dataset = new DataSet(module_settings.sampling_rate_);
                         dataset.AccData.X = (doubleOutput[0]);
                         dataset.AccData.Y = (doubleOutput[1]);
@@ -556,6 +557,7 @@ namespace gpm_vibration_module_api
             bulk_use = false;
             try
             {
+                var Is_Daul_MCU_Mode = module_settings.Is_Daul_MCU_Mode;
                 WaitForBufferRecieveDone = new ManualResetEvent(false);
                 SocketBufferClear();
                 var cmdbytes = Encoding.ASCII.GetBytes(clsEnum.ControllerCommand.READVALUE + "\r\n");
@@ -679,6 +681,7 @@ namespace gpm_vibration_module_api
         internal ManualResetEvent WaitForBufferRecieveDone;
         internal virtual void receiveCallBack(IAsyncResult ar)
         {
+            var Is_Daul_MCU_Mode = module_settings.Is_Daul_MCU_Mode;
             //Tools.Logger.Event_Log.Log($"receiveCallBack process");
             isBusy = true;
             SocketState state = (SocketState)ar.AsyncState;
@@ -705,7 +708,8 @@ namespace gpm_vibration_module_api
 
                         Array.Copy(state.temp_rev_data.ToArray(), 0, state.data_rev_, 0, state.window_size_);
                         state.temp_rev_data.Clear();
-                        SendBulkBreakCmd();
+                        if (!Is_Daul_MCU_Mode)
+                            SendBulkBreakCmd();
                         WaitForBufferRecieveDone.Set();
                         state.is_data_recieve_done_flag_ = true;
                         return;

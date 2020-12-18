@@ -4,7 +4,7 @@ using System.Text;
 
 namespace gpm_vibration_module_api
 {
-    public  class clsEnum
+    public class clsEnum
     {
         public enum MODULE_TYPE
         {
@@ -40,7 +40,11 @@ namespace gpm_vibration_module_api
                 MR_4G = 8192,
                 MR_8G = 4096,
                 MR_16G = 2048,
+                MR_32G = 1024,
+                MR_64G = 512,
             }
+
+          
         }
         /// <summary>
         /// GPM專用韌體ENUM

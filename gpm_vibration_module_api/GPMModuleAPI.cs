@@ -1,6 +1,5 @@
 ﻿#define YCM
 #define BR460800
-#define DAUL_MCU //最新版本，兩個MCU交互讀取的模式
 using gpm_vibration_module_api.GpmMath;
 using gpm_vibration_module_api.Module;
 using System;
@@ -131,9 +130,14 @@ namespace gpm_vibration_module_api
         {
             get
             {
-                return module_base.Is_Daul_MCU_Mode;
+                return module_base.module_settings.Is_Daul_MCU_Mode;
             }
-            set { module_base.Is_Daul_MCU_Mode = value; }
+            set
+            {
+                SamplingRate = value ? AccelerometerSetting.KX134.SamplingRate : SamplingRate;
+                module_base.module_settings.Is_Daul_MCU_Mode = value;
+                Sensor_Config_Save();
+            }
         }
         /// <summary>
         /// 設定要接收控制器傳來數據封包的總長度 ::: 控制器回傳一個bytes[長度]
@@ -203,6 +207,37 @@ namespace gpm_vibration_module_api
                 Sensor_Config_Save();
             }
         }
+
+        public bool HighPassFilterActive
+        {
+            get
+            {
+                if (module_base.module_settings.highPassFilter == null)
+                    return false;
+                return module_base.module_settings.highPassFilter.Active;
+            }
+            set
+            {
+
+                module_base.module_settings.highPassFilter.Active = value;
+                Sensor_Config_Save();
+            }
+        }
+        public double HighPassFilterCutOffFreq
+        {
+            get
+            {
+                if (module_base.module_settings.highPassFilter == null)
+                    return 1700;
+                return module_base.module_settings.highPassFilter.CutOffFreq;
+            }
+            set
+            {
+                module_base.module_settings.highPassFilter.CutOffFreq = value;
+                Sensor_Config_Save();
+            }
+        }
+
 
         public Socket ModuleSocket
         {
@@ -437,12 +472,11 @@ namespace gpm_vibration_module_api
         {
             get
             {
-                return module_base.module_settings.sampling_rate_;
+                return Is_Daul_MCU_Mode ? AccelerometerSetting.KX134.SamplingRate : module_base.module_settings.sampling_rate_;
             }
             set
             {
                 module_base.module_settings.sampling_rate_ = value;
-
                 Freq_Vec = FreqVecCal();
                 Sensor_Config_Save();
             }
@@ -458,7 +492,7 @@ namespace gpm_vibration_module_api
                 return module_base.module_settings.WifiControllUseHighSppedSensor;
             }
         }
-        #endregion
+
 
 
         public int Buffer_size
@@ -486,7 +520,7 @@ namespace gpm_vibration_module_api
                 return ClsModuleBase.delay_;
             }
         }
-
+        #endregion
         public enum Enum_AccGetMethod
         {
             Auto, Manual
@@ -1000,39 +1034,31 @@ namespace gpm_vibration_module_api
         /// </summary>
         public void Sensor_Config_Save()
         {
-            Thread th = new Thread(() =>
+            try
             {
+                var ModelSavePath = "SensorConfig\\" + SensorIP;
+                if (!Directory.Exists(ModelSavePath))
+                    Directory.CreateDirectory(ModelSavePath);
+                var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
+                if (!File.Exists(filepath))
+                    File.Create(filepath).Close();
+                using (FileStream fs = new FileStream(filepath, FileMode.Create))
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
+                    xs.Serialize(fs, module_base.module_settings);
+                };
+            }
+            catch (IOException ex)
+            {
+                Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
+                return;
+            }
 
-                try
-                {
-                    var ModelSavePath = "SensorConfig\\" + SensorIP;
-                    if (!Directory.Exists(ModelSavePath))
-                        Directory.CreateDirectory(ModelSavePath);
-                    var filepath = Path.Combine(ModelSavePath, "Controller_Parameters.xml");
-                    if (!File.Exists(filepath))
-                        File.Create(filepath).Close();
-                    using (FileStream fs = new FileStream(filepath, FileMode.Create))
-                    {
-                        XmlSerializer xs = new XmlSerializer(typeof(clsModuleSettings));
-                        xs.Serialize(fs, module_base.module_settings);
-                    }
-                    return;
-                }
-                catch (IOException ex)
-                {
-                    Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Tools.Logger.Code_Error_Log.Log($"[Sensor_Config_Save] {ex.Message}{ex.StackTrace}");
-                    return;
-                }
-            })
-            {
-                IsBackground = true
-            };
-            th.Start();
         }
 
         private void Sensor_Config_Load()
@@ -1277,42 +1303,71 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             Thread.Sleep(500);
         }
-        private DataSet ConvertToDataSet(byte[] AccPacket, bool lowPassFilter = false)
+        private DataSet ConvertToDataSet(byte[] AccPacket, bool lowPassFilter = false, bool highPassFilter = false)
         {
 
             // var datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DeterminALG());
             List<List<double>> datas;
+            DataSet.ADCError _adcError = new DataSet.ADCError();
             if (!Is_Daul_MCU_Mode)
-                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode);
+                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, out _adcError, MeasureRange, DAQMode);
             else
-                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, MeasureRange, DAQMode, min_axis_sample_num: module_base.module_settings.Min_Single_Axis_Sapmle_Num, High_Rich_Data: module_base.Is_Daul_MCU_Mode);
+                datas = Tools.ConverterTools.AccPacketToListDouble(AccPacket, out _adcError, MeasureRange, DAQMode, min_axis_sample_num: module_base.module_settings.Min_Single_Axis_Sapmle_Num, High_Rich_Data: module_base.module_settings.Is_Daul_MCU_Mode);
 
             if (lowPassFilter)
-            {
-                LowPassFilter passFilter = new LowPassFilter(module_base.module_settings.lowPassFilter.CutOffFreq, module_base.module_settings.sampling_rate_);
-                var alpha = passFilter.Alpha;
-                for (int i = 0; i < 3; i++)
-                {
-                    List<double> real_data = datas[i];
-                    List<double> y = new List<double>() { real_data[0] };
-                    for (int t = 1; t < real_data.Count; t++)
-                    {
-                        var _y = y[t - 1] + alpha * (real_data[t] - y[t - 1]);
-                        y.Add(_y);
-                    }
-                    datas[i] = y;
-                }
-
-            }
+                datas = LPF(datas);
+            if (highPassFilter)
+                datas = HPF(datas);
 
             var DataSetRet = new DataSet(SamplingRate);
             DataSetRet.AccData.X = datas[0];
             DataSetRet.AccData.Y = datas[1];
             DataSetRet.AccData.Z = datas[2];
-
-
+            DataSetRet.DATAERROR = _adcError;
             return DataSetRet;
         }
+
+        private List<List<double>> HPF(List<List<double>> datas)
+        {
+            HighPassFilter passFilter = new HighPassFilter(module_base.module_settings.highPassFilter.CutOffFreq, module_base.module_settings.sampling_rate_);
+            for (int i = 0; i < 3; i++)
+            {
+                List<double> real_data = datas[i];
+                List<double> y = new List<double>() { real_data[0] };
+                for (int t = 1; t < real_data.Count; t++)
+                {
+                    var _y = passFilter.Alpha * (y[t - 1] + real_data[t] - real_data[t - 1]);
+                    y.Add(_y);
+                }
+                datas[i] = y;
+            }
+
+            return datas;
+        }
+
+        /// <summary>
+        /// 通過低通濾波器
+        /// </summary>
+        private List<List<double>> LPF(List<List<double>> datas)
+        {
+            LowPassFilter passFilter = new LowPassFilter(module_base.module_settings.lowPassFilter.CutOffFreq, module_base.module_settings.sampling_rate_);
+
+            for (int i = 0; i < 3; i++)
+            {
+                List<double> real_data = datas[i];
+                List<double> y = new List<double>() { real_data[0] };
+                for (int t = 1; t < real_data.Count; t++)
+                {
+                    var _y = y[t - 1] + passFilter.Alpha * (real_data[t] - y[t - 1]);
+                    y.Add(_y);
+                }
+                datas[i] = y;
+            }
+
+            return datas;
+        }
+
+
 
         public void GenOneAccDataObject()
         {
@@ -1341,7 +1396,7 @@ namespace gpm_vibration_module_api
                         break;
                 }
 
-                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? (Is_Daul_MCU_Mode ? (DataLength * 3072) : 3072) : Is_Daul_MCU_Mode? module_base.module_settings.DataBytesSize : (DataLength) * 3072))
+                if (AccPacket.Length < (module_base.module_settings.dAQMode == DAQMode.High_Sampling ? (Is_Daul_MCU_Mode ? (DataLength * 3072) : 3072) : Is_Daul_MCU_Mode ? module_base.module_settings.DataBytesSize : (DataLength) * 3072))
                 {
                     //Tools.Logger.Event_Log.Log($"Raw Data bytes Insufficent :: {AccPacket.Length}<{(DataLength) * 3072}");
                     DataSetRet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
@@ -1351,7 +1406,7 @@ namespace gpm_vibration_module_api
                 module_base.state = null;
                 module_base.SocketBufferClear();
                 ///
-                DataSetRet.AddData(ConvertToDataSet(AccPacket, lowPassFilter: module_base.module_settings.lowPassFilter.Active));
+                DataSetRet.AddData(ConvertToDataSet(AccPacket, lowPassFilter: module_base.module_settings.lowPassFilter.Active, highPassFilter: module_base.module_settings.highPassFilter.Active));
                 module_base.state = null;
 
             }
@@ -1399,19 +1454,54 @@ namespace gpm_vibration_module_api
             }
             else
                 GenOneAccDataObject();
-            if (IsGetFFT && Numeric.Tools.IsPowerOf2(DataSetRet.AccData.X.Count))
-            {
-                DataSetRet.FFTData.X = FFT.GetFFT(DataSetRet.AccData.X);
-                DataSetRet.FFTData.Y = FFT.GetFFT(DataSetRet.AccData.Y);
-                DataSetRet.FFTData.Z = FFT.GetFFT(DataSetRet.AccData.Z);
 
+            if (IsGetFFT)
+            {
+                var rem = 0.0;
+                var sample_num = DataSetRet.AccData.X.Count;
+                var acc_data_x_for_fft = new List<double>();
+                var acc_data_y_for_fft = new List<double>();
+                var acc_data_z_for_fft = new List<double>();
+
+                #region 補數據作FFT
+                if ((rem = sample_num / 512.0) != 0)
+                {
+                    var _d = FindMinPowOf2(sample_num);
+                    var comp_num = _d - sample_num;
+                    double[] comp_datas_x = new double[comp_num];
+                    double[] comp_datas_y = new double[comp_num];
+                    double[] comp_datas_z = new double[comp_num];
+
+                    Array.Copy(DataSetRet.AccData.X.ToArray(), sample_num - comp_num, comp_datas_x, 0, comp_num);
+                    Array.Copy(DataSetRet.AccData.Y.ToArray(), sample_num - comp_num, comp_datas_y, 0, comp_num);
+                    Array.Copy(DataSetRet.AccData.Z.ToArray(), sample_num - comp_num, comp_datas_z, 0, comp_num);
+
+                    acc_data_x_for_fft.AddRange(DataSetRet.AccData.X);
+                    acc_data_x_for_fft.AddRange(comp_datas_x.ToList());
+                    acc_data_y_for_fft.AddRange(DataSetRet.AccData.Y);
+                    acc_data_y_for_fft.AddRange(comp_datas_y.ToList());
+                    acc_data_z_for_fft.AddRange(DataSetRet.AccData.Z);
+                    acc_data_z_for_fft.AddRange(comp_datas_z.ToList());
+                }
+                #endregion
+                else
+                {
+                    acc_data_x_for_fft.AddRange(DataSetRet.AccData.X);
+                    acc_data_y_for_fft.AddRange(DataSetRet.AccData.Y);
+                    acc_data_z_for_fft.AddRange(DataSetRet.AccData.Z);
+                }
+                DataSetRet.FFTData.X = FFT.GetFFT(acc_data_x_for_fft);
+                DataSetRet.FFTData.Y = FFT.GetFFT(acc_data_y_for_fft);
+                DataSetRet.FFTData.Z = FFT.GetFFT(acc_data_z_for_fft);
                 DataSetRet.Features.VibrationEnergy.X = Stastify.GetOA(DataSetRet.FFTData.X);
                 DataSetRet.Features.VibrationEnergy.Y = Stastify.GetOA(DataSetRet.FFTData.Y);
                 DataSetRet.Features.VibrationEnergy.Z = Stastify.GetOA(DataSetRet.FFTData.Z);
-
-                DataSetRet.FFTData.FreqVec = Freq_Vec;
-
+                DataSetRet.FFTData.FreqVec = FreqVecCal(DataSetRet.FFTData.X.Count); ;
             }
+
+
+
+
 
             if (IsGetOtherFeatures)
             {
@@ -1426,6 +1516,20 @@ namespace gpm_vibration_module_api
             module_base.isBusy = false;
             WaitAsyncForGetDataTask.Set();
         }
+
+        private int FindMinPowOf2(int Pt_num)
+        {
+            var Min_WS = -1;
+            for (int i = 0; true; i++)
+            {
+                Min_WS = (int)Math.Pow(2, i);
+
+                if (Min_WS > Pt_num)
+                    return Min_WS;
+            }
+
+        }
+
         private clsEnum.FWSetting_Enum.ACC_CONVERT_ALGRIUM DeterminALG()
         {
             if (module_base.module_settings.ByteAryOfParameters[1] == 0x00)

@@ -12,26 +12,27 @@ namespace gpm_vibration_module_api.Module
     public class clsModuleSettings
     {
         [Serializable]
-        public class LowPassFilterParam
+        public class PassFilterParam
         {
             public bool Active { get; set; } = false;
             public double CutOffFreq { get; set; } = 1700;
         }
+
         public clsModuleSettings()
         {
-            lowPassFilter = new LowPassFilterParam();
+            lowPassFilter = new PassFilterParam();
         }
 
         /// <summary>
         /// 控制器回傳的資料封包總長度
         /// </summary>
-        public int DataBytesSize { get; set; } = 6000;
+        public int DataBytesSize  = 6000;
         /// <summary>
         /// 
         /// </summary>
         internal int Min_Single_Axis_Sapmle_Num { get; set; } = 100;
-        public LowPassFilterParam lowPassFilter { get; set; }
-
+        public PassFilterParam lowPassFilter { get; set; } = new PassFilterParam();
+        public PassFilterParam highPassFilter { get; set; } = new PassFilterParam();
         public int Packet_Receive_Size
         {
             get
@@ -56,7 +57,7 @@ namespace gpm_vibration_module_api.Module
             }
         }
 
-
+        public bool Is_Daul_MCU_Mode = false;
 
         public DAQMode dAQMode = DAQMode.High_Sampling;
 

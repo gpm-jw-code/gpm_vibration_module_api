@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static gpm_vibration_module_api.DataSet;
 
 namespace gpm_vibration_module_api.Tools
 {
@@ -13,9 +14,9 @@ namespace gpm_vibration_module_api.Tools
         /// <param name="HB"></param>
         /// <param name="LB"></param>
         /// <returns></returns>
-        internal static double bytesToDouble(byte HB, byte LB)
-        {
-            return HB + (sbyte) LB * 256;
+        internal static double bytesToDouble(byte LB, byte HB)
+        { 
+            return (sbyte)HB * 256 + LB ;
         }
 
         /// <summary>
@@ -23,8 +24,9 @@ namespace gpm_vibration_module_api.Tools
         /// </summary>
         /// <param name="AccPacket"></param>
         /// <returns></returns>
-        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, out ADCError _ADCError, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
         {
+            _ADCError = new ADCError();
             //Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
             var N = AccPacket.Length / 6;
             var LSB = Convert.ToInt32(measureRange);
@@ -62,16 +64,27 @@ namespace gpm_vibration_module_api.Tools
                     Gz.Add(bytesToDouble(AccPacket[N * 4 + i], AccPacket[N * 5 + i]) / LSB);
                 }
             }
-            else if (dAQMode ==  DAQMode.Low_Sampling)
+            else if (dAQMode == DAQMode.Low_Sampling)
             {
                 for (int i = 0; i < N; i++)
                 {
-                    //0,1
-                    //2,3
-                    //4,5
-                    Gx.Add(bytesToDouble(AccPacket[(6 * i) + 0], AccPacket[(6 * i) + 1]) / LSB);
-                    Gy.Add(bytesToDouble(AccPacket[(6 * i) + 2], AccPacket[6 * i + 3]) / LSB);
-                    Gz.Add(bytesToDouble(AccPacket[(6 * i) + 4], AccPacket[(6 * i) + 5]) / LSB);
+                    var XHB = AccPacket[(6 * i) + 1];
+                    var XLB = AccPacket[(6 * i) + 0];
+                    var YHB = AccPacket[6 * i + 3];
+                    var YLB = AccPacket[6 * i + 2];
+                    var ZHB = AccPacket[(6 * i) + 5];
+                    var ZLB = AccPacket[(6 * i) + 4];
+
+                    if (XHB == 0xFF)
+                        _ADCError.X.Add(new ErrorValue() { Index = i });
+                    if (YHB == 0xFF)
+                        _ADCError.Y.Add(new ErrorValue() { Index = i });
+                    if (ZHB == 0xFF)
+                        _ADCError.Z.Add(new ErrorValue() { Index = i });
+
+                    Gx.Add(bytesToDouble(XLB, XHB) / LSB);
+                    Gy.Add(bytesToDouble(YLB, YHB) / LSB);
+                    Gz.Add(bytesToDouble(ZLB, ZHB) / LSB);
                 }
             }
             return new List<List<double>> { Gx, Gy, Gz };
@@ -86,8 +99,9 @@ namespace gpm_vibration_module_api.Tools
         /// <param name="min_axis_sample_num"></param>
         /// <param name="High_Rich_Data"></param>
         /// <returns></returns>
-        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode, int min_axis_sample_num = 100, bool High_Rich_Data = false)
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, out ADCError _ADCError, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode, int min_axis_sample_num = 100, bool High_Rich_Data = false)
         {
+            _ADCError = new ADCError();
             //Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
             var min_single_axes_sample_num = AccPacket.Length / 6;
             var LSB = Convert.ToInt32(measureRange);
@@ -163,9 +177,22 @@ namespace gpm_vibration_module_api.Tools
                     Array.Copy(AccPacket, (n * min_single_packet_len), single_bytes, 0, min_single_packet_len);
                     for (int i = 0; i < min_single_axes_sample_num; i++)
                     {
-                        Gx.Add(bytesToDouble(single_bytes[min_single_axes_sample_num * 0 + i], single_bytes[min_single_axes_sample_num * 1 + i]) / LSB);
-                        Gy.Add(bytesToDouble(single_bytes[min_single_axes_sample_num * 2 + i], single_bytes[min_single_axes_sample_num * 3 + i]) / LSB);
-                        Gz.Add(bytesToDouble(single_bytes[min_single_axes_sample_num * 4 + i], single_bytes[min_single_axes_sample_num * 5 + i]) / LSB);
+                        var XHB = single_bytes[min_single_axes_sample_num * 1 + i];
+                        var XLB = single_bytes[min_single_axes_sample_num * 0 + i];
+                        var YHB = single_bytes[min_single_axes_sample_num * 3 + i];
+                        var YLB = single_bytes[min_single_axes_sample_num * 2 + i];
+                        var ZHB = single_bytes[min_single_axes_sample_num * 5 + i];
+                        var ZLB = single_bytes[min_single_axes_sample_num * 4 + i];
+
+                        if (XHB == 0xFF )
+                            _ADCError.X.Add(new ErrorValue() { Index = i });
+                        if (YHB == 0xFF )
+                            _ADCError.Y.Add(new ErrorValue() { Index = i });
+                        if (ZHB == 0xFF )
+                            _ADCError.Z.Add(new ErrorValue() { Index = i });
+                        Gx.Add(bytesToDouble( XLB,XHB) / LSB);
+                        Gy.Add(bytesToDouble(  YLB, YHB) / LSB);
+                        Gz.Add(bytesToDouble(  ZLB, ZHB) / LSB);
                     }
                 }
             }
@@ -201,7 +228,7 @@ namespace gpm_vibration_module_api.Tools
         public static UVDataSet UVPacketToDatatSet(byte[] dataByteAry)
         {
             if (dataByteAry.Length < 4)
-                return new UVDataSet( (int)clsErrorCode.Error.ParticleSensorConvertError_Source_Data_Insufficient);
+                return new UVDataSet((int)clsErrorCode.Error.ParticleSensorConvertError_Source_Data_Insufficient);
             UVDataSet dataSet = new UVDataSet(0);
             byte hb = dataByteAry[0];
             byte Lb = dataByteAry[1];

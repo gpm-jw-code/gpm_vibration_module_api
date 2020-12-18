@@ -94,4 +94,46 @@ namespace Accord.Audio.Filters
 
 
     }
+
+    public class HighPassFilter 
+    {
+        /// <summary>
+        ///   Gets or sets the low-pass alpha value.
+        /// </summary>
+        /// 
+        public float Alpha { get; set; }
+
+        /// <summary>
+        ///   Gets the alpha value that can be used to achieve a given
+        ///   cut-off frequency under a given sampling rate.
+        /// </summary>
+        /// 
+        /// <param name="frequency">The desired cut-off frequency.</param>
+        /// <param name="sampleRate">The signal sampling rate.</param>
+        /// 
+        /// <returns>A value for <see cref="Alpha"/> that creates a filter
+        ///   that can filter out the given cut-off frequency.</returns>
+        /// 
+        private static float GetAlpha(double frequency, double sampleRate)
+        {
+            double rc = 1 / (2 * Math.PI * frequency);
+            double dt = 1 / sampleRate;
+            return (float)(rc / (rc + dt));
+        }
+
+        /// <summary>
+        ///   Constructs a new Low-Pass Filter using the given cut-off frequency and sample rate.
+        /// </summary>
+        /// 
+        /// <param name="frequency">The desired cut-off frequency.</param>
+        /// <param name="sampleRate">The signal sampling rate.</param>
+        /// 
+        public HighPassFilter(double frequency, double sampleRate)
+        {
+            Alpha = GetAlpha(frequency, sampleRate);
+        }
+
+    }
+
+
 }

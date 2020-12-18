@@ -93,6 +93,7 @@
     <Compile Include="License\LicenseCheckState.cs" />
     <Compile Include="LowPassFilter.cs" />
     <Compile Include="MeasureOption.cs" />
+    <Compile Include="Module\AccelerometerSetting.cs" />
     <Compile Include="Module\clsModuleBase.cs" />
     <Compile Include="Module\clsModuleSettings.cs" />
     <Compile Include="Module\ModulesServer.cs" />
