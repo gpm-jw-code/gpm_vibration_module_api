@@ -130,6 +130,7 @@ namespace gpm_vibration_module_api
         {
             get
             {
+                BitConverter.ToInt16(rowData, 0)
                 return module_base.module_settings.Is_Daul_MCU_Mode;
             }
             set
@@ -1194,7 +1195,15 @@ namespace gpm_vibration_module_api
         }
 
 
-
+        public async Task<byte[]> WriteParameterToController(byte[] params_byte_ary)
+        {
+            byte[] write_frame = new byte[11];
+            write_frame[0] = 0x53;
+            write_frame[9] = 0x0d;
+            write_frame[10] = 0x0a;
+            Array.Copy(params_byte_ary, 0, write_frame, 1, 8);
+            return await module_base.SendCommand(write_frame, 8);
+        }
 
 
         public void StartDataRecieve(MeasureOption option)
