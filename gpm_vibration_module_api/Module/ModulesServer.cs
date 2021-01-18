@@ -29,7 +29,7 @@ namespace gpm_module_api
             /// <summary>
             /// 自動生成的API物件與Module為Server Mode時的用法相同
             /// </summary>
-            public gpm_module_api.VibrationSensor.GPMModuleAPI ClientModuleAPI;
+            public GPMModuleAPI_HSR ClientModuleAPI;
             /// <summary>
             /// 連入的模組感測類型
             /// </summary>
@@ -44,20 +44,20 @@ namespace gpm_module_api
         /// <summary>
         /// 存放已連線模組的字典; Key:感測模組種類: Value:Dictiony<string,GPMModuleAPI> 以IP為Key,GPMModuleAPI物件為Value的字典:存放GPMModuleAPI物件
         /// </summary>
-        public static Dictionary<MODULE_TYPE, Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>> ModuleClientList = new Dictionary<MODULE_TYPE, Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>>()
+        public static Dictionary<MODULE_TYPE, Dictionary<string, GPMModuleAPI_HSR>> ModuleClientList = new Dictionary<MODULE_TYPE, Dictionary<string, GPMModuleAPI_HSR>>()
         {
-            { MODULE_TYPE.VIBRATION , new Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>()},
-            { MODULE_TYPE.UV , new Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>()},
-            { MODULE_TYPE.PARTICAL , new Dictionary<string,gpm_module_api.VibrationSensor. GPMModuleAPI>()},
+            { MODULE_TYPE.VIBRATION , new Dictionary<string, GPMModuleAPI_HSR>()},
+            { MODULE_TYPE.UV , new Dictionary<string, GPMModuleAPI_HSR>()},
+            { MODULE_TYPE.PARTICAL , new Dictionary<string,GPMModuleAPI_HSR>()},
         };
 
         private static void ModuleClinetListInitialize()
         {
-            ModuleClientList = new Dictionary<MODULE_TYPE, Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>>()
+            ModuleClientList = new Dictionary<MODULE_TYPE, Dictionary<string, GPMModuleAPI_HSR>>()
         {
-            { MODULE_TYPE.VIBRATION , new Dictionary<string,gpm_module_api.VibrationSensor. GPMModuleAPI>()},
-            { MODULE_TYPE.UV , new Dictionary<string,gpm_module_api.VibrationSensor. GPMModuleAPI>()},
-            { MODULE_TYPE.PARTICAL , new Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>()},
+            { MODULE_TYPE.VIBRATION , new Dictionary<string,GPMModuleAPI_HSR>()},
+            { MODULE_TYPE.UV , new Dictionary<string,GPMModuleAPI_HSR>()},
+            { MODULE_TYPE.PARTICAL , new Dictionary<string, GPMModuleAPI_HSR>()},
         };
         }
 
@@ -75,29 +75,29 @@ namespace gpm_module_api
 
         private static void ModulesServer_SensorConnectInEvent(ConnectInState obj)
         {
-            GPMModuleAPI api_module = null;
+            GPMModuleAPI_HSR api_module = null;
             var module_type = Tools.ModuleWhoAreYou.Judege(ref obj.ClientSocket);
             obj.CLIENT_MODULE_TYPE = module_type;
             
             switch (module_type)
             {
                 case MODULE_TYPE.VIBRATION:
-                    obj.ClientModuleAPI = new VibrationSensor.GPMModuleAPI(obj);
+                    obj.ClientModuleAPI = new GPMModuleAPI(obj);
                     break;
                 case MODULE_TYPE.UV:
-                    obj.ClientModuleAPI = new UVSensor.UVSensorAPI();
+                    obj.ClientModuleAPI = new UVSensor.UVSensorAPI(obj);
                     break;
                 case MODULE_TYPE.PARTICAL:
-                    obj.ClientModuleAPI = new ParticalSensor.ParticleModuleAPI();
+                    obj.ClientModuleAPI = new ParticalSensor.ParticleModuleAPI(obj);
                     break;
                 case MODULE_TYPE.UNKNOW:
-                    obj.ClientModuleAPI = new VibrationSensor.GPMModuleAPI(obj);
+                    obj.ClientModuleAPI = new GPMModuleAPI(obj);
                     break;
                 default:
                     break;
             }
             obj.CLIENT_MODULE_TYPE = obj.CLIENT_MODULE_TYPE == MODULE_TYPE.UNKNOW ?  MODULE_TYPE.VIBRATION : obj.CLIENT_MODULE_TYPE;
-            var module_api_ls = new Dictionary<string, gpm_module_api.VibrationSensor.GPMModuleAPI>();
+            var module_api_ls = new Dictionary<string, GPMModuleAPI_HSR>();
             ModuleClientList.TryGetValue(obj.CLIENT_MODULE_TYPE, out module_api_ls);
             if (module_api_ls != null)
             {

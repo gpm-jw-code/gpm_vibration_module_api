@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace gpm_vibration_module_api
+﻿namespace gpm_vibration_module_api
 {
     /// <summary>
     /// 數據封包擷取模式

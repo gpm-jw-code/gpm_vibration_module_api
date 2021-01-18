@@ -1,14 +1,12 @@
 ﻿using gpm_module_api.ParticalSensor;
-using gpm_vibration_module_api.GpmMath;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api
 {
-  
+
     public class DataSet
     {
         private const string DataSaveDir = "./Log/Data/";
@@ -76,6 +74,13 @@ namespace gpm_vibration_module_api
             internal List<double> acc_x_with_window = new List<double>();
             internal List<double> acc_y_with_window = new List<double>();
             internal List<double> acc_z_with_window = new List<double>();
+
+            internal List<double> acc_x_For_FFT = new List<double>();
+            internal List<double> acc_y_For_FFT = new List<double>();
+            internal List<double> acc_z_For_FFT = new List<double>();
+
+
+
             public enum States
             {
 

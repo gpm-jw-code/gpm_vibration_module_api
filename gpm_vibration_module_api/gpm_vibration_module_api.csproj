@@ -48,9 +48,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>8.0</LangVersion>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>
+    </CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -61,46 +62,59 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>
+    </CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Net.Http.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
+    <Compile Include="GpmMath\Filters.cs" />
+    <Compile Include="GPMModuleAPI.cs" />
+    <Compile Include="GPMModuleAPI_HSR.cs" />
     <Compile Include="gpm_module_api_namespace.cs" />
     <Compile Include="clsEnum.cs" />
     <Compile Include="clsErrorCode.cs" />
-    <Compile Include="ClsParamSetTaskObj.cs" />
     <Compile Include="DAQMode.cs" />
     <Compile Include="DataSet.cs" />
-    <Compile Include="Enviroment.cs" />
     <Compile Include="GpmMath\FFTSharp.cs" />
     <Compile Include="GpmMath\FFT.cs" />
     <Compile Include="GpmMath\Numeric.cs" />
     <Compile Include="GpmMath\Window.cs" />
-    <Compile Include="GPMModuleAPI.cs" />
-    <Compile Include="KeyproMdule.cs" />
+    <Compile Include="JSON\JSONParser.cs" />
+    <Compile Include="JSON\JSONWriter.cs" />
     <Compile Include="License\CHECK_RESULT.cs" />
     <Compile Include="License\GPMLicenseKey.cs" />
     <Compile Include="License\ICheckAction.cs" />
     <Compile Include="License\LicenseCheck.cs" />
     <Compile Include="License\LicenseCheckState.cs" />
-    <Compile Include="LowPassFilter.cs" />
-    <Compile Include="MeasureOption.cs" />
+    <Compile Include="GpmMath\LowPassFilter.cs" />
+    <Compile Include="Modbus\Exceptions\Exceptions.cs" />
+    <Compile Include="Modbus\GPMModbusAPI.cs" />
+    <Compile Include="Modbus\ModbusClient.cs" />
+    <Compile Include="Modbus\ModbusServer.cs" />
+    <Compile Include="Modbus\StoreLogData.cs" />
+    <Compile Include="ModuleSerialPortBase.cs" />
     <Compile Include="Module\AccelerometerSetting.cs" />
-    <Compile Include="Module\clsModuleBase.cs" />
-    <Compile Include="Module\clsModuleSettings.cs" />
     <Compile Include="Module\ModulesServer.cs" />
     <Compile Include="Module\TCPIPModule.cs" />
+    <Compile Include="NET\UDPServer.cs" />
+    <Compile Include="NET\WebAPI.cs" />
     <Compile Include="ParticalSensor\Concentration.cs" />
     <Compile Include="ParticalSensor\ParticleModuleAPI.cs" />
-    <Compile Include="ParticalSensor\ParticleModuleBase.cs" />
     <Compile Include="ParticalSensor\PARTICLE_Size.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -108,6 +122,7 @@
     <Compile Include="sys\Settings_Ctrl.cs" />
     <Compile Include="sys\Utility.cs" />
     <Compile Include="sys\Version.cs" />
+    <Compile Include="TCPSocketBase.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\EthernetControllerTool.cs" />
     <Compile Include="Tools\FirmwareBurning.cs" />
@@ -116,7 +131,6 @@
     <Compile Include="Tools\Sampling_Rate_Calculator.cs" />
     <Compile Include="Tools\VersionManager.cs" />
     <Compile Include="UVSensor\UVSensorAPI.cs" />
-    <Compile Include="UVSensor\UVSensorBase.cs" />
     <Compile Include="Visualize\ParticleModuleView.cs">
       <SubType>UserControl</SubType>
     </Compile>

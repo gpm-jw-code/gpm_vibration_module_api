@@ -1,76 +1,37 @@
 ﻿using gpm_vibration_module_api;
 using gpm_vibration_module_api.Tools;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace gpm_module_api.UVSensor
 {
 
-    public class UVSensorAPI : GPMModuleAPI
+    public class UVSensorAPI : GPMModuleAPI_HSR
     {
         internal UVDataSet PreDataSet = new UVDataSet(0);
         private UVDataSet uv_dataset = new UVDataSet(0);
+
+        public UVSensorAPI(GPMModulesServer.ConnectInState obj)
+        {
+            Obj = obj;
+            AsynchronousClient.client = obj.ClientSocket;
+        }
+
+        public GPMModulesServer.ConnectInState Obj { get; }
+
         public new event Action<DateTime> DisconnectEvent;
 
-        public UVSensorAPI(GPMModulesServer.ConnectInState _ConnectObj=null):base(_ConnectObj)
-        {
-            base.module_base = new UVSensorBase();
-        }
 
-        public new async Task<UVDataSet> GetData()
+        public  async Task<UVDataSet> GetData()
         {
-            if (module_base.isBusy)
-            {
-                return new UVDataSet(0)
-                {
-                    ErrorCode = Convert.ToInt32(clsErrorCode.Error.ModuleIsBusy)
-                };
-            }
-            WaitAsyncForGetDataTask.Reset();
-            await Task.Run(() => GetDataTask());
-            WaitAsyncForGetDataTask.WaitOne();
+            var state=  await SendMessageMiddleware("READUVVAL\r\n",4,3000);
+            if (state.ErrorCode != clsErrorCode.Error.None)
+                return new UVDataSet(0) { ErrorCode = (int) state.ErrorCode };
+            PreDataSet = ConverterTools.UVPacketToDatatSet(state.DataByteList.ToArray());
+            PreDataSet.RecieveTime = DateTime.Now;
+            AddNewDataToTempData(PreDataSet);
             return PreDataSet;
         }
-
-        internal override void GetDataTask()
-        {
-            byte[] dataByteAry;
-            bool IsTimeout;
-            try
-            {
-                var SCK_STATE =module_base.GetAccData_HighSpeedWay(out uv_dataset.TimeSpend, out IsTimeout);
-                dataByteAry = SCK_STATE.data_rev_;
-               uv_dataset.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                module_base.isBusy = false;
-
-                if (dataByteAry.Length < 4)
-                {
-                    uv_dataset.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
-                    uv_dataset = PreDataSet;
-                    WaitAsyncForGetDataTask.Set();
-                    return;
-                }
-                if (uv_dataset.ErrorCode != 0)
-                {
-                    WaitAsyncForGetDataTask.Set();
-                    return;
-                }
-                PreDataSet = ConverterTools.UVPacketToDatatSet(dataByteAry);
-                PreDataSet.RecieveTime = DateTime.Now;
-                AddNewDataToTempData(PreDataSet);
-                WaitAsyncForGetDataTask.Set();
-            }
-            catch (Exception ex)
-            {
-                if (DisconnectEvent != null)
-                    DisconnectEvent.Invoke(DateTime.Now);
-            }
-
-        }
-
         private void AddNewDataToTempData(UVDataSet NewDataSet)
         {
             if (NewDataSet.ErrorCode != 0)

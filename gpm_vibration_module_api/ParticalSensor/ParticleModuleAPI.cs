@@ -15,7 +15,7 @@ namespace gpm_module_api.ParticalSensor
     /// <summary>
     /// 讓使用者可以訪問粒子感測器
     /// </summary>
-    public class ParticleModuleAPI : GPMModuleAPI
+    public class ParticleModuleAPI : GPMModuleAPI_HSR
     {
         public struct DataTemporary
         {
@@ -33,6 +33,8 @@ namespace gpm_module_api.ParticalSensor
         internal ParticleDataSet PreDataSet = new ParticleDataSet();
         public DataTemporary TempData = new DataTemporary();
         public ParticleModuleView.DetailType NowDataType = ParticleModuleView.DetailType.None;
+
+        public GPMModulesServer.ConnectInState Obj { get; }
 
         public void DataTemporaryInitial()
         {
@@ -59,9 +61,8 @@ namespace gpm_module_api.ParticalSensor
             };
         }
 
-        public ParticleModuleAPI(GPMModulesServer.ConnectInState _ConnectObj = null) : base(_ConnectObj)
+        public ParticleModuleAPI() 
         {
-            base.module_base = new ParticleModuleBase();
             View = new ParticleModuleView();
             View.ModuleAPIBinding(this);
             DataTemporaryInitial();
@@ -69,6 +70,12 @@ namespace gpm_module_api.ParticalSensor
             View.TemperatureItemClickEvent += new Action<ParticleModuleAPI>(TemperatureDetailShow);
             View.IlluminanceItemClickEvent += new Action<ParticleModuleAPI>(IlluminanceDetailShow);
             View.ParticleItemClickEvent += new Action<ParticleModuleAPI>(ParticleDetailShow);
+        }
+
+        public ParticleModuleAPI(GPMModulesServer.ConnectInState obj)
+        {
+            Obj = obj;
+            AsynchronousClient.client = obj.ClientSocket;
         }
 
         private void ParticleDetailShow(ParticleModuleAPI obj)
@@ -183,78 +190,23 @@ namespace gpm_module_api.ParticalSensor
 
         public new event Action<DateTime> DisconnectEvent;
 
-        internal override void GetDataTask()
-        {
-            _ParticleDataSet = new ParticleDataSet();
-            try
-            {
-                byte[] dataByteAry;
-                bool IsTimeout;
-                var SCK_STATE = module_base.GetAccData_HighSpeedWay(out _ParticleDataSet.TimeSpend, out IsTimeout);
-                dataByteAry = SCK_STATE.data_rev_;
-               _ParticleDataSet.ErrorCode = IsTimeout ? Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT) : 0;
-                module_base.isBusy = false;
-                if (dataByteAry.Length < 62)
-                {
-                    _ParticleDataSet.ErrorCode = Convert.ToInt32(clsErrorCode.Error.DATA_GET_TIMEOUT);
-                    _ParticleDataSet = PreDataSet;
-                    WaitAsyncForGetDataTask.Set();
-                    return;
-                }
-                if (_ParticleDataSet.ErrorCode != 0)
-                {
-                    WaitAsyncForGetDataTask.Set();
-                    return;
-                }
-                var ParticleDataSet = ConverterTools.ParticalPacketToDataSet(dataByteAry);
-                _ParticleDataSet.Humidity = ParticleDataSet.Humidity;
-                _ParticleDataSet.Temperature = ParticleDataSet.Temperature;
-                _ParticleDataSet.Illuminance = ParticleDataSet.Illuminance;
-                _ParticleDataSet.ParticalValueDict = ParticleDataSet.ParticalValueDict;
-                _ParticleDataSet.TypicalParticleSize = ParticleDataSet.TypicalParticleSize;
-                _ParticleDataSet.Res1 = ParticleDataSet.Res1;
-                _ParticleDataSet.Res2 = ParticleDataSet.Res2;
-                PreDataSet = _ParticleDataSet;
-                AddNewDataToTempData(ParticleDataSet);
-                UpdateDetailShow();
-            }
-            catch (SocketException exp)
-            {
-                if (DisconnectEvent != null)
-                    DisconnectEvent.Invoke(DateTime.Now);
-            }
-            catch (Exception exp)
-            {
-
-            }
-
-            WaitAsyncForGetDataTask.Set();
-        }
-
         public new async Task<ParticleDataSet> GetData()
         {
-            if (module_base.isBusy)
-            {
-                return new ParticleDataSet
-                {
-                    Humidity = _ParticleDataSet.Humidity,
-                    Illuminance = _ParticleDataSet.Illuminance,
-                    ParticalValueDict = _ParticleDataSet.ParticalValueDict,
-                    Res1 = _ParticleDataSet.Res1,
-                    Res2 = _ParticleDataSet.Res2,
-                    Temperature = _ParticleDataSet.Temperature,
-                    TypicalParticleSize = _ParticleDataSet.TypicalParticleSize,
-                    ErrorCode = Convert.ToInt32(clsErrorCode.Error.ModuleIsBusy)
-                };
-            }
-
-            // if (Connected == false)
-            //     return new DataSet(module_base.SamplingRate) { ErrorCode = Convert.ToInt32(clsErrorCode.Error.NoConnection) };
-            WaitAsyncForParametersSet.Set();
-            WaitAsyncForGetDataTask.Reset();
-            await Task.Run(() => GetDataTask());
-            WaitAsyncForGetDataTask.WaitOne();
-            View.Update();
+            var state = await SendMessageMiddleware("READALVAL\r\n", 62, 3000);
+            if (state.ErrorCode != clsErrorCode.Error.None)
+                return new ParticleDataSet(0) { ErrorCode = (int)state.ErrorCode };
+            //READALVAL 62
+            var ParticleDataSet = ConverterTools.ParticalPacketToDataSet(state.DataByteList.ToArray());
+            _ParticleDataSet.Humidity = ParticleDataSet.Humidity;
+            _ParticleDataSet.Temperature = ParticleDataSet.Temperature;
+            _ParticleDataSet.Illuminance = ParticleDataSet.Illuminance;
+            _ParticleDataSet.ParticalValueDict = ParticleDataSet.ParticalValueDict;
+            _ParticleDataSet.TypicalParticleSize = ParticleDataSet.TypicalParticleSize;
+            _ParticleDataSet.Res1 = ParticleDataSet.Res1;
+            _ParticleDataSet.Res2 = ParticleDataSet.Res2;
+            PreDataSet = _ParticleDataSet;
+            AddNewDataToTempData(ParticleDataSet);
+            UpdateDetailShow();
             return PreDataSet;
         }
 

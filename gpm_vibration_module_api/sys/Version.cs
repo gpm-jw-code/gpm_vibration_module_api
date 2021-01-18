@@ -19,3 +19,10 @@ namespace gpm_module_api
         }
     }
 }
+namespace gpm_vibration_module_api
+{
+    public class Version: gpm_module_api.Version
+    {
+       
+    }
+}

@@ -68,7 +68,7 @@ namespace gpm_module_api.Module
                     {
                         byte[] rev = new byte[ret];
                         Array.Copy(_state.buffer,0,rev,0,ret);
-                        recieveEvent?.Invoke(rev);
+                        recieveEvent.Invoke(rev);
                         _state = new State { socket = _sck };
                         _sck.BeginReceive(_state.buffer, 0, State.bufferSize, SocketFlags.None, new AsyncCallback(RecieveCallBack), _state);
 

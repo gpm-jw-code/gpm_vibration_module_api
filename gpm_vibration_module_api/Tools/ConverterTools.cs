@@ -15,10 +15,14 @@ namespace gpm_vibration_module_api.Tools
         /// <param name="LB"></param>
         /// <returns></returns>
         internal static double bytesToDouble(byte LB, byte HB)
-        { 
-            return (sbyte)HB * 256 + LB ;
+        {
+            return (sbyte)HB * 256 + LB;
         }
-
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
+        {
+            ADCError _ADCError = null;
+            return AccPacketToListDouble(AccPacket, out _ADCError, measureRange, dAQMode );
+        }
         /// <summary>
         /// 將加速度封包轉換成List<double></double>
         /// </summary>
@@ -184,20 +188,54 @@ namespace gpm_vibration_module_api.Tools
                         var ZHB = single_bytes[min_single_axes_sample_num * 5 + i];
                         var ZLB = single_bytes[min_single_axes_sample_num * 4 + i];
 
-                        if (XHB == 0xFF )
+                        if (XHB == 0xFF)
                             _ADCError.X.Add(new ErrorValue() { Index = i });
-                        if (YHB == 0xFF )
+                        if (YHB == 0xFF)
                             _ADCError.Y.Add(new ErrorValue() { Index = i });
-                        if (ZHB == 0xFF )
+                        if (ZHB == 0xFF)
                             _ADCError.Z.Add(new ErrorValue() { Index = i });
-                        Gx.Add(bytesToDouble( XLB,XHB) / LSB);
-                        Gy.Add(bytesToDouble(  YLB, YHB) / LSB);
-                        Gz.Add(bytesToDouble(  ZLB, ZHB) / LSB);
+                        Gx.Add(bytesToDouble(XLB, XHB) / LSB);
+                        Gy.Add(bytesToDouble(YLB, YHB) / LSB);
+                        Gz.Add(bytesToDouble(ZLB, ZHB) / LSB);
                     }
                 }
             }
             return new List<List<double>> { Gx, Gy, Gz };
         }
+
+
+        public static List<List<double>> AccPacketToListDouble_KX134(byte[] AccPacket, int LSB, int min_axis_sample_num = 128)
+        {
+            var min_single_axes_sample_num = AccPacket.Length / 6;
+            List<double> Gx = new List<double>();
+            List<double> Gy = new List<double>();
+            List<double> Gz = new List<double>();
+
+            min_single_axes_sample_num = min_axis_sample_num;
+            var min_single_packet_len = min_single_axes_sample_num * 6;
+            var pN = AccPacket.Length / (min_single_packet_len); //幾倍
+            for (int n = 0; n < pN; n++)
+            {
+                byte[] single_bytes = new byte[min_single_packet_len];
+                //copy
+                Array.Copy(AccPacket, (n * min_single_packet_len), single_bytes, 0, min_single_packet_len);
+                for (int i = 0; i < min_single_axes_sample_num; i++)
+                {
+                    var XHB = single_bytes[min_single_axes_sample_num * 1 + i];
+                    var XLB = single_bytes[min_single_axes_sample_num * 0 + i];
+                    var YHB = single_bytes[min_single_axes_sample_num * 3 + i];
+                    var YLB = single_bytes[min_single_axes_sample_num * 2 + i];
+                    var ZHB = single_bytes[min_single_axes_sample_num * 5 + i];
+                    var ZLB = single_bytes[min_single_axes_sample_num * 4 + i];
+
+                    Gx.Add(bytesToDouble(XLB, XHB) / LSB);
+                    Gy.Add(bytesToDouble(YLB, YHB) / LSB);
+                    Gz.Add(bytesToDouble(ZLB, ZHB) / LSB);
+                }
+            }
+            return new List<List<double>> { Gx, Gy, Gz };
+        }
+
 
         internal static double[] PacketToVEVals(byte[] Packet)
         {

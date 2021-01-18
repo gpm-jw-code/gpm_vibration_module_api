@@ -53,15 +53,20 @@ namespace gpm_vibration_module_api.Tools
     {
         public string SaveDir;
         public bool is_log_enable = true;
+        internal NET.UDPServer udpServer = new NET.UDPServer();
         public virtual void Log(string content)
         {
+            var log = $"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} {content}";
+            udpServer.Send(Encoding.Unicode.GetBytes(log));
             if (is_log_enable == false) return;
             try
             {
                 var fileName = DateTime.Now.ToString("yyyyMMdd_HH") + ".txt";
                 using (StreamWriter sw = new StreamWriter(SaveDir + fileName, true))
                 {
-                    sw.WriteLine($"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} {content}");
+                    
+                    sw.WriteLine(log);
+                   
                 };
             }
             catch (Exception)

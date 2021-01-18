@@ -61,7 +61,7 @@ namespace gpm_module_api.Visualize
             {
                 try
                 {
-                    ModuleIPLabel.Text = _ParticleModuleAPI.SensorIP;
+                    ModuleIPLabel.Text = _ParticleModuleAPI.IP;
                     TemperatureShowLabel.Text = _ParticleModuleAPI.PreDataSet.Temperature + "";
                     HumidityShowlabel.Text = _ParticleModuleAPI.PreDataSet.Humidity + "";
                     IlluminanceShowlabel.Text = _ParticleModuleAPI.PreDataSet.Illuminance + "";
@@ -98,7 +98,7 @@ namespace gpm_module_api.Visualize
         {
             DetailDataType = DetailType.Temperature;
             ShowDetailChart(DetailType.Temperature);
-            TemperatureItemClickEvent?.BeginInvoke(_ParticleModuleAPI, null, null);
+            TemperatureItemClickEvent.BeginInvoke(_ParticleModuleAPI, null, null);
             LoadThresholdSettingEvent(sender, e);
             Chart_HistoryData.Titles[0].Text = "Temperature";
         }
@@ -117,7 +117,7 @@ namespace gpm_module_api.Visualize
         {
             DetailDataType = DetailType.Humidity;
             ShowDetailChart(DetailType.Humidity);
-            HumidityItemClickEvent?.BeginInvoke(_ParticleModuleAPI, null, null);
+            HumidityItemClickEvent.BeginInvoke(_ParticleModuleAPI, null, null);
             LoadThresholdSettingEvent(sender, e);
             Chart_HistoryData.Titles[0].Text = "Humidity";
         }
@@ -197,7 +197,7 @@ namespace gpm_module_api.Visualize
                  //   return;
                 }
             }
-            ParticleItemClickEvent?.BeginInvoke(_ParticleModuleAPI, null, null);
+            ParticleItemClickEvent.BeginInvoke(_ParticleModuleAPI, null, null);
             LoadThresholdSettingEvent(sender, e);
         }
 
@@ -283,7 +283,7 @@ namespace gpm_module_api.Visualize
         {
             DetailDataType = DetailType.Illuminance;
             ShowDetailChart(DetailType.Illuminance);
-            IlluminanceItemClickEvent?.BeginInvoke(_ParticleModuleAPI,null,null);
+            IlluminanceItemClickEvent.BeginInvoke(_ParticleModuleAPI,null,null);
             LoadThresholdSettingEvent(sender, e);
             Chart_HistoryData.Titles[0].Text = "Illuminance";
         }
