@@ -1,7 +1,7 @@
-﻿using System;
+﻿using gpm.Numerics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using static gpm_vibration_module_api.GpmMath.Numeric;
 
 namespace FftSharp
 {

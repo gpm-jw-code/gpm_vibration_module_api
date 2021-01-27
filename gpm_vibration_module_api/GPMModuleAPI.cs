@@ -1,6 +1,7 @@
 ﻿using gpm_module_api;
 using System;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using static gpm_vibration_module_api.clsEnum.Module_Setting_Enum;
 
@@ -31,11 +32,14 @@ namespace gpm_vibration_module_api
                 }
             }
         }
+
+
+
         public GPMModuleAPI()
         {
             IsKX134Sensor = false;
             DataLenMiniLen = 512;
-            LowpassFilterCutOffFreq = 3000;
+            LowPassFilterCutOffFreq = 3000;
         }
 
         public GPMModuleAPI(GPMModulesServer.ConnectInState obj)
@@ -46,6 +50,11 @@ namespace gpm_vibration_module_api
 
         #region API FOR USER
 
+        public override Socket ModuleSocket { get => base.ModuleSocket; set => base.ModuleSocket = value; }
+        public override DAQMode DAQMode => base.DAQMode;
+        public override bool LowPassFilterActive { get => base.LowPassFilterActive; set => base.LowPassFilterActive = value; }
+        public override double LowPassFilterCutOffFreq { get => base.LowPassFilterCutOffFreq; set => base.LowPassFilterCutOffFreq = value; }
+
         /// <summary>
         /// 取得感測數據集物件
         /// </summary>
@@ -54,7 +63,7 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public override async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
-            if (Settings.Mode == DAQMode.Low_Sampling)
+            if (Settings.Mode == gpm_vibration_module_api.DAQMode.Low_Sampling)
                 return await base.GetData(IsGetFFT, IsGetOtherFeatures);
             else
             {

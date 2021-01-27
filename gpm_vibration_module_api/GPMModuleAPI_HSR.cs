@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using static gpm_vibration_module_api.clsEnum.Module_Setting_Enum;
@@ -56,11 +57,25 @@ namespace gpm_vibration_module_api
 
         #region API FOR USER
 
+        virtual public Socket ModuleSocket
+        {
+            get
+            {
+                return AsynchronousClient.client;
+            }
+            set
+            {
+                AsynchronousClient.client = value;
+            }
+        }
+
+        virtual public bool LowPassFilterActive { get; set; } = true;
         /// <summary>
         /// 低通濾波器截止頻率
         /// </summary>
-        public double LowpassFilterCutOffFreq { get; set; } = 1000;
+        virtual public double LowPassFilterCutOffFreq { get; set; } = 1000;
 
+        public int MovingAverageSize { get; set; } = 20;
         /// <summary>
         /// 取得連線狀態
         /// </summary>
@@ -304,7 +319,13 @@ namespace gpm_vibration_module_api
                 return 0;
             }
         }
-
+        virtual public DAQMode DAQMode
+        {
+            get
+            {
+                return Settings.Mode;
+            }
+        }
         /// <summary>
         /// DAQ MODE SETTING::HSR Version isn't support, always retrun 0.
         /// </summary>
@@ -588,7 +609,8 @@ namespace gpm_vibration_module_api
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
                 else
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(_raw_bytes, Settings.mEASURE_RANGE, Settings.Mode);
-                List<List<double>> XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowpassFilterCutOffFreq, Settings.SamplingRate); //濾波
+                // List<List<double>> XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowpassFilterCutOffFreq, Settings.SamplingRate); //濾波
+                List<List<double>> XYZ_Acc_Data_List = Filters.MovingAverage(ori_xyz_data_list, Convert.ToInt32(Settings.SamplingRate), MovingAverageSize); //濾波
                 DataSet dataSet_ret = new DataSet(Settings.SamplingRate) { RecieveTime = DateTime.Now };
                 dataSet_ret.AccData.X = XYZ_Acc_Data_List[0];
                 dataSet_ret.AccData.Y = XYZ_Acc_Data_List[1];

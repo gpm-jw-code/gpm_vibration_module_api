@@ -1,4 +1,5 @@
-﻿using System;
+﻿using gpm.Numerics;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -36,7 +37,7 @@ namespace gpm_vibration_module_api.GpmMath
             double SumOfSquare = 0;
             foreach (double Si in DataVec)
                 SumOfSquare += Math.Pow(Si, 2);
-            return Math.Sqrt(SumOfSquare);
+            return Math.Sqrt(SumOfSquare/(double)DataVec.Length);
         }
         public static double RMS(List<double> DataVec)
         {
@@ -76,7 +77,7 @@ namespace gpm_vibration_module_api.GpmMath
         {
             int N = TD.Length;
             double[] FFT = new double[N / 2];
-            Numeric.Complex[] Cpl_TD = new Numeric.Complex[N];
+            Complex[] Cpl_TD = new Complex[N];
             for (int i = 0; i < N; i++)
                 Cpl_TD[i] = TD[i];
             FourierTransform.FFT(Cpl_TD, FourierTransform.Direction.Forward);
@@ -105,7 +106,7 @@ namespace gpm_vibration_module_api.GpmMath
             }
             int N = toConvertTimeData.Count;
             List<double> FFT = new List<double>();
-            Numeric.Complex[] Cpl_TD = new Numeric.Complex[N];
+            Complex[] Cpl_TD = new Complex[N];
             for (int i = 0; i < N; i++)
                 Cpl_TD[i] = toConvertTimeData[i];
             FourierTransform.FFT(Cpl_TD, FourierTransform.Direction.Forward);
@@ -147,16 +148,16 @@ namespace gpm_vibration_module_api.GpmMath
             /// <param name="direction">Transformation direction.</param>
             /// 
 
-            internal static void DFT(Numeric.Complex[] data, Direction direction)
+            internal static void DFT(Complex[] data, Direction direction)
             {
                 int n = data.Length;
                 double arg, cos, sin;
-                var dst = new Numeric.Complex[n];
+                var dst = new Complex[n];
 
                 // for each destination element
                 for (int i = 0; i < dst.Length; i++)
                 {
-                    dst[i] = Numeric.Complex.Zero;
+                    dst[i] = Complex.Zero;
 
                     arg = -(int)direction * 2.0 * System.Math.PI * (double)i / (double)n;
 
@@ -169,7 +170,7 @@ namespace gpm_vibration_module_api.GpmMath
                         double re = data[j].Real * cos - data[j].Imaginary * sin;
                         double im = data[j].Real * sin + data[j].Imaginary * cos;
 
-                        dst[i] += new Numeric.Complex(re, im);
+                        dst[i] += new Complex(re, im);
                     }
                 }
 
@@ -194,19 +195,19 @@ namespace gpm_vibration_module_api.GpmMath
             /// <param name="data">Data to transform.</param>
             /// <param name="direction">Transformation direction.</param>
             /// 
-            internal static void DFT2(Numeric.Complex[,] data, Direction direction)
+            internal static void DFT2(Complex[,] data, Direction direction)
             {
                 int n = data.GetLength(0);	// rows
                 int m = data.GetLength(1);	// columns
                 double arg, cos, sin;
-                var dst = new Numeric.Complex[System.Math.Max(n, m)];
+                var dst = new Complex[System.Math.Max(n, m)];
 
                 // process rows
                 for (int i = 0; i < n; i++)
                 {
                     for (int j = 0; j < dst.Length; j++)
                     {
-                        dst[j] = Numeric.Complex.Zero;
+                        dst[j] = Complex.Zero;
 
                         arg = -(int)direction * 2.0 * System.Math.PI * (double)j / (double)m;
 
@@ -219,7 +220,7 @@ namespace gpm_vibration_module_api.GpmMath
                             double re = data[i, k].Real * cos - data[i, k].Imaginary * sin;
                             double im = data[i, k].Real * sin + data[i, k].Imaginary * cos;
 
-                            dst[j] += new Numeric.Complex(re, im);
+                            dst[j] += new Complex(re, im);
                         }
                     }
 
@@ -242,7 +243,7 @@ namespace gpm_vibration_module_api.GpmMath
                 {
                     for (int i = 0; i < n; i++)
                     {
-                        dst[i] = Numeric.Complex.Zero;
+                        dst[i] = Complex.Zero;
 
                         arg = -(int)direction * 2.0 * System.Math.PI * (double)i / (double)n;
 
@@ -255,7 +256,7 @@ namespace gpm_vibration_module_api.GpmMath
                             double re = data[k, j].Real * cos - data[k, j].Imaginary * sin;
                             double im = data[k, j].Real * sin + data[k, j].Imaginary * cos;
 
-                            dst[i] += new Numeric.Complex(re, im);
+                            dst[i] += new Complex(re, im);
                         }
                     }
 
@@ -287,10 +288,10 @@ namespace gpm_vibration_module_api.GpmMath
             /// 
             /// <exception cref="ArgumentException">Incorrect data length.</exception>
             /// 
-            internal static void FFT(Numeric.Complex[] data, Direction direction)
+            internal static void FFT(Complex[] data, Direction direction)
             {
                 int n = data.Length;
-                int m = Numeric.Tools.Log2(n);
+                int m = MathTools.Log2(n);
 
                 // reorder data first
                 ReorderData(data);
@@ -300,26 +301,26 @@ namespace gpm_vibration_module_api.GpmMath
 
                 for (int k = 1; k <= m; k++)
                 {
-                    Numeric.Complex[] rotation = FourierTransform.GetComplexRotation(k, direction);
+                    Complex[] rotation = FourierTransform.GetComplexRotation(k, direction);
 
                     tm = tn;
                     tn <<= 1;
 
                     for (int i = 0; i < tm; i++)
                     {
-                        Numeric.Complex t = rotation[i];
+                        Complex t = rotation[i];
 
                         for (int even = i; even < n; even += tn)
                         {
                             int odd = even + tm;
-                            Numeric.Complex ce = data[even];
-                            Numeric.Complex co = data[odd];
+                            Complex ce = data[even];
+                            Complex co = data[odd];
 
                             double tr = co.Real * t.Real - co.Imaginary * t.Imaginary;
                             double ti = co.Real * t.Imaginary + co.Imaginary * t.Real;
 
-                            data[even] += new Numeric.Complex(tr, ti);
-                            data[odd] = new Numeric.Complex(ce.Real - tr, ce.Imaginary - ti);
+                            data[even] += new Complex(tr, ti);
+                            data[odd] = new Complex(ce.Real - tr, ce.Imaginary - ti);
                         }
                     }
                 }
@@ -346,20 +347,20 @@ namespace gpm_vibration_module_api.GpmMath
             /// 
             /// <exception cref="ArgumentException">Incorrect data length.</exception>
             /// 
-            internal static void FFT2(Numeric.Complex[,] data, Direction direction)
+            internal static void FFT2(Complex[,] data, Direction direction)
             {
                 int k = data.GetLength(0);
                 int n = data.GetLength(1);
 
                 // check data size
-                if (!Numeric.Tools.IsPowerOf2(k) || !Numeric.Tools.IsPowerOf2(n))
+                if (!MathTools.IsPowerOf2(k) || !MathTools.IsPowerOf2(n))
                     throw new ArgumentException("The matrix rows and columns must be a power of 2.");
 
                 if (k < minLength || k > maxLength || n < minLength || n > maxLength)
                     throw new ArgumentException("Incorrect data length.");
 
                 // process rows
-                var row = new Numeric.Complex[n];
+                var row = new Complex[n];
 
                 for (int i = 0; i < k; i++)
                 {
@@ -376,7 +377,7 @@ namespace gpm_vibration_module_api.GpmMath
                 }
 
                 // process columns
-                var col = new Numeric.Complex[k];
+                var col = new Complex[k];
 
                 for (int j = 0; j < n; j++)
                 {
@@ -399,7 +400,7 @@ namespace gpm_vibration_module_api.GpmMath
             private const int minBits = 1;
             private const int maxBits = 20;
             private static int[][] reversedBits = new int[maxBits][];
-            private static Numeric.Complex[,][] complexRotation = new Numeric.Complex[maxBits, 2][];
+            private static Complex[,][] complexRotation = new Complex[maxBits, 2][];
 
             // Get array, indicating which data members should be swapped before FFT
             private static int[] GetReversedBits(int numberOfBits)
@@ -410,7 +411,7 @@ namespace gpm_vibration_module_api.GpmMath
                 // check if the array is already calculated
                 if (reversedBits[numberOfBits - 1] == null)
                 {
-                    int n = Numeric.Tools.Pow2(numberOfBits);
+                    int n = MathTools.Pow2(numberOfBits);
                     int[] rBits = new int[n];
 
                     // calculate the array
@@ -432,7 +433,7 @@ namespace gpm_vibration_module_api.GpmMath
             }
 
             // Get rotation of complex number
-            private static Numeric.Complex[] GetComplexRotation(int numberOfBits, Direction direction)
+            private static Complex[] GetComplexRotation(int numberOfBits, Direction direction)
             {
                 int directionIndex = (direction == Direction.Forward) ? 0 : 1;
 
@@ -446,11 +447,11 @@ namespace gpm_vibration_module_api.GpmMath
                     double wR = System.Math.Cos(angle);
                     double wI = System.Math.Sin(angle);
                     double t;
-                    Numeric.Complex[] rotation = new Numeric.Complex[n];
+                    Complex[] rotation = new Complex[n];
 
                     for (int i = 0; i < n; i++)
                     {
-                        rotation[i] = new Numeric.Complex(uR, uI);
+                        rotation[i] = new Complex(uR, uI);
                         t = uR * wI + uI * wR;
                         uR = uR * wR - uI * wI;
                         uI = t;
@@ -462,15 +463,15 @@ namespace gpm_vibration_module_api.GpmMath
             }
 
             // Reorder data for FFT using
-            private static void ReorderData(Numeric.Complex[] data)
+            private static void ReorderData(Complex[] data)
             {
                 int len = data.Length;
 
                 // check data length
-                if ((len < minLength) || (len > maxLength) || (!Numeric.Tools.IsPowerOf2(len)))
+                if ((len < minLength) || (len > maxLength) || (!MathTools.IsPowerOf2(len)))
                     throw new ArgumentException("Incorrect data length.");
 
-                int[] rBits = GetReversedBits(Numeric.Tools.Log2(len));
+                int[] rBits = GetReversedBits(MathTools.Log2(len));
 
                 for (int i = 0; i < len; i++)
                 {
@@ -478,7 +479,7 @@ namespace gpm_vibration_module_api.GpmMath
 
                     if (s > i)
                     {
-                        Numeric.Complex t = data[i];
+                        Complex t = data[i];
                         data[i] = data[s];
                         data[s] = t;
                     }

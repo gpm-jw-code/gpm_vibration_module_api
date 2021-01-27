@@ -14,7 +14,7 @@ namespace gpm_vibration_module_api.GpmMath
         /// </summary>
         internal static List<List<double>> LPF(List<List<double>> datas, double CutoffFreq, double SamplingRate)
         {
-            LowPassFilter passFilter = new LowPassFilter(CutoffFreq,SamplingRate);
+            LowPassFilter passFilter = new LowPassFilter(CutoffFreq, SamplingRate);
 
             for (int i = 0; i < 3; i++)
             {
@@ -29,6 +29,20 @@ namespace gpm_vibration_module_api.GpmMath
             }
 
             return datas;
+        }
+
+        internal static List<List<double>> MovingAverage(List<List<double>> datas, int SamplingRate, int size = 9)
+        {
+            Console.WriteLine("Moving Average Filter Apply,Sampling Rate =" + SamplingRate + " Hz");
+            NWaves.Filters.MovingAverageRecursiveFilter Filter = new NWaves.Filters.MovingAverageRecursiveFilter(size);
+            List<List<double>> filteredDatas = new List<List<double>>();
+            for (int i = 0; i < 3; i++)
+            {
+                List<double> real_data = datas[i];
+                var filtered = Filter.ApplyTo(new NWaves.Signals.DiscreteSignal(SamplingRate, real_data.ToFloatList()), NWaves.Filters.Base.FilteringMethod.Auto);
+                filteredDatas.Add(filtered.Samples.ToList().ToDoubleList());
+            }
+            return filteredDatas;
         }
     }
 }

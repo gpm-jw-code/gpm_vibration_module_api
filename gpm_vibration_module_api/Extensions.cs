@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using static gpm_vibration_module_api.clsEnum.Module_Setting_Enum;
 
 namespace gpm_vibration_module_api
@@ -6,7 +7,7 @@ namespace gpm_vibration_module_api
     /// <summary>
     /// 擴充功能
     /// </summary>
-    internal static class ExtendMethods
+    public static class ExtendMethods
     {
         internal static string ToCommaString(this byte[] byteAry)
         {
@@ -90,6 +91,27 @@ namespace gpm_vibration_module_api
                     return MEASURE_RANGE.MR_2G;
             }
         }
+        internal static double ToRMS(this List<double> data)
+        {
+            var sum = 0.0;
+            for (int i = 0; i < data.Count; i++)
+                sum += Math.Pow(data[i], 2);
+            return Math.Sqrt(sum / (double)data.Count);
+        }
+        public static List<double> ToDoubleList(this List<float> floatList)
+        {
+            List<double> doubleList = new List<double>();
+            foreach (var floatval in floatList)
+                doubleList.Add(floatval);
+            return doubleList;
+        }
 
+        public static List<float> ToFloatList(this List<double> doubleList)
+        {
+            List<float> floatList = new List<float>();
+            foreach (var doubleval in doubleList)
+                floatList.Add((float)doubleval);
+            return floatList;
+        }
     }
 }
