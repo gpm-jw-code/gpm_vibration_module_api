@@ -11,6 +11,8 @@
             IPIllegal = 601,
             PortIllegal = 602,
             CONNECT_FAIL = 603,
+            SerialPortOpenFail = 2603,
+            DATA_GET_INTERUPT = 144448,
             NoConnection = 604,
             DATA_GET_TIMEOUT = 605,
             PARAM_HS_TIMEOUT = 606,
@@ -27,8 +29,7 @@
             DATA_LENGTH_SETTING_VALUE_ILLEGAL = 144445,
             Cancel = 144446,
             ParticleSensorConvertError_Source_Data_Insufficient = 52110,
-            PostProcessingError = 144447,
-            DATA_GET_INTERUPT = 144448,
+            PostProcessingError = 144447
         }
 
     }

@@ -15,38 +15,42 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI_HSR
     {
-        internal int DataLenMiniLen = 256;
-        private Stopwatch HSStopWatch = new Stopwatch();
-        private int GetDataInteruptFlag;
-        internal bool IsDaulMCUMode = true;
-
-        private readonly NET.DeviceTestData DeviceData = new NET.DeviceTestData();
-        public int GetDataCalledNum { get; private set; }
-        public int GetDataSuccessNum { get; private set; }
-        public DataSet DataSetForUser { get; private set; }
-        public event Action<int> DataPacketOnchange;
-        /// <summary>
-        /// TCP/IP 通訊界面
-        /// </summary>
-        public AsynchronousClient AsynchronousClient;
         /// <summary>
         /// Serial Port通訊介面
         /// </summary>
         private ModuleSerialPortBase SerialPortBase;
+        private readonly NET.DeviceTestData DeviceData = new NET.DeviceTestData();
+        private Stopwatch HSStopWatch = new Stopwatch();
+        private int GetDataInteruptFlag;
+        private bool GetDataFirstCall = true;
+
+
+        internal bool IsKX134Sensor = true;
+        internal bool _Is485Module = false;
+        internal int DataLenMiniLen = 256;
+        internal int ParamSetCheckLen = 8;
+        /// <summary>
+        /// TCP/IP 通訊界面
+        /// </summary>
+        public AsynchronousClient AsynchronousClient;
+        public int GetDataCalledNum { get; private set; }
+        public int GetDataSuccessNum { get; private set; }
+        public DataSet DataSetForUser { get; private set; }
+        public event Action<int> DataPacketOnchange;
         public GPMModuleAPI_HSR()
         {
+            _Is485Module = false;
             AsynchronousClient = new AsynchronousClient();
             AsynchronousClient.DataPacketLenOnchange += AsynchronousClient_DataPacketLenOnchange1;
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
-        private void AsynchronousClient_DataPacketLenOnchange1(object sender, int e)
-        {
-            DataPacketOnchange?.BeginInvoke(e, null, null);
-        }
         public string IP { get; private set; }
         public int Port { get; private set; }
-        private bool GetDataFirstCall = true;
+
+        public string PortName { get; private set; }
+
+        public int BaudRate { get; private set; }
 
         public ModuleSetting Settings { get; internal set; } = new ModuleSetting();
 
@@ -55,7 +59,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// 低通濾波器截止頻率
         /// </summary>
-        public double LowpassFilterCutOffFreq { get; set; } = 4000;
+        public double LowpassFilterCutOffFreq { get; set; } = 1000;
 
         /// <summary>
         /// 取得連線狀態
@@ -66,7 +70,7 @@ namespace gpm_vibration_module_api
             {
                 try
                 {
-                    if (SerialPortBase == null)
+                    if (!_Is485Module)
                         return AsynchronousClient.client.Connected;
                     else
                         return SerialPortBase.module_port.IsOpen;
@@ -131,6 +135,9 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public async Task<int> Connect(string IP, int Port)
         {
+            var licCheckRet = 0;
+            if ((licCheckRet = LicenseCheckProcess()) != 0)
+                return licCheckRet;
             try
             {
                 SerialPortBase = null;
@@ -148,6 +155,7 @@ namespace gpm_vibration_module_api
                 }
                 await GetDataInterupt();
                 Tools.Logger.Event_Log.Log("Device Connected.");
+                _Is485Module = false;
                 return 0;
             }
             catch (Exception ex)
@@ -158,11 +166,38 @@ namespace gpm_vibration_module_api
 
         }
 
-        public async Task<int> Open(string PortName, int BaudRate = 115200)
+        public async Task<int> Open(string PortName, int BaudRate)
         {
+            var licCheckRet = 0;
+            if ((licCheckRet = LicenseCheckProcess()) != 0)
+                return licCheckRet;
+            this.PortName = PortName;
+            this.BaudRate = BaudRate;
             Tools.Logger.Event_Log.Log($"(Serial Port)使用者嘗試連線..PORTNAME:{PortName}");
+            if (SerialPortBase != null)
+                SerialPortBase.PortClose();
             SerialPortBase = new ModuleSerialPortBase();
+            _Is485Module = true;
             return await SerialPortBase.Open(PortName, BaudRate);
+        }
+
+        private int LicenseCheckProcess()
+        {
+            gpm_module_api.License.LicenseCheck licenseChecker = new gpm_module_api.License.LicenseCheck();
+            var licState = licenseChecker.Check("license.lic");
+            switch (licState.CHECK_RESULT)
+            {
+                case gpm_module_api.License.CHECK_RESULT.PASS:
+                    return 0;
+                case gpm_module_api.License.CHECK_RESULT.EXPIRED:
+                    return (int)clsErrorCode.Error.LicenseExpired;
+                case gpm_module_api.License.CHECK_RESULT.FAIL:
+                    return (int)clsErrorCode.Error.LicenseCheckFail;
+                case gpm_module_api.License.CHECK_RESULT.LOSS:
+                    return (int)clsErrorCode.Error.LicenseFileNoExist;
+                default:
+                    return (int)clsErrorCode.Error.LicenseCheckFail;
+            }
         }
 
         /// <summary>
@@ -172,7 +207,7 @@ namespace gpm_vibration_module_api
         public int Disconnect()
         {
             Tools.Logger.Event_Log.Log("Try Disconnect.");
-            if (SerialPortBase == null)
+            if (!_Is485Module)
             {
                 AsynchronousClient.Disconnect();
                 AsynchronousClient = null;
@@ -201,12 +236,12 @@ namespace gpm_vibration_module_api
                 //await GetDataInterupt();
                 var ori_Set = Settings.DataLength;
                 Settings.DataLength = N;
-                var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, 8, Timeout: 3000);
+                var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
                 int retry_cnt = 0;
                 while (state.ErrorCode != clsErrorCode.Error.None)
                 {
                     retry_cnt++;
-                    state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, 8, Timeout: 3000));
+                    state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
                     retry_cnt++;
                     if (retry_cnt >= ParamSetRetryNumber)
                         return (int)state.ErrorCode;
@@ -222,6 +257,7 @@ namespace gpm_vibration_module_api
                 }
                 else
                 {
+                    Settings.DataLength = N;
                     Tools.Logger.Event_Log.Log($"Data Length Setting OK::{N}");
                     Console.WriteLine("量測時間預估:" + Settings.Measure_Time + " ms");
                     return 0;
@@ -239,18 +275,18 @@ namespace gpm_vibration_module_api
         /// </summary>
         /// <param name="mr_select"></param>
         /// <returns></returns>
-        public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
+        virtual public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
         {
             Tools.Logger.Event_Log.Log($"使用者嘗試修改量測範圍({mr_select})");
             var ori_Set = Settings.mEASURE_RANGE;
             //await GetDataInterupt();
             Settings.mEASURE_RANGE = mr_select;
-            var state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, 8, Timeout: 3000));
+            var state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
             int retry_cnt = 0;
             while (state.ErrorCode != clsErrorCode.Error.None)
             {
                 retry_cnt++;
-                state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, 8, Timeout: 3000));
+                state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
                 if (retry_cnt >= ParamSetRetryNumber)
                     return (int)state.ErrorCode;
                 Thread.Sleep(1);
@@ -277,7 +313,16 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         virtual public async Task<int> DAQModeSetting(DAQMode Mode)
         {
-            return 0;
+            var oriMode = Settings.Mode;
+            Settings.Mode = Mode;
+            var state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
+            if (state.ErrorCode != clsErrorCode.Error.None)
+            {
+                Settings.Mode = oriMode;
+                return (int)state.ErrorCode;
+            }
+            else
+                return 0;
         }
         /// <summary>
         /// GetData方法呼叫統計
@@ -299,7 +344,7 @@ namespace gpm_vibration_module_api
             {
                 // var timeout = GetDataFirstCall ? 500 : Settings.Measure_Time + 8000;
                 HSStopWatch.Restart();
-                var state_obj = await SendMessageMiddleware("READVALUE\r\n", Settings.PackageTotalLen, Timeout: 3000);
+                var state_obj = SendGetRawDataCmd();
                 HSStopWatch.Stop();
                 #region Retry
                 ////Timeout後會自動重連，所以可以重試
@@ -319,7 +364,7 @@ namespace gpm_vibration_module_api
                 //}
                 #endregion
                 GetDataFirstCall = false;
-                _ = DataUploadToWeb();
+                //DataUploadToWeb();
                 if (state_obj.ErrorCode == clsErrorCode.Error.None)
                 {
                     GetDataSuccessNum++;
@@ -364,19 +409,39 @@ namespace gpm_vibration_module_api
         /// 取得裝置參數設定組
         /// </summary>
         /// <returns></returns>
-        public async Task<string> GetDeviceParams()
+        virtual public async Task<string> GetDeviceParams()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", 8, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
         }
 
         #endregion
+        #region Internal Methods
 
+        /// <summary>
+        /// 發送獲取RAW DATA 的指令(overrideable)
+        /// </summary>
+        /// <returns></returns>
+        virtual internal StateObject SendGetRawDataCmd(int Timeout = 3000)
+        {
+            StateObject state_obj = null;
+            if (!_Is485Module)
+                state_obj = SendMessageMiddleware("READVALUE\r\n", Settings.PackageTotalLen, Timeout).Result;
+            else
+                state_obj = SendMessageMiddleware(Settings.READRAWCmdByteForModbus, Settings.PackageTotalLen, Timeout).Result;
+            return state_obj;
+        }
+        #endregion
         #region Private Methods
+        private void AsynchronousClient_DataPacketLenOnchange1(object sender, int e)
+        {
+            DataPacketOnchange?.BeginInvoke(e, null, null);
+        }
         private async Task DataUploadToWeb()
         {
             try
             {
+                DeviceData.IP = _Is485Module ? $"Serial Port({PortName}:{BaudRate})" : IP;
                 DeviceData.PCName = System.Net.Dns.GetHostName();
                 DeviceData.ModuleConnected = Connected;
                 DeviceData.DataLenSet = DataLength;
@@ -395,14 +460,14 @@ namespace gpm_vibration_module_api
         }
         internal async Task<StateObject> SendMessageMiddleware(string msg, int CheckLen, int Timeout)
         {
-            if (SerialPortBase == null)
+            if (!_Is485Module)
                 return await AsynchronousClient.SendMessage(msg, CheckLen, Timeout);
             else
                 return await SerialPortBase.SendMessage(msg, CheckLen, Timeout);
         }
         internal async Task<StateObject> SendMessageMiddleware(byte[] msg, int CheckLen, int Timeout)
         {
-            if (SerialPortBase == null)
+            if (!_Is485Module)
                 return await AsynchronousClient.SendMessage(msg, CheckLen, Timeout);
             else
                 return await SerialPortBase.SendMessage(msg, CheckLen, Timeout);
@@ -508,11 +573,21 @@ namespace gpm_vibration_module_api
         {
             try
             {
-                List<List<double>> ori_xyz_data_list = null;
-                if (IsDaulMCUMode)
-                    ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(raw_bytes.ToArray(), Settings.LSB, MiniPacketDataLen);
+                byte[] _raw_bytes;
+                if (_Is485Module)
+                {
+                    _raw_bytes = new byte[raw_bytes.Count - 3];
+                    Array.Copy(raw_bytes.ToArray(), 1, _raw_bytes, 0, _raw_bytes.Length);
+                }
                 else
-                    ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(raw_bytes.ToArray(), Settings.mEASURE_RANGE, Settings.Mode);
+                {
+                    _raw_bytes = raw_bytes.ToArray();
+                }
+                List<List<double>> ori_xyz_data_list = null;
+                if (IsKX134Sensor)
+                    ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
+                else
+                    ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(_raw_bytes, Settings.mEASURE_RANGE, Settings.Mode);
                 List<List<double>> XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowpassFilterCutOffFreq, Settings.SamplingRate); //濾波
                 DataSet dataSet_ret = new DataSet(Settings.SamplingRate) { RecieveTime = DateTime.Now };
                 dataSet_ret.AccData.X = XYZ_Acc_Data_List[0];
@@ -618,6 +693,39 @@ namespace gpm_vibration_module_api
 
     public class ModuleSetting
     {
+
+        public byte SlaveID = 0x00;
+        public byte[] READParamCmdByteForModbus
+        {
+            get
+            {
+                byte[] cmd = { SlaveID, 0x03, 0x00, 0x10, 0x00, 0x04 };
+                var crc = BitConverter.GetBytes(calculateCRC(cmd, 6, 0));
+                return new byte[8] { SlaveID, 0x03, 0x00, 0x10, 0x00, 0x04, crc[0], crc[1] };
+            }
+        }
+
+        public byte[] ModifyIDCmbByteForModbus(byte ID_ToChange)
+        {
+            byte[] cmd = { SlaveID, 0x06, 0x00, 0x20, 0x00, ID_ToChange };
+            var crc = BitConverter.GetBytes(calculateCRC(cmd, 6, 0));
+            return new byte[8] { SlaveID, 0x06, 0x00, 0x20, 0x00, ID_ToChange, crc[0], crc[1] };
+        }
+
+        public byte[] READRAWCmdByteForModbus
+        {
+            get
+            {
+                byte[] cmd = { SlaveID, 0x03, 0x00, 0xFF, 0x00, 0xFF };
+                var crc = BitConverter.GetBytes(calculateCRC(cmd, 6, 0));
+                return new byte[8] { SlaveID, 0x03, 0x00, 0xFF, 0x00, 0xFF, crc[0], crc[1] };
+            }
+        }
+        internal enum SettingItem
+        {
+            SetDaqMode, SetDataLen, SetMeasureRange, NotSpecify
+        }
+        internal SettingItem settingItem = SettingItem.NotSpecify;
         public double SamplingRate { get; set; } = 10064;
 
         internal byte[] _SettingBytes = new byte[8] { 0x00, 0x02, 0x00, 0xC0, 0x2F, 0x00, 0x00, 0x00 };
@@ -642,17 +750,8 @@ namespace gpm_vibration_module_api
                 return _SettingBytes;
             }
         }
-        internal DAQMode _Mode = DAQMode.High_Sampling;
-        public DAQMode Mode
-        {
-            get { return _Mode; }
-            set
-            {
-                SamplingRate = value == DAQMode.High_Sampling ? 8000 : 3500;
-                _Mode = value;
-                UpdateSettingBytes();
-            }
-        }
+
+
         /// <summary>
         /// 單軸資料長度
         /// </summary>
@@ -683,12 +782,23 @@ namespace gpm_vibration_module_api
         }
 
         internal MEASURE_RANGE _mEASURE_RANGE = MEASURE_RANGE.MR_8G;
-        public MEASURE_RANGE mEASURE_RANGE
+        virtual public MEASURE_RANGE mEASURE_RANGE
         {
             get { return _mEASURE_RANGE; }
             set
             {
                 _mEASURE_RANGE = value;
+                UpdateSettingBytes();
+            }
+        }
+        internal DAQMode _Mode = DAQMode.High_Sampling;
+        virtual public DAQMode Mode
+        {
+            get { return _Mode; }
+            set
+            {
+                SamplingRate = value == DAQMode.High_Sampling ? 8000 : 3500;
+                _Mode = value;
                 UpdateSettingBytes();
             }
         }
@@ -723,9 +833,76 @@ namespace gpm_vibration_module_api
             var DLHLBytes = ratio.ToHLBytes();
             _SettingBytes[0] = DLHLBytes[0];
             _SettingBytes[1] = DLHLBytes[1];
-
             //量測範圍
             _SettingBytes[3] = _mEASURE_RANGE.ToKXByte();
+        }
+
+        /// <summary>
+        /// Calculates the CRC16 for Modbus-RTU
+        /// </summary>
+        /// <param name="data">Byte buffer to send</param>
+        /// <param name="numberOfBytes">Number of bytes to calculate CRC</param>
+        /// <param name="startByte">First byte in buffer to start calculating CRC</param>
+        internal UInt16 calculateCRC(byte[] data, UInt16 numberOfBytes, int startByte)
+        {
+            byte[] auchCRCHi = {
+            0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
+            0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
+            0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01,
+            0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
+            0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81,
+            0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0,
+            0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01,
+            0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40,
+            0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
+            0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
+            0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01,
+            0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41,
+            0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
+            0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
+            0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01,
+            0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41,
+            0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
+            0x40
+            };
+
+            byte[] auchCRCLo = {
+            0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 0x07, 0xC7, 0x05, 0xC5, 0xC4,
+            0x04, 0xCC, 0x0C, 0x0D, 0xCD, 0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09,
+            0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9, 0x1B, 0xDB, 0xDA, 0x1A, 0x1E, 0xDE, 0xDF, 0x1F, 0xDD,
+            0x1D, 0x1C, 0xDC, 0x14, 0xD4, 0xD5, 0x15, 0xD7, 0x17, 0x16, 0xD6, 0xD2, 0x12, 0x13, 0xD3,
+            0x11, 0xD1, 0xD0, 0x10, 0xF0, 0x30, 0x31, 0xF1, 0x33, 0xF3, 0xF2, 0x32, 0x36, 0xF6, 0xF7,
+            0x37, 0xF5, 0x35, 0x34, 0xF4, 0x3C, 0xFC, 0xFD, 0x3D, 0xFF, 0x3F, 0x3E, 0xFE, 0xFA, 0x3A,
+            0x3B, 0xFB, 0x39, 0xF9, 0xF8, 0x38, 0x28, 0xE8, 0xE9, 0x29, 0xEB, 0x2B, 0x2A, 0xEA, 0xEE,
+            0x2E, 0x2F, 0xEF, 0x2D, 0xED, 0xEC, 0x2C, 0xE4, 0x24, 0x25, 0xE5, 0x27, 0xE7, 0xE6, 0x26,
+            0x22, 0xE2, 0xE3, 0x23, 0xE1, 0x21, 0x20, 0xE0, 0xA0, 0x60, 0x61, 0xA1, 0x63, 0xA3, 0xA2,
+            0x62, 0x66, 0xA6, 0xA7, 0x67, 0xA5, 0x65, 0x64, 0xA4, 0x6C, 0xAC, 0xAD, 0x6D, 0xAF, 0x6F,
+            0x6E, 0xAE, 0xAA, 0x6A, 0x6B, 0xAB, 0x69, 0xA9, 0xA8, 0x68, 0x78, 0xB8, 0xB9, 0x79, 0xBB,
+            0x7B, 0x7A, 0xBA, 0xBE, 0x7E, 0x7F, 0xBF, 0x7D, 0xBD, 0xBC, 0x7C, 0xB4, 0x74, 0x75, 0xB5,
+            0x77, 0xB7, 0xB6, 0x76, 0x72, 0xB2, 0xB3, 0x73, 0xB1, 0x71, 0x70, 0xB0, 0x50, 0x90, 0x91,
+            0x51, 0x93, 0x53, 0x52, 0x92, 0x96, 0x56, 0x57, 0x97, 0x55, 0x95, 0x94, 0x54, 0x9C, 0x5C,
+            0x5D, 0x9D, 0x5F, 0x9F, 0x9E, 0x5E, 0x5A, 0x9A, 0x9B, 0x5B, 0x99, 0x59, 0x58, 0x98, 0x88,
+            0x48, 0x49, 0x89, 0x4B, 0x8B, 0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C,
+            0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42, 0x43, 0x83, 0x41, 0x81, 0x80,
+            0x40
+            };
+            UInt16 usDataLen = numberOfBytes;
+            byte uchCRCHi = 0xFF;
+            byte uchCRCLo = 0xFF;
+            int i = 0;
+            int uIndex;
+            while (usDataLen > 0)
+            {
+                usDataLen--;
+                if ((i + startByte) < data.Length)
+                {
+                    uIndex = uchCRCLo ^ data[i + startByte];
+                    uchCRCLo = (byte)(uchCRCHi ^ auchCRCHi[uIndex]);
+                    uchCRCHi = auchCRCLo[uIndex];
+                }
+                i++;
+            }
+            return (UInt16)((UInt16)uchCRCHi << 8 | uchCRCLo);
         }
 
     }

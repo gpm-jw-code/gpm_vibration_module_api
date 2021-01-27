@@ -24,6 +24,7 @@ namespace gpm_vibration_module_api
             }
         }
         internal bool IsReady = false;
+        public int ID = -1;
         public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
         public clsFFTData FFTData = new clsFFTData();

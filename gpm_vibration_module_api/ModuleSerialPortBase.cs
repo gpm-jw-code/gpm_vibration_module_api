@@ -27,10 +27,10 @@ namespace gpm_vibration_module_api
             }
             catch (Exception ex)
             {
-                throw ex;
+                Console.WriteLine(ex.Message);
             }
         }
-        internal async Task<int> Open(string ComPort, int BaudRate=1152000, Parity parity= Parity.None, StopBits StopBits= StopBits.One)
+        internal async Task<int> Open(string ComPort, int BaudRate = 1152000, Parity parity = Parity.None, StopBits StopBits = StopBits.One)
         {
             PortClose();
             try
@@ -40,12 +40,18 @@ namespace gpm_vibration_module_api
                 module_port.BaudRate = BaudRate;
                 module_port.Parity = parity;
                 module_port.StopBits = StopBits;
+                module_port.ReadTimeout = 1000;
+                module_port.ReadBufferSize = 8192;
+                module_port.DtrEnable = true;
+                module_port.RtsEnable = true;
                 module_port.Open();
+                module_port.DiscardInBuffer();
+                module_port.DiscardOutBuffer();
                 return module_port.IsOpen ? 0 : -1; //TODO Error Code add
             }
             catch (Exception ex)
             {
-                return -1;
+                return (int)clsErrorCode.Error.SerialPortOpenFail;
             }
         }
 
@@ -53,7 +59,8 @@ namespace gpm_vibration_module_api
         {
             StateForAPI = new StateObject();
             receiveDone.Reset();
-            module_port.Write(cmd,0,cmd.Length);
+            Console.WriteLine("Serial Port Send:" + cmd.ToCommaString());
+            module_port.Write(cmd, 0, cmd.Length);
             await SyncRecieve(CheckLen, timeout);
             receiveDone.WaitOne();
             module_port.DiscardOutBuffer();
@@ -62,12 +69,13 @@ namespace gpm_vibration_module_api
 
         internal async Task<StateObject> SendMessage(string msg, int CheckLen, int timeout)
         {
+            module_port.DiscardNull = true;
+            Console.WriteLine("Serial Port Send:" + msg);
             StateForAPI = new StateObject();
             receiveDone.Reset();
             module_port.Write(msg);
             await SyncRecieve(CheckLen, timeout);
             receiveDone.WaitOne();
-            module_port.DiscardOutBuffer();
             return StateForAPI;
         }
         private Stopwatch SyncRecieveStopwatch = new Stopwatch();
@@ -76,9 +84,24 @@ namespace gpm_vibration_module_api
             SyncRecieveStopwatch.Restart();
             while (StateForAPI.IsDataReach == false)
             {
+                module_port.ReadTimeout = timeout;
+                int byteToRead = module_port.BytesToRead;
+                if (byteToRead == 0)
+                {
+                    if (SyncRecieveStopwatch.ElapsedMilliseconds > 3000)
+                    {
+                        StateForAPI.ErrorCode = CheckLen == 8 ? clsErrorCode.Error.PARAM_HS_TIMEOUT : clsErrorCode.Error.DATA_GET_TIMEOUT;
+                        receiveDone.Set();
+                        return;
+                    }
+                    Thread.Sleep(16);
+                    continue;
+                }
                 byte[] buffer = new byte[module_port.BytesToRead];
+
                 module_port.Read(buffer, 0, buffer.Length);
                 StateForAPI.DataByteList.AddRange(buffer);
+                //StateForAPI.DataByteList.Add((byte)module_port.ReadByte());
                 if (StateForAPI.DataByteList.Count >= CheckLen)
                 {
                     module_port.DiscardInBuffer();
@@ -86,12 +109,8 @@ namespace gpm_vibration_module_api
                     receiveDone.Set();
                     return;
                 }
-                if (SyncRecieveStopwatch.ElapsedMilliseconds > timeout)
-                {
-                    StateForAPI.ErrorCode = CheckLen == 8 ? clsErrorCode.Error.PARAM_HS_TIMEOUT : clsErrorCode.Error.DATA_GET_TIMEOUT;
-                    receiveDone.Set();
-                    return;
-                }
+
+                Thread.Sleep(10);
             }
         }
     }

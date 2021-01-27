@@ -43,7 +43,7 @@ namespace gpm_vibration_module_api.GpmMath
             double SumOfSquare = 0;
             foreach (double Si in DataVec)
                 SumOfSquare += Math.Pow(Si, 2);
-            return Math.Sqrt(SumOfSquare);
+            return Math.Sqrt(SumOfSquare/(double)DataVec.Count);
         }
 
         public static double GetOA(List<double> data)
@@ -111,8 +111,9 @@ namespace gpm_vibration_module_api.GpmMath
             FourierTransform.FFT(Cpl_TD, FourierTransform.Direction.Forward);
             for (int i = 0; i < N / 2; i++)
             {
+                //FFT.Add(Cpl_TD[i].Magnitude / (N / 2));
                 FFT.Add(Cpl_TD[i].Magnitude);
-            }   // FFT.Add(Cpl_TD[i].Magnitude / (N / 2));
+            }   
             FFT[0] = 0;
             return FFT;
         }

@@ -265,7 +265,8 @@ namespace gpm_module_api.Tools
             if (param.potocol == PARAM.POTOCOL.TTL)
             {
                 param.serialPort = OpenPort(param.PortName, 115200); //寫韌體時固定115200
-                if (param.serialPort == null) return new RESULT { IsOK = false, FailReason = RESULT.FAIL_REASON.SerialPortOpenFail };
+                if (param.serialPort == null) return new RESULT { IsOK = false, FailReason = RESULT.FAIL_REASON.SerialPortOpenFail
+                };
                 //port.write(b'\xff\xff')
                 param.serialPort.Write(new byte[] { 0xFF, 0xFF }, 0, 2);
                 //var ret = await TimeoutCheck(param.FrameBurningTimeout);

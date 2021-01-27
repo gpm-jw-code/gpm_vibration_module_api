@@ -73,5 +73,23 @@ namespace gpm_vibration_module_api
             return b;
 
         }
+
+        internal static MEASURE_RANGE ToMeasureGENRange(this byte mrByte)
+        {
+            switch (mrByte)
+            {
+                case 0x00:
+                    return MEASURE_RANGE.MR_2G;
+                case 0x10:
+                    return MEASURE_RANGE.MR_4G;
+                case 0x20:
+                    return MEASURE_RANGE.MR_8G;
+                case 0x30:
+                    return MEASURE_RANGE.MR_16G;
+                default:
+                    return MEASURE_RANGE.MR_2G;
+            }
+        }
+
     }
 }
