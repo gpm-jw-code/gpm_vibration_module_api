@@ -42,11 +42,12 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="IP"></param>
         /// <param name="Port"></param>
         /// <returns></returns>
-        public bool Connect(string IP, int Port)
+        public bool Connect(string IP, int Port,string SlaveID)
         {
             modbusClient.IPAddress = IP;
             modbusClient.Port = Port;
             modbusClient.SerialPort = null;
+            modbusClient.UnitIdentifier = byte.Parse(SlaveID);
             return modbusClient.Connect();
         }
         /// <summary>
@@ -71,37 +72,37 @@ namespace gpm_vibration_module_api.Modbus
         /// 讀取3軸振動能量值
         /// </summary>
         /// <returns></returns>
-        public double[] ReadVEValues()
+        public async Task<double[]> ReadVEValues()
         {
             RecieveData = false;
-            return GetF03FloatValue(Register.VEValuesRegStart, Register.VEValuesRegLen);
+            return await GetF03FloatValue(Register.VEValuesRegStart, Register.VEValuesRegLen);
         }
         /// <summary>
         /// 讀取總能量值
         /// </summary>
         /// <returns></returns>
-        public double ReadTotalVEValues()
+        public async Task<double> ReadTotalVEValues()
         {
             RecieveData = false;
-            return GetF03FloatValue(Register.TotalVEValueRegStart, Register.TotalVEValueRegLen)[0];
+            return (await GetF03FloatValue(Register.TotalVEValueRegStart, Register.TotalVEValueRegLen))[0];
         }
         /// <summary>
         /// 讀取3軸RMS值
         /// </summary>
         /// <returns></returns>
-        public double[] ReadRMSValues()
+        public async Task<double[]> ReadRMSValues()
         {
             RecieveData = false;
-            return GetF03FloatValue(Register.RMSValuesRegStart, Register.RMSValuesRegLen);
+            return await GetF03FloatValue(Register.RMSValuesRegStart, Register.RMSValuesRegLen);
         }
         /// <summary>
         /// 讀取所有特徵值(3軸能量值+總能量值+3軸RMS值)
         /// </summary>
         /// <returns></returns>
-        public double[] ReadAllValues()
+        public async Task<double[]> ReadAllValues()
         {
             RecieveData = false;
-            return GetF03FloatValue(Register.AllValuesRegStart, Register.AllValuesRegLen);
+            return await GetF03FloatValue(Register.AllValuesRegStart, Register.AllValuesRegLen);
         }
         /// <summary>
         /// 查詢Device ID
@@ -166,7 +167,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="start"></param>
         /// <param name="len"></param>
         /// <returns></returns>
-        private double[] GetF03FloatValue(int start, int len)
+        private async Task<double[]> GetF03FloatValue(int start, int len)
         {
             int[] values = modbusClient.ReadHoldingRegisters(start, len);
             return values.IEEE754FloatAry(); ;

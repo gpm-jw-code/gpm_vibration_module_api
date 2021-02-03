@@ -374,6 +374,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Visualize\ParticleModuleView.resx">
       <DependentUpon>ParticleModuleView.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup />

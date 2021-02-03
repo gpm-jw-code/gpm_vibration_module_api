@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using static gpm_vibration_module_api.clsEnum.Module_Setting_Enum;
 
@@ -24,7 +25,7 @@ namespace gpm_vibration_module_api
                     base.Settings = Settings_485;
                     ParamSetCheckLen = 6;
                     ParamSetRetryNumber = 2;
-    }
+                }
                 else
                 {
                     base.Settings = Settings;
@@ -67,12 +68,37 @@ namespace gpm_vibration_module_api
                 return await base.GetData(IsGetFFT, IsGetOtherFeatures);
             else
             {
+                int ErrorCnt = 0;
                 DataSet dataSet_ret = new DataSet(base.Settings.SamplingRate);
                 //拿好幾次 組合
                 while (dataSet_ret.AccData.X.Count != base.Settings.DataLength)
                 {
                     DataSet dataSet_slice = await base.GetData(IsGetFFT, IsGetOtherFeatures);
-                    dataSet_ret.AddData(dataSet_slice);
+                    if(dataSet_slice==null)
+                    {
+                        Thread.Sleep(1);
+                        continue;
+                    }
+                    if (dataSet_slice.ErrorCode == 0)
+                        dataSet_ret.AddData(dataSet_slice);
+                    else
+                    {
+                        ErrorCnt += 1;
+                        if (ErrorCnt > (Is485Module ? 20 : 5))
+                        {
+                            if (Is485Module)
+                            {
+                                Disconnect();
+                                int reopen_ret = await Open(PortName, BaudRate);
+                                Console.WriteLine($"重新開啟通訊埠 {(reopen_ret == 0 ? "成功" : "失敗")}");
+                                if (reopen_ret != 0| ErrorCnt > 40)
+                                    return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.DATA_GET_TIMEOUT };
+                            }
+                            else
+                                return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.DATA_GET_TIMEOUT };
+                        }
+                    }
+                    Thread.Sleep(1);
                 }
                 FFTAndFeatureCal(ref dataSet_ret, IsGetFFT, IsGetOtherFeatures, base.Settings.SamplingRate);
                 return dataSet_ret;
@@ -81,7 +107,7 @@ namespace gpm_vibration_module_api
         public async Task<DataSet> GetData_ByID(byte ID, bool IsGetFFT, bool IsGetOtherFeatures)
         {
             base.Settings.SlaveID = ID;
-            MeasureRangeCheck(ID);
+            //MeasureRangeCheck(ID);
             var data = GetData(IsGetFFT, IsGetOtherFeatures).Result;
             data.ID = ID;
             return data;

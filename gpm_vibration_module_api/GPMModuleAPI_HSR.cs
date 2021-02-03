@@ -16,6 +16,10 @@ namespace gpm_vibration_module_api
     /// </summary>
     public class GPMModuleAPI_HSR
     {
+        public enum Filter
+        {
+            MA, LowPass
+        }
         /// <summary>
         /// Serial Port通訊介面
         /// </summary>
@@ -69,13 +73,18 @@ namespace gpm_vibration_module_api
             }
         }
 
-        virtual public bool LowPassFilterActive { get; set; } = true;
+        virtual public bool FilterActive { get; set; } = true;
+
+        virtual public bool LowPassFilterActive { get; set; } = false;
         /// <summary>
         /// 低通濾波器截止頻率
         /// </summary>
-        virtual public double LowPassFilterCutOffFreq { get; set; } = 1000;
+        virtual public double LowPassFilterCutOffFreq { get; set; } = 3000;
 
-        public int MovingAverageSize { get; set; } = 20;
+        public int MovingAverageSize { get; set; } = 2;
+
+        public Filter filter = Filter.LowPass;
+
         /// <summary>
         /// 取得連線狀態
         /// </summary>
@@ -365,7 +374,7 @@ namespace gpm_vibration_module_api
             {
                 // var timeout = GetDataFirstCall ? 500 : Settings.Measure_Time + 8000;
                 HSStopWatch.Restart();
-                var state_obj = SendGetRawDataCmd();
+                var state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : 3000);
                 HSStopWatch.Stop();
                 #region Retry
                 ////Timeout後會自動重連，所以可以重試
@@ -610,11 +619,24 @@ namespace gpm_vibration_module_api
                 else
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(_raw_bytes, Settings.mEASURE_RANGE, Settings.Mode);
                 // List<List<double>> XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowpassFilterCutOffFreq, Settings.SamplingRate); //濾波
-                List<List<double>> XYZ_Acc_Data_List = Filters.MovingAverage(ori_xyz_data_list, Convert.ToInt32(Settings.SamplingRate), MovingAverageSize); //濾波
                 DataSet dataSet_ret = new DataSet(Settings.SamplingRate) { RecieveTime = DateTime.Now };
-                dataSet_ret.AccData.X = XYZ_Acc_Data_List[0];
-                dataSet_ret.AccData.Y = XYZ_Acc_Data_List[1];
-                dataSet_ret.AccData.Z = XYZ_Acc_Data_List[2];
+
+                dataSet_ret.AccData.X = ori_xyz_data_list[0];
+                dataSet_ret.AccData.Y = ori_xyz_data_list[1];
+                dataSet_ret.AccData.Z = ori_xyz_data_list[2];
+
+                if (FilterActive)
+                {
+                    List<List<double>> XYZ_Acc_Data_List = null;
+                    if (filter == Filter.MA)
+                        XYZ_Acc_Data_List = Filters.MovingAverage(ori_xyz_data_list, Convert.ToInt32(Settings.SamplingRate), MovingAverageSize); //濾波
+                    else
+                        XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowPassFilterCutOffFreq, Settings.SamplingRate); //濾波
+                    dataSet_ret.AccData_Filtered.X = XYZ_Acc_Data_List[0];
+                    dataSet_ret.AccData_Filtered.Y = XYZ_Acc_Data_List[1];
+                    dataSet_ret.AccData_Filtered.Z = XYZ_Acc_Data_List[2];
+                }
+
                 FFTAndFeatureCal(ref dataSet_ret, GetFFT, GetFeatures, Settings.SamplingRate);
                 return dataSet_ret;
             }
@@ -630,13 +652,29 @@ namespace gpm_vibration_module_api
             if (fft)
             {
                 DataForFFTCompensate(ref dataSet_ret);
+                var n = dataSet_ret.AccData.X.Count / 2;
+                dataSet_ret.PSDData.X = FftSharp.Transform.FFTmagnitude(dataSet_ret.AccData.X.ToArray()).ToList().GetRange(1, n);
+                dataSet_ret.PSDData.Y = FftSharp.Transform.FFTmagnitude(dataSet_ret.AccData.Y.ToArray()).ToList().GetRange(1, n);
+                dataSet_ret.PSDData.Z = FftSharp.Transform.FFTmagnitude(dataSet_ret.AccData.Z.ToArray()).ToList().GetRange(1, n);
                 dataSet_ret.FFTData.X = FFT.GetFFT(dataSet_ret.AccData.acc_x_For_FFT);
                 dataSet_ret.FFTData.Y = FFT.GetFFT(dataSet_ret.AccData.acc_y_For_FFT);
                 dataSet_ret.FFTData.Z = FFT.GetFFT(dataSet_ret.AccData.acc_z_For_FFT);
                 dataSet_ret.Features.VibrationEnergy.X = Stastify.GetOA(dataSet_ret.FFTData.X);
                 dataSet_ret.Features.VibrationEnergy.Y = Stastify.GetOA(dataSet_ret.FFTData.Y);
                 dataSet_ret.Features.VibrationEnergy.Z = Stastify.GetOA(dataSet_ret.FFTData.Z);
+
+                if (FilterActive)
+                {
+                    dataSet_ret.FFTData_Filtered.X = FFT.GetFFT(dataSet_ret.AccData_Filtered.X);
+                    dataSet_ret.FFTData_Filtered.Y = FFT.GetFFT(dataSet_ret.AccData_Filtered.Y);
+                    dataSet_ret.FFTData_Filtered.Z = FFT.GetFFT(dataSet_ret.AccData_Filtered.Z);
+                    dataSet_ret.Features_Filtered.VibrationEnergy.X = Stastify.GetOA(dataSet_ret.FFTData_Filtered.X);
+                    dataSet_ret.Features_Filtered.VibrationEnergy.Y = Stastify.GetOA(dataSet_ret.FFTData_Filtered.Y);
+                    dataSet_ret.Features_Filtered.VibrationEnergy.Z = Stastify.GetOA(dataSet_ret.FFTData_Filtered.Z);
+                }
+
                 dataSet_ret.FFTData.FreqVec = FreqVecCal(dataSet_ret.FFTData.X.Count, samplingRate); ;
+
             }
 
             if (other_feature)
@@ -648,6 +686,17 @@ namespace gpm_vibration_module_api
                 dataSet_ret.Features.AccRMS.X = Stastify.RMS(dataSet_ret.AccData.X);
                 dataSet_ret.Features.AccRMS.Y = Stastify.RMS(dataSet_ret.AccData.Y);
                 dataSet_ret.Features.AccRMS.Z = Stastify.RMS(dataSet_ret.AccData.Z);
+
+                if (FilterActive)
+                {
+                    dataSet_ret.Features_Filtered.AccP2P.X = Stastify.GetPP(dataSet_ret.AccData_Filtered.X);
+                    dataSet_ret.Features_Filtered.AccP2P.Y = Stastify.GetPP(dataSet_ret.AccData_Filtered.Y);
+                    dataSet_ret.Features_Filtered.AccP2P.Z = Stastify.GetPP(dataSet_ret.AccData_Filtered.Z);
+
+                    dataSet_ret.Features_Filtered.AccRMS.X = Stastify.RMS(dataSet_ret.AccData_Filtered.X);
+                    dataSet_ret.Features_Filtered.AccRMS.Y = Stastify.RMS(dataSet_ret.AccData_Filtered.Y);
+                    dataSet_ret.Features_Filtered.AccRMS.Z = Stastify.RMS(dataSet_ret.AccData_Filtered.Z);
+                }
             }
         }
         internal void DataForFFTCompensate(ref DataSet dataSet_ret)

@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.GpmMath
 {
-    internal class Filters
+    public class Filters
     {
         /// <summary>
         /// 通過低通濾波器
         /// </summary>
-        internal static List<List<double>> LPF(List<List<double>> datas, double CutoffFreq, double SamplingRate)
+        public static List<List<double>> LPF(List<List<double>> datas, double CutoffFreq, double SamplingRate)
         {
             LowPassFilter passFilter = new LowPassFilter(CutoffFreq, SamplingRate);
 

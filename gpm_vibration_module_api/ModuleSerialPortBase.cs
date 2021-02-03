@@ -47,6 +47,7 @@ namespace gpm_vibration_module_api
                 module_port.Open();
                 module_port.DiscardInBuffer();
                 module_port.DiscardOutBuffer();
+                module_port.DataReceived += Module_port_DataReceived;
                 return module_port.IsOpen ? 0 : -1; //TODO Error Code add
             }
             catch (Exception ex)
@@ -55,13 +56,17 @@ namespace gpm_vibration_module_api
             }
         }
 
+
         internal async Task<StateObject> SendMessage(byte[] cmd, int CheckLen, int timeout)
         {
             StateForAPI = new StateObject();
+            StateForAPI.CheckLen = CheckLen;
             receiveDone.Reset();
             Console.WriteLine("Serial Port Send:" + cmd.ToCommaString());
             module_port.Write(cmd, 0, cmd.Length);
-            await SyncRecieve(CheckLen, timeout);
+            Thread.Sleep(1);
+            Task.Run(() => TimeoutChecker(timeout));
+            //await SyncRecieve(CheckLen, timeout);
             receiveDone.WaitOne();
             module_port.DiscardOutBuffer();
             return StateForAPI;
@@ -74,44 +79,56 @@ namespace gpm_vibration_module_api
             StateForAPI = new StateObject();
             receiveDone.Reset();
             module_port.Write(msg);
-            await SyncRecieve(CheckLen, timeout);
+            Thread.Sleep(1);
+            Task.Run(() => TimeoutChecker(timeout));
+            //await SyncRecieve(CheckLen, timeout);
             receiveDone.WaitOne();
             return StateForAPI;
         }
-        private Stopwatch SyncRecieveStopwatch = new Stopwatch();
-        private async Task SyncRecieve(int CheckLen, int timeout)
-        {
-            SyncRecieveStopwatch.Restart();
-            while (StateForAPI.IsDataReach == false)
-            {
-                module_port.ReadTimeout = timeout;
-                int byteToRead = module_port.BytesToRead;
-                if (byteToRead == 0)
-                {
-                    if (SyncRecieveStopwatch.ElapsedMilliseconds > 3000)
-                    {
-                        StateForAPI.ErrorCode = CheckLen == 8 ? clsErrorCode.Error.PARAM_HS_TIMEOUT : clsErrorCode.Error.DATA_GET_TIMEOUT;
-                        receiveDone.Set();
-                        return;
-                    }
-                    Thread.Sleep(16);
-                    continue;
-                }
-                byte[] buffer = new byte[module_port.BytesToRead];
 
+        private void Module_port_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            try
+            {
+                Console.WriteLine("DataReceived event trigger");
+                byte[] buffer = new byte[module_port.BytesToRead];
+                Console.WriteLine($"Byte to read: {module_port.BytesToRead}");
                 module_port.Read(buffer, 0, buffer.Length);
                 StateForAPI.DataByteList.AddRange(buffer);
-                //StateForAPI.DataByteList.Add((byte)module_port.ReadByte());
-                if (StateForAPI.DataByteList.Count >= CheckLen)
+                if (StateForAPI.DataByteList.Count >= StateForAPI.CheckLen)
                 {
                     module_port.DiscardInBuffer();
                     StateForAPI.ErrorCode = clsErrorCode.Error.None;
                     receiveDone.Set();
                     return;
                 }
-
-                Thread.Sleep(10);
+            }
+            catch (Exception ex)
+            {
+                StateForAPI.IsDataReach = true;
+                StateForAPI.ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT;
+                receiveDone.Set();
+            }
+           
+        }
+        private void TimeoutChecker(int timeout)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            while (!StateForAPI.IsDataReach)
+            {
+                if (sw.ElapsedMilliseconds > timeout)
+                {
+                    module_port.DiscardInBuffer();
+                    module_port.DiscardOutBuffer();
+                    StateForAPI.ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT;
+                    receiveDone.Set();
+                }
+                Thread.Sleep(1);
             }
         }
+
+        private Stopwatch SyncRecieveStopwatch = new Stopwatch();
+
     }
 }

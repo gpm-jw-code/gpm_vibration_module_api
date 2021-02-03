@@ -401,11 +401,16 @@ namespace gpm_vibration_module_api.GPMBase
         /// 儲存模組回傳值
         /// </summary>
         public List<byte> DataByteList = new List<byte>();
+        private bool _IsDataReach = false;
         internal bool IsDataReach
         {
             get
             {
                 return CheckLen == byteRevCnt;
+            }
+            set
+            {
+                _IsDataReach = value;
             }
         }
 

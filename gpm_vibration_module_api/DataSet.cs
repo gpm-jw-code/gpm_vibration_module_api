@@ -27,13 +27,17 @@ namespace gpm_vibration_module_api
         public int ID = -1;
         public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
+        public clsAcc AccData_Filtered = new clsAcc();
         public clsFFTData FFTData = new clsFFTData();
+        public clsFFTData PSDData = new clsFFTData();
+        public clsFFTData FFTData_Filtered = new clsFFTData();
         public clsFFTData MelBankData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();
+        public clsOtherFeatures Features_Filtered = new clsOtherFeatures();
         public ADCError DATAERROR = new ADCError();
         public long TimeSpend;
         public DateTime RecieveTime;
-        
+
 
         internal void AddData(DataSet NewData)
         {
@@ -41,6 +45,9 @@ namespace gpm_vibration_module_api
             this.AccData.X.AddRange(NewData.AccData.X);
             this.AccData.Y.AddRange(NewData.AccData.Y);
             this.AccData.Z.AddRange(NewData.AccData.Z);
+            this.AccData_Filtered.X.AddRange(NewData.AccData_Filtered.X);
+            this.AccData_Filtered.Y.AddRange(NewData.AccData_Filtered.Y);
+            this.AccData_Filtered.Z.AddRange(NewData.AccData_Filtered.Z);
             this.FFTData.X.AddRange(NewData.FFTData.X);
             this.FFTData.Y.AddRange(NewData.FFTData.Y);
             this.FFTData.Z.AddRange(NewData.FFTData.Z);
