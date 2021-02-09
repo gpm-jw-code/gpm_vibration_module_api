@@ -19,7 +19,10 @@ namespace NWaves.Effects
         private float _lfoFrequency;
         public float LfoFrequency
         {
-            get => _lfoFrequency;
+            get
+            {
+                return _lfoFrequency;
+            }
             set
             {
                 _lfoFrequency = value;
@@ -33,7 +36,10 @@ namespace NWaves.Effects
         private float _minFrequency;
         public float MinFrequency
         {
-            get => _minFrequency;
+            get
+            {
+                return _minFrequency;
+            }
             set
             {
                 _minFrequency = value;
@@ -47,7 +53,7 @@ namespace NWaves.Effects
         private float _maxFrequency;
         public float MaxFrequency
         {
-            get => _maxFrequency;
+            get { return _maxFrequency; }
             set
             {
                 _maxFrequency = value;

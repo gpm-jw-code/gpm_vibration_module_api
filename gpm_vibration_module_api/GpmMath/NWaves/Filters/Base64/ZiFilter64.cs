@@ -24,7 +24,7 @@ namespace NWaves.Filters.Base64
         /// State vector
         /// </summary>
         protected readonly double[] _zi;
-        public double[] Zi => _zi;
+        public double[] Zi { get { return _zi; } }
 
         /// <summary>
         /// Transfer function
@@ -32,8 +32,11 @@ namespace NWaves.Filters.Base64
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b, _a);
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b, _a); }
+            protected set
+            {
+                _tf = value;
+            }
         }
 
         /// <summary>

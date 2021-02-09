@@ -15,7 +15,7 @@ namespace NWaves.Filters.Base
         /// <summary>
         /// Filter kernel (impulse response)
         /// </summary>
-        public float[] Kernel => _b.Take(_kernelSize).ToArray();
+        public float[] Kernel { get { return _b.Take(_kernelSize).ToArray(); } } 
 
         /// <summary>
         /// 
@@ -50,8 +50,11 @@ namespace NWaves.Filters.Base
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b.Take(_kernelSize).ToDoubles());
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b.Take(_kernelSize).ToDoubles()); }
+            protected set
+            {
+                _tf = value;
+            }
         }
 
         /// <summary>
@@ -121,7 +124,7 @@ namespace NWaves.Filters.Base
         /// <param name="signal"></param>
         /// <param name="method"></param>
         /// <returns></returns>
-        public override DiscreteSignal ApplyTo(DiscreteSignal signal, 
+        public override DiscreteSignal ApplyTo(DiscreteSignal signal,
                                                FilteringMethod method = FilteringMethod.Auto)
         {
             if (_kernelSize >= KernelSizeForBlockConvolution && method == FilteringMethod.Auto)
@@ -132,25 +135,25 @@ namespace NWaves.Filters.Base
             switch (method)
             {
                 case FilteringMethod.OverlapAdd:
-                {
-                    var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
-                    var blockConvolver = OlaBlockConvolver.FromFilter(this, fftSize);
-                    return blockConvolver.ApplyTo(signal);
-                }
+                    {
+                        var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
+                        var blockConvolver = OlaBlockConvolver.FromFilter(this, fftSize);
+                        return blockConvolver.ApplyTo(signal);
+                    }
                 case FilteringMethod.OverlapSave:
-                {
-                    var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
-                    var blockConvolver = OlsBlockConvolver.FromFilter(this, fftSize);
-                    return blockConvolver.ApplyTo(signal);
-                }
+                    {
+                        var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
+                        var blockConvolver = OlsBlockConvolver.FromFilter(this, fftSize);
+                        return blockConvolver.ApplyTo(signal);
+                    }
                 case FilteringMethod.DifferenceEquation:
-                {
-                    return ApplyFilterDirectly(signal);
-                }
+                    {
+                        return ApplyFilterDirectly(signal);
+                    }
                 default:
-                {
-                    return new DiscreteSignal(signal.SamplingRate, ProcessAllSamples(signal.Samples));
-                }
+                    {
+                        return new DiscreteSignal(signal.SamplingRate, ProcessAllSamples(signal.Samples));
+                    }
             }
         }
 

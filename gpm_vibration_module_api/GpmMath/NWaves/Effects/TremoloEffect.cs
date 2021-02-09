@@ -13,7 +13,7 @@ namespace NWaves.Effects
         private float _frequency;
         public float Frequency
         {
-            get => _frequency;
+            get { return _frequency; }
             set
             {
                 _frequency = value;
@@ -27,7 +27,7 @@ namespace NWaves.Effects
         private float _tremoloIndex;
         public float TremoloIndex
         {
-            get => _tremoloIndex;
+            get { return _tremoloIndex; }
             set
             {
                 _tremoloIndex = value;

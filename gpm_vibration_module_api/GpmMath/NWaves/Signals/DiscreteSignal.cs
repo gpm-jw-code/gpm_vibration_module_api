@@ -34,12 +34,23 @@ namespace NWaves.Signals
         /// <summary>
         /// Length of the signal
         /// </summary>
-        public int Length => Samples.Length;
+        public int Length {
+            get
+            {
+                return Samples.Length;
+            }
+        } 
 
         /// <summary>
         /// Duration of the signal (in sec)
         /// </summary>
-        public double Duration => (double)Samples.Length / SamplingRate;
+        public double Duration
+        {
+            get
+            {
+                return (double)Samples.Length / SamplingRate;
+            }
+        }
 
         /// <summary>
         /// The most efficient constructor for initializing discrete signals
@@ -97,7 +108,7 @@ namespace NWaves.Signals
             Guard.AgainstNonPositive(samplingRate, "Sampling rate");
 
             SamplingRate = samplingRate;
-            
+
             var intSamples = samples.ToArray();
             var floatSamples = new float[intSamples.Length];
             for (var i = 0; i < intSamples.Length; i++)
@@ -150,8 +161,8 @@ namespace NWaves.Signals
         /// <returns>Sample by index</returns>
         public float this[int index]
         {
-            get => Samples[index];
-            set => Samples[index] = value;
+            get { return Samples[index]; }
+            set { Samples[index] = value; }
         }
 
         /// <summary>
@@ -172,7 +183,6 @@ namespace NWaves.Signals
             get
             {
                 Guard.AgainstInvalidRange(startPos, endPos, "Left index", "Right index");
-
                 return new DiscreteSignal(SamplingRate, Samples.FastCopyFragment(endPos - startPos, startPos));
             }
         }
@@ -271,7 +281,7 @@ namespace NWaves.Signals
         /// Energy of entire signal
         /// </summary>
         /// <returns>Energy</returns>
-        public float Energy() => Energy(0, Length);
+        public float Energy() { return Energy(0, Length); }
 
         /// <summary>
         /// RMS of a signal fragment
@@ -288,7 +298,7 @@ namespace NWaves.Signals
         /// RMS of entire signal
         /// </summary>
         /// <returns>RMS</returns>
-        public float Rms() => (float)Math.Sqrt(Energy(0, Length));
+        public float Rms() { return (float)Math.Sqrt(Energy(0, Length)); }
 
         /// <summary>
         /// Zero-crossing rate of a signal fragment
@@ -322,7 +332,7 @@ namespace NWaves.Signals
         /// Zero-crossing rate of entire signal
         /// </summary>
         /// <returns>Zero-crossing rate</returns>
-        public float ZeroCrossingRate() => ZeroCrossingRate(0, Length);
+        public float ZeroCrossingRate() { return ZeroCrossingRate(0, Length); }
 
         /// <summary>
         /// Shannon entropy of a signal fragment
@@ -340,7 +350,7 @@ namespace NWaves.Signals
                 binCount = len;
             }
 
-            var bins = new int[binCount+1];
+            var bins = new int[binCount + 1];
 
             var min = Samples[0];
             var max = Samples[0];
@@ -373,7 +383,7 @@ namespace NWaves.Signals
             var entropy = 0.0;
             for (var i = 0; i < binCount; i++)
             {
-                var p = (float) bins[i] / (endPos - startPos);
+                var p = (float)bins[i] / (endPos - startPos);
 
                 if (p > 1e-8f)
                 {
@@ -388,7 +398,8 @@ namespace NWaves.Signals
         /// Entropy of entire signal
         /// </summary>
         /// <returns>Entropy</returns>
-        public float Entropy() => Entropy(0, Length);
+        public float Entropy()
+        { return Entropy(0, Length); }
 
         #endregion
     }

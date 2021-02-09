@@ -14,7 +14,7 @@ namespace NWaves.Effects
         private float _length;
         public float Length
         {
-            get => _length;
+            get { return _length; }
             set
             {
                 _length = value;
@@ -28,7 +28,7 @@ namespace NWaves.Effects
         private float _decay;
         public float Decay
         {
-            get => _decay;
+            get { return _decay; }
             set
             {
                 _decay = value;

@@ -14,7 +14,7 @@ namespace NWaves.Operations
         private float _attackTime;
         public float AttackTime
         {
-            get => _attackTime;
+            get { return _attackTime; }
             set
             {
                 _attackTime = value;
@@ -28,7 +28,7 @@ namespace NWaves.Operations
         private float _releaseTime;
         public float ReleaseTime
         {
-            get => _releaseTime;
+            get { return _releaseTime; }
             set
             {
                 _releaseTime = value;

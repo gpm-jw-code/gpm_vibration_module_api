@@ -14,7 +14,7 @@ namespace NWaves.Effects
         private float _width;
         public float Width
         {
-            get => _width;
+            get { return _width; }
             set
             {
                 _width = value;
@@ -29,7 +29,7 @@ namespace NWaves.Effects
         private float _lfoFrequency = 1;
         public float LfoFrequency
         {
-            get => _lfoFrequency;
+            get { return _lfoFrequency; }
             set
             {
                 _lfoFrequency = value;
@@ -43,7 +43,7 @@ namespace NWaves.Effects
         private SignalBuilder _lfo;
         public SignalBuilder Lfo
         {
-            get => _lfo;
+            get { return _lfo; }
             set
             {
                 _lfo = value;

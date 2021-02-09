@@ -45,7 +45,7 @@ namespace NWaves.Signals
         /// <summary>
         /// Length of the signal
         /// </summary>
-        public int Length => Real.Length;
+        public int Length { get { return Real.Length; } } 
 
         /// <summary>
         /// The most efficient constructor for initializing complex signals
@@ -134,7 +134,7 @@ namespace NWaves.Signals
 
             var intSamples = samples.ToArray();
             var realSamples = new double[intSamples.Length];
-            
+
             for (var i = 0; i < intSamples.Length; i++)
             {
                 realSamples[i] = intSamples[i] / normalizeFactor;
@@ -143,7 +143,7 @@ namespace NWaves.Signals
             Real = realSamples;
             Imag = new double[intSamples.Length];
         }
-        
+
         /// <summary>
         /// Method for creating the deep copy of a complex signal
         /// </summary>
@@ -158,8 +158,11 @@ namespace NWaves.Signals
         /// </summary>
         public double this[int index]
         {
-            get => Real[index];
-            set => Real[index] = value;
+            get { return Real[index]; }
+            set
+            {
+                Real[index] = value;
+            }
         }
 
         /// <summary>
@@ -254,7 +257,13 @@ namespace NWaves.Signals
         /// <summary>
         /// Get unwrapped phase
         /// </summary>
-        public double[] PhaseUnwrapped => MathUtils.Unwrap(Phase);
+        public double[] PhaseUnwrapped {
+
+            get
+            {
+                return MathUtils.Unwrap(Phase);
+            }
+        }
 
 
         #region overloaded operators

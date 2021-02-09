@@ -62,8 +62,8 @@ namespace NWaves.Filters.Base
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b.Take(_numeratorSize).ToDoubles(), _a.Take(_denominatorSize).ToDoubles());
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b.Take(_numeratorSize).ToDoubles(), _a.Take(_denominatorSize).ToDoubles()); }
+            protected set { _tf = value; }
         }
        
         /// <summary>

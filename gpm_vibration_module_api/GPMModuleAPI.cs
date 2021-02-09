@@ -51,10 +51,26 @@ namespace gpm_vibration_module_api
 
         #region API FOR USER
 
-        public override Socket ModuleSocket { get => base.ModuleSocket; set => base.ModuleSocket = value; }
-        public override DAQMode DAQMode => base.DAQMode;
-        public override bool LowPassFilterActive { get => base.LowPassFilterActive; set => base.LowPassFilterActive = value; }
-        public override double LowPassFilterCutOffFreq { get => base.LowPassFilterCutOffFreq; set => base.LowPassFilterCutOffFreq = value; }
+        public override Socket ModuleSocket
+        {
+            get { return base.ModuleSocket; }
+            set { base.ModuleSocket = value; }
+        }
+        public override DAQMode DAQMode { get { return base.DAQMode; } }
+        public override bool LowPassFilterActive
+        {
+            get { return base.LowPassFilterActive; }
+            set { base.LowPassFilterActive = value; }
+        }
+        public override double LowPassFilterCutOffFreq
+        {
+            get
+            {
+                return base.LowPassFilterCutOffFreq;
+            }
+            set { base.LowPassFilterCutOffFreq = value; }
+        }
+
 
         /// <summary>
         /// 取得感測數據集物件
@@ -74,7 +90,7 @@ namespace gpm_vibration_module_api
                 while (dataSet_ret.AccData.X.Count != base.Settings.DataLength)
                 {
                     DataSet dataSet_slice = await base.GetData(IsGetFFT, IsGetOtherFeatures);
-                    if(dataSet_slice==null)
+                    if (dataSet_slice == null)
                     {
                         Thread.Sleep(1);
                         continue;
@@ -91,7 +107,7 @@ namespace gpm_vibration_module_api
                                 Disconnect();
                                 int reopen_ret = await Open(PortName, BaudRate);
                                 Console.WriteLine($"重新開啟通訊埠 {(reopen_ret == 0 ? "成功" : "失敗")}");
-                                if (reopen_ret != 0| ErrorCnt > 40)
+                                if (reopen_ret != 0 | ErrorCnt > 40)
                                     return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.DATA_GET_TIMEOUT };
                             }
                             else
@@ -246,7 +262,10 @@ namespace gpm_vibration_module_api
         }
         public override int DataLength
         {
-            get => base.DataLength;
+            get
+            {
+                return base.DataLength;
+            }
             set
             {
                 settingItem = SettingItem.SetDataLen;
@@ -256,7 +275,10 @@ namespace gpm_vibration_module_api
 
         public override MEASURE_RANGE mEASURE_RANGE
         {
-            get => base.mEASURE_RANGE;
+            get
+            {
+                return base.mEASURE_RANGE;
+            }
             set
             {
                 settingItem = SettingItem.SetMeasureRange;
@@ -265,7 +287,10 @@ namespace gpm_vibration_module_api
         }
         public override DAQMode Mode
         {
-            get => base.Mode;
+            get
+            {
+                return base.Mode;
+            }
             set
             {
                 settingItem = SettingItem.SetDaqMode;
@@ -340,7 +365,11 @@ namespace gpm_vibration_module_api
                 return bytes;
             }
         }
-        public override int DataLength { get => base.DataLength; set => base.DataLength = value; }
+        public override int DataLength
+        {
+            get { return base.DataLength; }
+            set { base.DataLength = value; }
+        }
         internal override void UpdateSettingBytes()
         {
             if (_Mode == DAQMode.Low_Sampling)

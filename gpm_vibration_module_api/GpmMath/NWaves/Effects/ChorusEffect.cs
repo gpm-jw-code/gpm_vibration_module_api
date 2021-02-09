@@ -18,7 +18,7 @@ namespace NWaves.Effects
         /// </summary>
         public override float Wet
         {
-            get => base.Wet;
+            get { return base.Wet; }
             set
             {
                 base.Wet = value;
@@ -31,7 +31,7 @@ namespace NWaves.Effects
         /// </summary>
         public override float Dry
         {
-            get => base.Dry;
+            get { return base.Dry; }
             set
             {
                 base.Dry = value;
@@ -44,7 +44,7 @@ namespace NWaves.Effects
         /// </summary>
         public float[] Widths
         {
-            get => _voices.Select(v => v.Width).ToArray();
+            get { return _voices.Select(v => v.Width).ToArray(); }
             set
             {
                 for (var i = 0; i < _voices.Length; i++)
@@ -60,7 +60,7 @@ namespace NWaves.Effects
         private float[] _lfoFrequencies;
         public float[] LfoFrequencies
         {
-            get => _lfoFrequencies;
+            get { return _lfoFrequencies; }
             set
             {
                 _lfoFrequencies = value;

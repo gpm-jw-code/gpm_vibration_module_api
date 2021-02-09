@@ -53,8 +53,11 @@ namespace NWaves.Filters.Base64
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b.Take(_numeratorSize).ToArray(), _a.Take(_denominatorSize).ToArray());
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b.Take(_numeratorSize).ToArray(), _a.Take(_denominatorSize).ToArray()); }
+            protected set
+            {
+                _tf = value;
+            }
         }
 
         /// <summary>

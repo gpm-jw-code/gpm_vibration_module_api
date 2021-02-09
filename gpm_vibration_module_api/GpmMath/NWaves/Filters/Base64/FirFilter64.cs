@@ -15,8 +15,13 @@ namespace NWaves.Filters.Base64
         /// <summary>
         /// Filter kernel (impulse response)
         /// </summary>
-        public double[] Kernel => _b.Take(_kernelSize).ToArray();
-
+        public double[] Kernel
+        {
+            get
+            {
+                return _b.Take(_kernelSize).ToArray();
+            }
+        }
         /// <summary>
         /// 
         /// Numerator part coefficients in filter's transfer function 
@@ -44,8 +49,11 @@ namespace NWaves.Filters.Base64
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b.Take(_kernelSize).ToArray());
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b.Take(_kernelSize).ToArray()); }
+            protected set
+            {
+                _tf = value;
+            }
         }
 
         /// <summary>
@@ -112,21 +120,21 @@ namespace NWaves.Filters.Base64
             switch (method)
             {
                 case FilteringMethod.OverlapAdd:
-                {
-                    var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
-                    var blockConvolver = OlaBlockConvolver64.FromFilter(this, fftSize);
-                    return blockConvolver.ApplyTo(signal);
-                }
+                    {
+                        var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
+                        var blockConvolver = OlaBlockConvolver64.FromFilter(this, fftSize);
+                        return blockConvolver.ApplyTo(signal);
+                    }
                 case FilteringMethod.OverlapSave:
-                {
-                    var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
-                    var blockConvolver = OlsBlockConvolver64.FromFilter(this, fftSize);
-                    return blockConvolver.ApplyTo(signal);
-                }
+                    {
+                        var fftSize = MathUtils.NextPowerOfTwo(4 * _kernelSize);
+                        var blockConvolver = OlsBlockConvolver64.FromFilter(this, fftSize);
+                        return blockConvolver.ApplyTo(signal);
+                    }
                 default:
-                {
-                    return ProcessAllSamples(signal);
-                }
+                    {
+                        return ProcessAllSamples(signal);
+                    }
             }
         }
 

@@ -27,7 +27,7 @@ namespace NWaves.Filters.Base
         /// State vector
         /// </summary>
         protected readonly float[] _zi;
-        public float[] Zi => _zi;
+        public float[] Zi { get { return _zi; } } 
 
         /// <summary>
         /// Transfer function
@@ -35,8 +35,8 @@ namespace NWaves.Filters.Base
         protected TransferFunction _tf;
         public override TransferFunction Tf
         {
-            get => _tf ?? new TransferFunction(_b.ToDoubles(), _a.ToDoubles());
-            protected set => _tf = value;
+            get { return _tf ?? new TransferFunction(_b.ToDoubles(), _a.ToDoubles()); }
+            protected set { _tf = value; }
         }
 
         /// <summary>
@@ -56,14 +56,14 @@ namespace NWaves.Filters.Base
                 maxLength = _a.Length;
                 _b = _b.PadZeros(maxLength);
             }
-            else if(_a.Length < _b.Length)
+            else if (_a.Length < _b.Length)
             {
                 maxLength = _b.Length;
                 _a = _a.PadZeros(maxLength);
             }
             // don't check for equality
 
-            _zi = new float [maxLength];
+            _zi = new float[maxLength];
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace NWaves.Filters.Base
             {
                 output[i] = Process(input[i]);
             }
-            
+
             baseSample = input.Last();
 
             for (int k = 0, i = input.Length - 2; i > input.Length - 2 - padLength; k++, i--)
