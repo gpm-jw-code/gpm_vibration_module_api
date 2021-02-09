@@ -29,7 +29,7 @@ namespace NWaves.Effects
         public float AttackTime
         {
             get { return _envelopeFollower.AttackTime; }
-            set => _envelopeFollower.AttackTime = value;
+            set { _envelopeFollower.AttackTime = value; }
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace NWaves.Effects
         public float ReleaseTime
         {
             get { return _envelopeFollower.ReleaseTime; }
-            set => _envelopeFollower.ReleaseTime = value;
+            set { _envelopeFollower.ReleaseTime = value; }
         }
 
         /// <summary>
