@@ -300,32 +300,32 @@ namespace gpm_vibration_module_api.GPMBase
         /// <returns></returns>
         private async Task TimeoutDetection(int timeout = 10000)//毫秒
         {
-            _ = Task.Run(async () =>
-              {
-                  TimeoutDetectEndFlag = 0;
-                  Stopwatch watcher = new Stopwatch();
-                  watcher.Start();
-                  while (true)
-                  {
-                      if (watcher.ElapsedMilliseconds > timeout)
-                      {
-                          StateForAPI = new StateObject()
-                          {
-                              ErrorCode = cmd == "READVALUE\r\n" ? clsErrorCode.Error.DATA_GET_TIMEOUT :
-                                                          clsErrorCode.Error.PARAM_HS_TIMEOUT
-                          };
-                          Tools.Logger.Event_Log.Log($"(CMD:{cmd}) Data receieve Timeout(timeout設定:{timeout} ms)");
-                          receiveDone.Set();
-                          return;
-                      }
-                      if (TimeoutDetectEndFlag == 1)
-                      {
-                          return;
-                      }
-                      Thread.Sleep(1);
-                  }
+            Task.Run(async () =>
+             {
+                 TimeoutDetectEndFlag = 0;
+                 Stopwatch watcher = new Stopwatch();
+                 watcher.Start();
+                 while (true)
+                 {
+                     if (watcher.ElapsedMilliseconds > timeout)
+                     {
+                         StateForAPI = new StateObject()
+                         {
+                             ErrorCode = cmd == "READVALUE\r\n" ? clsErrorCode.Error.DATA_GET_TIMEOUT :
+                                                         clsErrorCode.Error.PARAM_HS_TIMEOUT
+                         };
+                         Tools.Logger.Event_Log.Log($"(CMD:{cmd}) Data receieve Timeout(timeout設定:{timeout} ms)");
+                         receiveDone.Set();
+                         return;
+                     }
+                     if (TimeoutDetectEndFlag == 1)
+                     {
+                         return;
+                     }
+                     Thread.Sleep(1);
+                 }
 
-              });
+             });
         }
         private void Send(Socket client, String data)
         {
