@@ -11,6 +11,7 @@ using gpm_module_api.ParticalSensor;
 using System.Runtime;
 using Microsoft.Win32;
 using System.Windows.Forms.DataVisualization.Charting;
+using System.Net;
 
 namespace gpm_module_api.Visualize
 {
@@ -61,7 +62,6 @@ namespace gpm_module_api.Visualize
             {
                 try
                 {
-                    ModuleIPLabel.Text = _ParticleModuleAPI.IP;
                     TemperatureShowLabel.Text = _ParticleModuleAPI.PreDataSet.Temperature + "";
                     HumidityShowlabel.Text = _ParticleModuleAPI.PreDataSet.Humidity + "";
                     IlluminanceShowlabel.Text = _ParticleModuleAPI.PreDataSet.Illuminance + "";
