@@ -45,8 +45,7 @@ namespace gpm_vibration_module_api
         public GPMModuleAPI_HSR()
         {
             _Is485Module = false;
-            AsynchronousClient = new AsynchronousClient();
-            AsynchronousClient.DataPacketLenOnchange += AsynchronousClient_DataPacketLenOnchange1;
+     
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
@@ -150,7 +149,24 @@ namespace gpm_vibration_module_api
         public int ParamSetRetryNumber = 5;
         public int GetDataRetryNumber = 30;
 
-
+        public virtual int AccDataRevTimeOut
+        {
+            set
+            {
+                try
+                {
+                    if (Int32.TryParse(value + "", out int _result))
+                        Settings.AccDataRevTimeout = _result;
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+            get
+            {
+                return Settings.AccDataRevTimeout;
+            }
+        }
         /// <summary>
         /// 跟模組連線
         /// </summary>
@@ -159,9 +175,9 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         public async Task<int> Connect(string IP, int Port)
         {
-            var licCheckRet = 0;
-            if ((licCheckRet = LicenseCheckProcess()) != 0)
-                return licCheckRet;
+            //var licCheckRet = 0;
+            //if ((licCheckRet = LicenseCheckProcess()) != 0)
+            //    return licCheckRet;
             try
             {
                 SerialPortBase = null;
@@ -170,6 +186,8 @@ namespace gpm_vibration_module_api
                     Disconnect();
                 this.IP = IP;
                 this.Port = Port;
+                AsynchronousClient = new AsynchronousClient();
+                AsynchronousClient.DataPacketLenOnchange += AsynchronousClient_DataPacketLenOnchange1;
                 int isconnect = await AsynchronousClient.AsyncConnect(IP, Port);
                 if (isconnect != 0)
                 {
@@ -233,7 +251,7 @@ namespace gpm_vibration_module_api
             Tools.Logger.Event_Log.Log("Try Disconnect.");
             if (!_Is485Module)
             {
-                AsynchronousClient.Disconnect();
+                AsynchronousClient?.Disconnect();
                 AsynchronousClient = null;
                 GC.Collect();
             }
@@ -374,7 +392,7 @@ namespace gpm_vibration_module_api
             {
                 // var timeout = GetDataFirstCall ? 500 : Settings.Measure_Time + 8000;
                 HSStopWatch.Restart();
-                var state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : 3000);
+                var state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : Settings.AccDataRevTimeout);
                 HSStopWatch.Stop();
                 #region Retry
                 ////Timeout後會自動重連，所以可以重試
@@ -610,9 +628,7 @@ namespace gpm_vibration_module_api
                     Array.Copy(raw_bytes.ToArray(), 1, _raw_bytes, 0, _raw_bytes.Length);
                 }
                 else
-                {
                     _raw_bytes = raw_bytes.ToArray();
-                }
                 List<List<double>> ori_xyz_data_list = null;
                 if (IsKX134Sensor)
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
@@ -644,8 +660,6 @@ namespace gpm_vibration_module_api
             {
                 return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.PostProcessingError };
             }
-
-
         }
         internal void FFTAndFeatureCal(ref DataSet dataSet_ret, bool fft, bool other_feature, double samplingRate)
         {
@@ -764,7 +778,7 @@ namespace gpm_vibration_module_api
 
     public class ModuleSetting
     {
-
+        public int AccDataRevTimeout = 3000;
         public byte SlaveID = 0x00;
         public byte[] READParamCmdByteForModbus
         {

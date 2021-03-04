@@ -143,7 +143,7 @@ namespace gpm_vibration_module_api.GPMBase
             }
             catch (Exception ex)
             {
-                StateForAPI.ErrorCode = clsErrorCode.Error.SYSTEM_ERROR;
+                StateForAPI.ErrorCode = clsErrorCode.Error.CONNECT_FAIL;
                 Tools.Logger.Code_Error_Log.Log(ex.Message);
                 return StateForAPI;
             }

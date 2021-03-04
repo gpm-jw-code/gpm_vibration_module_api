@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using static gpm_vibration_module_api.clsEnum.Module_Setting_Enum;
+using gpm_vibration_module_api.Tools;
 
 namespace gpm_vibration_module_api
 {
@@ -51,6 +52,8 @@ namespace gpm_vibration_module_api
 
         #region API FOR USER
 
+        public override int AccDataRevTimeOut { get => base.AccDataRevTimeOut; set => base.AccDataRevTimeOut = value; }
+
         public override Socket ModuleSocket
         {
             get { return base.ModuleSocket; }
@@ -81,7 +84,37 @@ namespace gpm_vibration_module_api
         public override async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
             if (Settings.Mode == gpm_vibration_module_api.DAQMode.Low_Sampling)
-                return await base.GetData(IsGetFFT, IsGetOtherFeatures);
+            {
+                var dataset = await base.GetData(IsGetFFT, IsGetOtherFeatures);
+                int rerty = 0;
+                while (dataset.ErrorCode != 0)
+                {
+                    if (rerty > 5)
+                    {
+                        Tools.Logger.Event_Log.Log($"GetData(Low SP MODE) FAIL TO END. Retry > 5, Reconnect process start");
+                        var recon = 0;
+                        while (!await ReConnectAndInitialize())
+                        {
+                            if (recon > 5)
+                            {
+                                return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.CONNECT_FAIL };
+                            }
+                            recon = recon + 1;
+                            Tools.Logger.Event_Log.Log($"Reconnect fail.. retry..");
+                            Thread.Sleep(1);
+                        }
+                        Tools.Logger.Event_Log.Log($"GetData(Low SP MODE) FAIL TO END. Retry > 5, Reconnect process start");
+                        rerty = -1;
+                        continue;
+                    }
+                    rerty = rerty + 1;
+                    Tools.Logger.Event_Log.Log("GetData(Low SP MODE) FAIL , Error code =" + dataset.ErrorCode);
+                    dataset = await base.GetData(IsGetFFT, IsGetOtherFeatures);
+                    Thread.Sleep(1);
+                }
+
+                return dataset;
+            }
             else
             {
                 int ErrorCnt = 0;
@@ -103,10 +136,11 @@ namespace gpm_vibration_module_api
                         if (ErrorCnt > (Is485Module ? 20 : 5))
                         {
                             if (Is485Module)
+
                             {
                                 Disconnect();
                                 int reopen_ret = await Open(PortName, BaudRate);
-                                Console.WriteLine($"重新開啟通訊埠 {(reopen_ret == 0 ? "成功" : "失敗")}");
+                                Logger.Event_Log.Log($"重新開啟通訊埠 {(reopen_ret == 0 ? "成功" : "失敗")}");
                                 if (reopen_ret != 0 | ErrorCnt > 40)
                                     return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.DATA_GET_TIMEOUT };
                             }
@@ -120,6 +154,26 @@ namespace gpm_vibration_module_api
                 return dataSet_ret;
             }
         }
+
+        private async Task<bool> ReConnectAndInitialize()
+        {
+            try
+            {
+                this.Disconnect();
+                await Connect();
+                await Measure_Range_Setting(base.Settings.mEASURE_RANGE);
+                await DAQModeSetting(base.Settings.Mode);
+                await Data_Length_Setting(base.Settings.DataLength);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Tools.Logger.Event_Log.Log("[ReConnectAndInitialize] Error:" + ex.Message);
+                return false;
+            }
+
+        }
+
         public async Task<DataSet> GetData_ByID(byte ID, bool IsGetFFT, bool IsGetOtherFeatures)
         {
             base.Settings.SlaveID = ID;
@@ -343,6 +397,7 @@ namespace gpm_vibration_module_api
         {
             base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x10 };
         }
+
         public override int PackageTotalLen
         {
             get

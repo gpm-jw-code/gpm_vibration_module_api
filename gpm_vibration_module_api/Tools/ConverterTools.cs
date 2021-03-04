@@ -18,17 +18,17 @@ namespace gpm_vibration_module_api.Tools
         {
             return (sbyte)HB * 256 + LB;
         }
-        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode, bool Noise_remove=false)
         {
             ADCError _ADCError = null;
-            return AccPacketToListDouble(AccPacket, out _ADCError, measureRange, dAQMode );
+            return AccPacketToListDouble(AccPacket, out _ADCError, measureRange, dAQMode, Noise_remove);
         }
         /// <summary>
         /// 將加速度封包轉換成List<double></double>
         /// </summary>
         /// <param name="AccPacket"></param>
         /// <returns></returns>
-        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, out ADCError _ADCError, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode)
+        public static List<List<double>> AccPacketToListDouble(byte[] AccPacket, out ADCError _ADCError, clsEnum.Module_Setting_Enum.MEASURE_RANGE measureRange, DAQMode dAQMode, bool noise_remove=false)
         {
             _ADCError = new ADCError();
             //Console.WriteLine($"Algrium:{convertAlgrium.ToString()}");
@@ -89,6 +89,26 @@ namespace gpm_vibration_module_api.Tools
                     Gx.Add(bytesToDouble(XLB, XHB) / LSB);
                     Gy.Add(bytesToDouble(YLB, YHB) / LSB);
                     Gz.Add(bytesToDouble(ZLB, ZHB) / LSB);
+                }
+            }
+
+            if (noise_remove)
+            {
+                for (int i = 0; i < Gx.Count; i++)
+                {
+                    if (i == 0 | i==Gx.Count-1)
+                    {
+                        int index = i == 0 ? 1 : -1;
+                        Gx[i] = Math.Abs((Gx[i] - Gx[i + index])) > 0.2 ? Gx[i + index] : Gx[i];
+                        Gy[i] = Math.Abs((Gy[i] - Gy[i + index])) > 0.2 ? Gy[i + index] : Gy[i];
+                        Gz[i] = Math.Abs((Gz[i] - Gz[i + index])) > 0.2 ? Gz[i + index] : Gz[i];
+                    }
+                    else
+                    {
+                        Gx[i] = Math.Abs((Gx[i] - Gx[i + 1])) > 0.2 && Math.Abs((Gx[i] - Gx[i - 1])) > 0.2 ? Gx[i - 1] : Gx[i];
+                        Gy[i] = Math.Abs((Gy[i] - Gy[i + 1])) > 0.2 && Math.Abs((Gy[i] - Gy[i - 1])) > 0.2 ? Gy[i - 1] : Gy[i];
+                        Gz[i] = Math.Abs((Gz[i] - Gz[i + 1])) > 0.2 && Math.Abs((Gz[i] - Gz[i - 1])) > 0.2 ? Gz[i - 1] : Gz[i];
+                    }
                 }
             }
             return new List<List<double>> { Gx, Gy, Gz };
@@ -204,7 +224,7 @@ namespace gpm_vibration_module_api.Tools
         }
 
 
-        public static List<List<double>> AccPacketToListDouble_KX134(byte[] AccPacket, int LSB, int min_axis_sample_num = 128)
+        public static List<List<double>> AccPacketToListDouble_KX134(byte[] AccPacket, int LSB, int min_axis_sample_num = 128, bool noise_remove = false)
         {
             var min_single_axes_sample_num = AccPacket.Length / 6;
             List<double> Gx = new List<double>();
@@ -231,6 +251,24 @@ namespace gpm_vibration_module_api.Tools
                     Gx.Add(bytesToDouble(XLB, XHB) / LSB);
                     Gy.Add(bytesToDouble(YLB, YHB) / LSB);
                     Gz.Add(bytesToDouble(ZLB, ZHB) / LSB);
+                }
+            }
+            if (noise_remove)
+            {
+                for (int i = 0; i < Gx.Count; i++)
+                {
+                    if (i == 0)
+                    {
+                        Gx[i] = Math.Abs((Gx[i] - Gx[i + 1])) > 0.2 ? Gx[i + 1] : Gx[i];
+                        Gy[i] = Math.Abs((Gy[i] - Gy[i + 1])) > 0.2 ? Gy[i + 1] : Gy[i];
+                        Gz[i] = Math.Abs((Gz[i] - Gz[i + 1])) > 0.2 ? Gz[i + 1] : Gz[i];
+                    }
+                    else
+                    {
+                        Gx[i] = Math.Abs((Gx[i] - Gx[i + 1])) > 0.2 && Math.Abs((Gx[i] - Gx[i - 1])) > 0.2 ? Gx[i - 1] : Gx[i];
+                        Gy[i] = Math.Abs((Gy[i] - Gy[i + 1])) > 0.2 && Math.Abs((Gy[i] - Gy[i - 1])) > 0.2 ? Gy[i - 1] : Gy[i];
+                        Gz[i] = Math.Abs((Gz[i] - Gz[i + 1])) > 0.2 && Math.Abs((Gz[i] - Gz[i - 1])) > 0.2 ? Gz[i - 1] : Gz[i];
+                    }
                 }
             }
             return new List<List<double>> { Gx, Gy, Gz };
