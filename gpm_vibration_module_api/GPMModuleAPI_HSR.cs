@@ -45,7 +45,6 @@ namespace gpm_vibration_module_api
         public GPMModuleAPI_HSR()
         {
             _Is485Module = false;
-     
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
@@ -72,7 +71,7 @@ namespace gpm_vibration_module_api
             }
         }
 
-        virtual public bool FilterActive { get; set; } = true;
+        virtual public bool FilterActive { get; set; } = false;
 
         virtual public bool LowPassFilterActive { get; set; } = false;
         /// <summary>
@@ -384,7 +383,6 @@ namespace gpm_vibration_module_api
 
         virtual public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
-
             GetDataCalledStasify();
             GetDataInteruptFlag = 0;
             Tools.Logger.Event_Log.Log("GetData Fun called");
@@ -628,7 +626,18 @@ namespace gpm_vibration_module_api
                     Array.Copy(raw_bytes.ToArray(), 1, _raw_bytes, 0, _raw_bytes.Length);
                 }
                 else
-                    _raw_bytes = raw_bytes.ToArray();
+                {
+                    try
+                    {
+                        _raw_bytes = new byte[Settings.DataLength * 6];
+                        Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
+                    }
+                    catch (Exception ex)
+                    {
+                        Tools.Logger.Event_Log.Log("[ARRAY COPY FAIL]"+ex.Message);
+                        return new DataSet(0) {ErrorCode= (int)clsErrorCode.Error.SYSTEM_ERROR};
+                    }
+                }
                 List<List<double>> ori_xyz_data_list = null;
                 if (IsKX134Sensor)
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
@@ -658,6 +667,7 @@ namespace gpm_vibration_module_api
             }
             catch (Exception ex)
             {
+                Tools.Logger.Event_Log.Log("[PostProcessingError]" + ex.Message);
                 return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.PostProcessingError };
             }
         }

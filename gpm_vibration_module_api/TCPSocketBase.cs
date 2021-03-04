@@ -206,6 +206,11 @@ namespace gpm_vibration_module_api.GPMBase
                 }
                 StateForAPI.DataByteList.AddRange(buf);
             }
+            //記錄前八
+            string str = "";
+            for (int i = 0; i < 8; i++)
+                str += StateForAPI.DataByteList[i] + ",";
+            Tools.Logger.Event_Log.Log($"Data Sync Receieve data(Eight){str}");
             SyncRevRunning = false;
             //DataPacketLenOnchange?.BeginInvoke(null, StateForAPI.DataByteList.Count, null, null);
             Tools.Logger.Event_Log.Log($"Data Sync Receieve Done( Data Size = {StateForAPI.DataByteList.Count})");
@@ -406,7 +411,7 @@ namespace gpm_vibration_module_api.GPMBase
         {
             get
             {
-                return CheckLen == byteRevCnt;
+                return CheckLen <= byteRevCnt;
             }
             set
             {

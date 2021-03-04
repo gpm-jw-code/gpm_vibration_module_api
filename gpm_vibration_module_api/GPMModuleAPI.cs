@@ -39,9 +39,12 @@ namespace gpm_vibration_module_api
 
         public GPMModuleAPI()
         {
+            Logger.Event_Log.Log("GPMMODULEAPI OBJECT BUILD");
+            base.Settings = new ModuleSetting_GEN();
             IsKX134Sensor = false;
             DataLenMiniLen = 512;
             LowPassFilterCutOffFreq = 3000;
+
         }
 
         public GPMModuleAPI(GPMModulesServer.ConnectInState obj)
@@ -395,7 +398,7 @@ namespace gpm_vibration_module_api
     {
         public ModuleSetting_GEN()
         {
-            base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x10 };
+            base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x20 };
         }
 
         public override int PackageTotalLen
@@ -405,7 +408,7 @@ namespace gpm_vibration_module_api
                 if (_Mode == DAQMode.High_Sampling)
                     return 3072;
                 else
-                    return 3072 * (_DataLength / 512);
+                    return 3072 * Ratio;
             }
         }
         internal override byte[] SettingBytesWithHead
@@ -425,16 +428,22 @@ namespace gpm_vibration_module_api
             get { return base.DataLength; }
             set { base.DataLength = value; }
         }
+        private int Ratio
+        {
+            get
+            {
+                return _DataLength / 512;
+            }
+        }
         internal override void UpdateSettingBytes()
         {
             if (_Mode == DAQMode.Low_Sampling)
             {
-                int _ratio = _DataLength / 512;  //倍數
-                _SettingBytes[1] = (byte)_ratio;
+                _SettingBytes[1] = (byte)Ratio;
             }
             else
             {
-                _SettingBytes[0] = 0x00;
+                _SettingBytes[1] = 0x00;
             }
             //量測範圍
             _SettingBytes[3] = _mEASURE_RANGE.ToGENByte();
