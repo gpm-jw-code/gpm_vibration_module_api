@@ -197,15 +197,15 @@ namespace gpm_module_api.ParticalSensor
                 return new ParticleDataSet(0) { ErrorCode = (int)state.ErrorCode };
             //READALVAL 62
             var ParticleDataSet = ConverterTools.ParticalPacketToDataSet(state.DataByteList.ToArray());
-            _ParticleDataSet.Humidity = ParticleDataSet.Humidity;
-            _ParticleDataSet.Temperature = ParticleDataSet.Temperature;
-            _ParticleDataSet.Illuminance = ParticleDataSet.Illuminance;
-            _ParticleDataSet.ParticalValueDict = ParticleDataSet.ParticalValueDict;
-            _ParticleDataSet.TypicalParticleSize = ParticleDataSet.TypicalParticleSize;
-            _ParticleDataSet.Res1 = ParticleDataSet.Res1;
-            _ParticleDataSet.Res2 = ParticleDataSet.Res2;
-            PreDataSet = _ParticleDataSet;
+            PreDataSet.Humidity = ParticleDataSet.Humidity;
+            PreDataSet.Temperature = ParticleDataSet.Temperature;
+            PreDataSet.Illuminance = ParticleDataSet.Illuminance;
+            PreDataSet.ParticalValueDict = ParticleDataSet.ParticalValueDict;
+            PreDataSet.TypicalParticleSize = ParticleDataSet.TypicalParticleSize;
+            PreDataSet.Res1 = ParticleDataSet.Res1;
+            PreDataSet.Res2 = ParticleDataSet.Res2;
             AddNewDataToTempData(ParticleDataSet);
+            View.Update();
             UpdateDetailShow();
             return PreDataSet;
         }
