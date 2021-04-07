@@ -20,6 +20,7 @@ namespace gpm_vibration_module_api.Tools
             {
                 SaveDir = "Log/Event_Log/";
                 DirCreation();
+                LoadGlobalSetting();
             }
             public override void Log(string content)
             {
@@ -34,6 +35,7 @@ namespace gpm_vibration_module_api.Tools
             {
                 SaveDir = "Log/Coode_Error_Log/";
                 DirCreation();
+                LoadGlobalSetting();
             }
 
             public override void Log(string content)
@@ -54,6 +56,13 @@ namespace gpm_vibration_module_api.Tools
         public string SaveDir;
         public bool is_log_enable = true;
         internal NET.UDPServer udpServer = new NET.UDPServer();
+
+        internal void LoadGlobalSetting()
+        {
+            var settings =sys.Settings_Ctrl.Log_Config();
+            this.is_log_enable = settings.is_write_log_to_HardDisk;
+        }
+
         public virtual void Log(string content)
         {
             var log = $"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} {content}";
@@ -64,9 +73,7 @@ namespace gpm_vibration_module_api.Tools
                 var fileName = DateTime.Now.ToString("yyyyMMdd_HH") + ".txt";
                 using (StreamWriter sw = new StreamWriter(SaveDir + fileName, true))
                 {
-                    
                     sw.WriteLine(log);
-                   
                 };
             }
             catch (Exception)

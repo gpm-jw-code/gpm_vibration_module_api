@@ -44,7 +44,9 @@ namespace gpm_vibration_module_api
         public event Action<int> DataPacketOnchange;
         public GPMModuleAPI_HSR()
         {
+            IsKX134Sensor = true;
             _Is485Module = false;
+            Settings = new ModuleSetting();
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
@@ -250,9 +252,16 @@ namespace gpm_vibration_module_api
             Tools.Logger.Event_Log.Log("Try Disconnect.");
             if (!_Is485Module)
             {
-                AsynchronousClient?.Disconnect();
-                AsynchronousClient = null;
-                GC.Collect();
+                try
+                {
+                    AsynchronousClient?.Disconnect();
+                    AsynchronousClient = null;
+                    GC.Collect();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message + "|" + ex.StackTrace);
+                }
             }
             else
                 SerialPortBase.PortClose();
@@ -356,13 +365,14 @@ namespace gpm_vibration_module_api
         /// DAQ MODE SETTING::HSR Version isn't support, always retrun 0.
         /// </summary>
         /// <param name="Mode"></param>
-        /// <param name="IsNeedReboot"></param>
         /// <returns></returns>
         virtual public async Task<int> DAQModeSetting(DAQMode Mode)
         {
+            if (IsKX134Sensor)
+                return 0;
             var oriMode = Settings.Mode;
             Settings.Mode = Mode;
-            var state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
+            var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
             if (state.ErrorCode != clsErrorCode.Error.None)
             {
                 Settings.Mode = oriMode;
@@ -634,8 +644,8 @@ namespace gpm_vibration_module_api
                     }
                     catch (Exception ex)
                     {
-                        Tools.Logger.Event_Log.Log("[ARRAY COPY FAIL]"+ex.Message);
-                        return new DataSet(0) {ErrorCode= (int)clsErrorCode.Error.SYSTEM_ERROR};
+                        Tools.Logger.Event_Log.Log("[ARRAY COPY FAIL]" + ex.Message);
+                        return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.SYSTEM_ERROR };
                     }
                 }
                 List<List<double>> ori_xyz_data_list = null;
@@ -786,6 +796,9 @@ namespace gpm_vibration_module_api
 
     }
 
+    /// <summary>
+    /// 高階版本感測器設定物件
+    /// </summary>
     public class ModuleSetting
     {
         public int AccDataRevTimeout = 3000;

@@ -1,16 +1,17 @@
-﻿using System.Reflection;
+﻿using System.Resources;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // 組件的一般資訊是由下列的屬性集控制。
 // 變更這些屬性的值即可修改組件的相關
 // 資訊。
-[assembly: AssemblyTitle("gpm_vibration_module_api[YCM]")]
-[assembly: AssemblyDescription("Customized For YCM")]
+[assembly: AssemblyTitle("gpm_vibration_module_api")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("GPM")]
 [assembly: AssemblyProduct("gpm_vibration_module_api")]
-[assembly: AssemblyCopyright("Copyright ©  2020")]
+[assembly: AssemblyCopyright("Copyright ©GPM 2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +33,5 @@ using System.Runtime.InteropServices;
 // 您可以指定所有的值，也可以使用 '*' 將組建和修訂編號
 // 設為預設，如下所示:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2021.03.04.1")]
-[assembly: AssemblyFileVersion("2021.03.04.1")]
+[assembly: AssemblyVersion("2021.4.7.1")]
+[assembly: NeutralResourcesLanguage("en")]
