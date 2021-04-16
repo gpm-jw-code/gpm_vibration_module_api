@@ -392,6 +392,7 @@ namespace gpm_vibration_module_api
             GetDataCalledNum += 1;
         }
 
+        private StateObject state_obj = new StateObject() { ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT };
         virtual public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
             Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
@@ -404,17 +405,21 @@ namespace gpm_vibration_module_api
                 // var timeout = GetDataFirstCall ? 500 : Settings.Measure_Time + 8000;
                 HSStopWatch.Restart();
                 clsErrorCode.Error retcode = clsErrorCode.Error.DATA_GET_TIMEOUT;
-                var state_obj = new StateObject() { ErrorCode = clsErrorCode.Error.DATA_GET_INTERUPT };
                 int retry = 0;
+                state_obj.ClearBuffer();
                 while (state_obj.ErrorCode != clsErrorCode.Error.None)
                 {
+                    state_obj.ClearBuffer();
                     if (retry >= 5)
                     {
+                        Tools.Logger.Event_Log.Log($"GetData Retry Number >5, return {state_obj.ErrorCode}");
                         break;
                     }
+                    Tools.Logger.Event_Log.Log($"GetData > SendGetRawDataCmd({retry})");
                     state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : Settings.AccDataRevTimeout);
                     retcode = state_obj.ErrorCode;
                     retry += 1;
+                    Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
                     Thread.Sleep(1);
                 }
 
@@ -432,7 +437,9 @@ namespace gpm_vibration_module_api
                     return DataSetForUser;
                 }
                 else
+                {
                     return new DataSet(0) { ErrorCode = state_obj.ErrorCode == clsErrorCode.Error.DATA_GET_INTERUPT ? (int)clsErrorCode.Error.DATA_GET_INTERUPT : (int)clsErrorCode.Error.DATA_GET_TIMEOUT };
+                }
             }
             catch (Exception ex)
             {
@@ -470,6 +477,13 @@ namespace gpm_vibration_module_api
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", 8, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
+        } 
+        virtual public async Task<bool> SendKXRegisterSetting(int CNTL1, int ODCNTL)
+        {
+            Settings._SettingBytes[3] = (byte)CNTL1;
+            Settings._SettingBytes[4] = (byte)ODCNTL;
+            var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
+            return state.ErrorCode == clsErrorCode.Error.None;
         }
 
         #endregion
@@ -836,8 +850,11 @@ namespace gpm_vibration_module_api
         }
         internal SettingItem settingItem = SettingItem.NotSpecify;
         public double SamplingRate { get; set; } = 10064;
-
-        internal byte[] _SettingBytes = new byte[8] { 0x00, 0x02, 0x00, 0xC0, 0x2F, 0x00, 0x00, 0x00 };
+        /// <summary>
+        /// [3] CNTL1
+        /// [4] ODCNTL
+        /// </summary>
+        public byte[] _SettingBytes = new byte[8] { 0x00, 0x02, 0x00, 0xC0, 0x2F, 0x00, 0x00, 0x00 };
 
         virtual internal byte[] SettingBytesWithHead
         {

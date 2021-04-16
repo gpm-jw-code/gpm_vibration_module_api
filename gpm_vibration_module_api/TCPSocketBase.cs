@@ -23,7 +23,7 @@ namespace gpm_vibration_module_api.GPMBase
         private bool SyncRevRunning = false;
         private AsyncCallback DataRecieveCallBack = null;
         public Socket client;
-        public StateObject StateForAPI { get; private set; } = new StateObject();
+        public StateObject StateForAPI { get; private set; } = new StateObject() {};
         private StateObject NoConnectionStateForAPI = new StateObject { ErrorCode = clsErrorCode.Error.NoConnection };
         // ManualResetEvent instances signal completion.
         private ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -120,8 +120,9 @@ namespace gpm_vibration_module_api.GPMBase
             try
             {
                 interuptFlag = 0;
+                StateForAPI.ClearBuffer();
                 //if (!client.Connected) return NoConnectionStateForAPI;
-                StateForAPI = new StateObject() { CheckLen = CheckLen };
+                StateForAPI.CheckLen = CheckLen;
                 SocketBufferClear();
                 cmd = Encoding.ASCII.GetString(Msg);
                 Tools.Logger.Event_Log.Log($"Send {cmd} to Device.");
@@ -134,7 +135,7 @@ namespace gpm_vibration_module_api.GPMBase
                     return StateForAPI;
                 }
                 sendDone.WaitOne();
-              await SyncReceive(client, Timeout);
+                await SyncReceive(client, Timeout);
                 //if (Timeout == -1)
                 //  TimeoutDetection(Timeout);
                 //AsyncReceive(client, CheckLen);
@@ -376,6 +377,12 @@ namespace gpm_vibration_module_api.GPMBase
             }
             catch (Exception ex)
             {
+                Console.WriteLine("Nothing" + ex.Message);
+            }
+            finally
+            {
+
+                Console.WriteLine("Socket buffer clear");
             }
         }
     }
@@ -417,5 +424,10 @@ namespace gpm_vibration_module_api.GPMBase
             }
         }
 
+        internal void ClearBuffer()
+        {
+            DataByteList.Clear();
+            ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT;
+        }
     }
 }
