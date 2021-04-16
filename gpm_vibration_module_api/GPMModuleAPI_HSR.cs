@@ -256,15 +256,16 @@ namespace gpm_vibration_module_api
                 {
                     AsynchronousClient?.Disconnect();
                     AsynchronousClient = null;
-                    GC.Collect();
                 }
                 catch (Exception ex)
                 {
+                    Tools.Logger.Event_Log.Log($"Try Disconnect fail>{ex.StackTrace} {ex.Message}.");
                     Console.WriteLine(ex.Message + "|" + ex.StackTrace);
                 }
             }
             else
                 SerialPortBase.PortClose();
+            Tools.Logger.Event_Log.Log("Try Disconnect FNISH");
             return 0;
         }
 
@@ -393,6 +394,8 @@ namespace gpm_vibration_module_api
 
         virtual public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
+            Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
+
             GetDataCalledStasify();
             GetDataInteruptFlag = 0;
             Tools.Logger.Event_Log.Log("GetData Fun called");
@@ -400,27 +403,25 @@ namespace gpm_vibration_module_api
             {
                 // var timeout = GetDataFirstCall ? 500 : Settings.Measure_Time + 8000;
                 HSStopWatch.Restart();
-                var state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : Settings.AccDataRevTimeout);
+                clsErrorCode.Error retcode = clsErrorCode.Error.DATA_GET_TIMEOUT;
+                var state_obj = new StateObject() { ErrorCode = clsErrorCode.Error.DATA_GET_INTERUPT };
+                int retry = 0;
+                while (state_obj.ErrorCode != clsErrorCode.Error.None)
+                {
+                    if (retry >= 5)
+                    {
+                        break;
+                    }
+                    state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : Settings.AccDataRevTimeout);
+                    retcode = state_obj.ErrorCode;
+                    retry += 1;
+                    Thread.Sleep(1);
+                }
+
                 HSStopWatch.Stop();
-                #region Retry
-                ////Timeout後會自動重連，所以可以重試
-                //int retry_cnt = 0;
-                //while (state_obj.ErrorCode != clsErrorCode.Error.None)
-                //{
-                //    GetDataFirstCall = false;
-                //    await Reconnect();
-                //    state_obj = await AsynchronousClient.SendMessage("READVALUE\r\n", Settings.PackageTotalLen, Timeout: timeout);
-                //    retry_cnt++;
-                //    if (retry_cnt >= GetDataRetryNumber)
-                //    {
-                //        GetDataFirstCall = false;
-                //        return new DataSet(0) { ErrorCode = (int)state_obj.ErrorCode };
-                //    }
-                //    Thread.Sleep(1);
-                //}
-                #endregion
                 GetDataFirstCall = false;
                 //DataUploadToWeb();
+                Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
                 if (state_obj.ErrorCode == clsErrorCode.Error.None)
                 {
                     GetDataSuccessNum++;

@@ -22,7 +22,7 @@ namespace gpm_vibration_module_api.GPMBase
         private int TimeoutDetectEndFlag = 0;
         private bool SyncRevRunning = false;
         private AsyncCallback DataRecieveCallBack = null;
-        internal Socket client;
+        public Socket client;
         public StateObject StateForAPI { get; private set; } = new StateObject();
         private StateObject NoConnectionStateForAPI = new StateObject { ErrorCode = clsErrorCode.Error.NoConnection };
         // ManualResetEvent instances signal completion.
@@ -88,7 +88,7 @@ namespace gpm_vibration_module_api.GPMBase
         /// <summary>
         /// 斷開TCP/IP連線
         /// </summary>
-        internal void Disconnect()
+        public void Disconnect()
         {
             var fun_Name = "Disconnect";
             try
@@ -134,10 +134,11 @@ namespace gpm_vibration_module_api.GPMBase
                     return StateForAPI;
                 }
                 sendDone.WaitOne();
-                await SyncReceive(client, Timeout);
+              await SyncReceive(client, Timeout);
                 //if (Timeout == -1)
                 //  TimeoutDetection(Timeout);
                 //AsyncReceive(client, CheckLen);
+                Tools.Logger.Event_Log.Log("SendMessage FINISH ");
                 receiveDone.WaitOne();
                 return StateForAPI;
             }
@@ -174,7 +175,7 @@ namespace gpm_vibration_module_api.GPMBase
             }
 
         }
-
+        private Stopwatch SyncTevTimer = new Stopwatch();
         /// <summary>
         /// 同步阻塞方法接收資料
         /// </summary>
@@ -182,6 +183,7 @@ namespace gpm_vibration_module_api.GPMBase
         /// <param name="timeout"></param>
         private async Task SyncReceive(Socket client, int timeout)
         {
+            SyncTevTimer.Restart();
             client.ReceiveTimeout = timeout;
             Tools.Logger.Event_Log.Log($"SyncReceive Task start. Data Length recieved should be :{StateForAPI.CheckLen}");
             while (!StateForAPI.IsDataReach)
@@ -201,10 +203,12 @@ namespace gpm_vibration_module_api.GPMBase
                 client.Receive(buf, 0, buf.Length, SocketFlags.None, out errorCode);
                 if (errorCode != SocketError.Success)
                 {
+                    StateForAPI.ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT;
                     Tools.Logger.Event_Log.Log($"Data Sync Receieve Error Occur(Socket Error Code:{errorCode} || Data Size = {StateForAPI.DataByteList.Count})");
-                    break;
+                    receiveDone.Set(); break;
                 }
                 StateForAPI.DataByteList.AddRange(buf);
+                Thread.Sleep(1);
             }
             SyncRevRunning = false;
             Tools.Logger.Event_Log.Log($"Data Sync Receieve Done( Data Size = {StateForAPI.DataByteList.Count})");
