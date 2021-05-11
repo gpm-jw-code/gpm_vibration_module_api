@@ -50,8 +50,8 @@ namespace gpm_vibration_module_api
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
-        public string IP { get; private set; }
-        public int Port { get; private set; }
+        public string IP { get;  set; }
+        public int Port { get;  set; }
 
         public string PortName { get; private set; }
 
@@ -209,7 +209,8 @@ namespace gpm_vibration_module_api
 
         }
 
-        public async Task<int> Open(string PortName, int BaudRate)
+      
+            public async Task<int> Open(string PortName, int BaudRate)
         {
             var licCheckRet = 0;
             if ((licCheckRet = LicenseCheckProcess()) != 0)
