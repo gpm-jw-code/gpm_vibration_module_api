@@ -15,22 +15,24 @@ namespace gpm_vibration_module_api.Modbus
         /// </summary>
         internal struct Register
         {
-            public const int VEValuesRegStart = 0;
+            public const int VEValuesRegStartIndex = 0;
             public const int VEValuesRegLen = 6;
 
-            public const int TotalVEValueRegStart = 6;
+            public const int TotalVEValueRegStartIndex = 6;
             public const int TotalVEValueRegLen = 2;
 
-            public const int RMSValuesRegStart = 8;
+            public const int RMSValuesRegStartIndex = 8;
             public const int RMSValuesRegLen = 6;
 
-            public const int P2PValuesRegStart = 14;
+            public const int P2PValuesRegStartIndex = 14;
             public const int P2PValuesRegLen = 6;
 
-            public const int AllValuesRegStart = 0;
+            public const int AllValuesRegStartIndex = 0;
             public const int AllValuesRegLen = 14;
             //ID
-            public const int IDReg = 90;
+            public const int IDRegIndex = 90;
+
+            public const int RangeRegStart = 81;
         }
         #endregion
         private bool RecieveData = false;
@@ -81,7 +83,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double[]> ReadVEValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.VEValuesRegStart, Register.VEValuesRegLen);
+            return await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen);
         }
         /// <summary>
         /// 讀取總能量值
@@ -90,7 +92,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double> ReadTotalVEValues()
         {
             RecieveData = false;
-            return (await GetF03FloatValue(Register.TotalVEValueRegStart, Register.TotalVEValueRegLen))[0];
+            return (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen))[0];
         }
         /// <summary>
         /// 讀取3軸RMS值
@@ -99,7 +101,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double[]> ReadRMSValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.RMSValuesRegStart, Register.RMSValuesRegLen);
+            return await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen);
         }
         /// <summary>
         /// 讀取3軸P2P值
@@ -108,7 +110,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double[]> ReadP2PValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.P2PValuesRegStart, Register.P2PValuesRegLen);
+            return await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen);
         }
         /// <summary>
         /// 讀取所有特徵值(3軸能量值+總能量值+3軸RMS值)
@@ -117,7 +119,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double[]> ReadAllValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.AllValuesRegStart, Register.AllValuesRegLen);
+            return await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen);
         }
         /// <summary>
         /// 查詢Device ID
@@ -126,8 +128,27 @@ namespace gpm_vibration_module_api.Modbus
         public string GetSlaveID()
         {
             RecieveData = false;
-            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDReg, 1).First();
+            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1).First();
             return ID_int.ToString("X2");
+        }
+        /// <summary>
+        /// 鮑率設定
+        /// </summary>
+        /// <param name="baud"></param>
+        public void BaudRateSetting(int baud)
+        {
+            if (baud != 115200 | baud != 9600)
+                throw new Exception("不允許的鮑率設定值");
+            RecieveData = false;
+            modbusClient.WriteSingleRegister(92, baud == 115200 ? 1 : 0);
+        }
+        /// <summary>
+        /// 版本號查詢
+        /// </summary>
+        public void GetVersion()
+        {
+            RecieveData = false;
+            modbusClient.ReadHoldingRegisters(240, 2);
         }
         /// <summary>
         /// 設定Device ID
@@ -138,7 +159,7 @@ namespace gpm_vibration_module_api.Modbus
             var oriID = modbusClient.UnitIdentifier;
             RecieveData = false;
             modbusClient.UnitIdentifier = 0xF0;
-            modbusClient.WriteSingleRegister(Register.IDReg, ID);
+            modbusClient.WriteSingleRegister(Register.IDRegIndex, ID);
             if (RecieveData)
             {
                 modbusClient.UnitIdentifier = ID;
@@ -173,7 +194,7 @@ namespace gpm_vibration_module_api.Modbus
                 default:
                     break;
             }
-            modbusClient.WriteSingleRegister(81, valwrite);
+            modbusClient.WriteSingleRegister(Register.RangeRegStart, valwrite);
         }
 
         /// <summary>
