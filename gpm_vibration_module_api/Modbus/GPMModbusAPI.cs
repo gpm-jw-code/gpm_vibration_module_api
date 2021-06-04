@@ -28,9 +28,9 @@ namespace gpm_vibration_module_api.Modbus
             public const int P2PValuesRegLen = 6;
 
             public const int AllValuesRegStartIndex = 0;
-            public const int AllValuesRegLen = 14;
+            public const int AllValuesRegLen = 20;
             //ID
-            public const int IDRegIndex = 90;
+            public const int IDRegIndex = 144;
 
             public const int RangeRegStart = 81;
         }
