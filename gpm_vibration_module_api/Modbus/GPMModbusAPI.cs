@@ -17,14 +17,20 @@ namespace gpm_vibration_module_api.Modbus
         {
             public const int VEValuesRegStart = 0;
             public const int VEValuesRegLen = 6;
+
             public const int TotalVEValueRegStart = 6;
             public const int TotalVEValueRegLen = 2;
+
             public const int RMSValuesRegStart = 8;
             public const int RMSValuesRegLen = 6;
+
+            public const int P2PValuesRegStart = 14;
+            public const int P2PValuesRegLen = 6;
+
             public const int AllValuesRegStart = 0;
             public const int AllValuesRegLen = 14;
             //ID
-            public const int IDReg = 20;
+            public const int IDReg = 90;
         }
         #endregion
         private bool RecieveData = false;
@@ -42,7 +48,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="IP"></param>
         /// <param name="Port"></param>
         /// <returns></returns>
-        public bool Connect(string IP, int Port,string SlaveID)
+        public bool Connect(string IP, int Port, string SlaveID)
         {
             modbusClient.IPAddress = IP;
             modbusClient.Port = Port;
@@ -94,6 +100,15 @@ namespace gpm_vibration_module_api.Modbus
         {
             RecieveData = false;
             return await GetF03FloatValue(Register.RMSValuesRegStart, Register.RMSValuesRegLen);
+        }
+        /// <summary>
+        /// 讀取3軸P2P值
+        /// </summary>
+        /// <returns></returns>
+        public async Task<double[]> ReadP2PValues()
+        {
+            RecieveData = false;
+            return await GetF03FloatValue(Register.P2PValuesRegStart, Register.P2PValuesRegLen);
         }
         /// <summary>
         /// 讀取所有特徵值(3軸能量值+總能量值+3軸RMS值)
@@ -158,7 +173,7 @@ namespace gpm_vibration_module_api.Modbus
                 default:
                     break;
             }
-            modbusClient.WriteSingleRegister(11, valwrite);
+            modbusClient.WriteSingleRegister(81, valwrite);
         }
 
         /// <summary>
@@ -196,7 +211,7 @@ namespace gpm_vibration_module_api.Modbus
             List<double> valuesList = new List<double>();
             for (int i = 0; i < intAry.Length; i += 4)
             {
-                var hexstring = intAry[i].ToString("X2") + intAry[i+1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");
+                var hexstring = intAry[i].ToString("X2") + intAry[i + 1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");
                 valuesList.Add(Hex32toFloat(hexstring));
             }
             return valuesList.ToArray();

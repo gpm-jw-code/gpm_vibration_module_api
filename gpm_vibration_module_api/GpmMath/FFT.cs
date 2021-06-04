@@ -7,6 +7,16 @@ namespace gpm_vibration_module_api.GpmMath
 {
     public class Stastify
     {
+        /// <summary>
+        /// 雜訊密度
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="samplingRate"></param>
+        /// <returns></returns>
+        public static double NoiseDensity(List<double> data, double samplingRate)
+        {
+            return Math.Round(RMS(data) / Math.Sqrt(samplingRate / 2) * 1000000, 2);
+        }
         internal static double GetMean(List<double> data)
         {
             var sum = 0.0;
@@ -37,14 +47,14 @@ namespace gpm_vibration_module_api.GpmMath
             double SumOfSquare = 0;
             foreach (double Si in DataVec)
                 SumOfSquare += Math.Pow(Si, 2);
-            return Math.Sqrt(SumOfSquare/(double)DataVec.Length);
+            return Math.Sqrt(SumOfSquare / (double)DataVec.Length);
         }
         public static double RMS(List<double> DataVec)
         {
             double SumOfSquare = 0;
             foreach (double Si in DataVec)
                 SumOfSquare += Math.Pow(Si, 2);
-            return Math.Sqrt(SumOfSquare/(double)DataVec.Count);
+            return Math.Sqrt(SumOfSquare / (double)DataVec.Count);
         }
 
         public static double GetOA(List<double> data)
@@ -93,7 +103,7 @@ namespace gpm_vibration_module_api.GpmMath
             toConvertTimeData.AddRange(TD);
             if (IsZeroAdd)
             {
-               
+
                 var numToAdd = FFTWindow - TD.Count;
                 toConvertTimeData.AddRange(new double[numToAdd]);
                 //var _window = WindowFun.Hamming(toConvertTimeData.Count);
@@ -114,7 +124,7 @@ namespace gpm_vibration_module_api.GpmMath
             {
                 //FFT.Add(Cpl_TD[i].Magnitude / (N / 2));
                 FFT.Add(Cpl_TD[i].Magnitude);
-            }   
+            }
             FFT[0] = 0;
             return FFT;
         }

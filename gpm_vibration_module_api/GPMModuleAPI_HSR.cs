@@ -50,8 +50,8 @@ namespace gpm_vibration_module_api
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
-        public string IP { get;  set; }
-        public int Port { get;  set; }
+        public string IP { get; set; }
+        public int Port { get; set; }
 
         public string PortName { get; private set; }
 
@@ -168,6 +168,8 @@ namespace gpm_vibration_module_api
                 return Settings.AccDataRevTimeout;
             }
         }
+
+
         /// <summary>
         /// 跟模組連線
         /// </summary>
@@ -209,8 +211,8 @@ namespace gpm_vibration_module_api
 
         }
 
-      
-            public async Task<int> Open(string PortName, int BaudRate)
+
+        public async Task<int> Open(string PortName, int BaudRate)
         {
             var licCheckRet = 0;
             if ((licCheckRet = LicenseCheckProcess()) != 0)
@@ -322,6 +324,40 @@ namespace gpm_vibration_module_api
 
         }
 
+        /// <summary>
+        /// 修改ODR設定
+        /// </summary>
+        /// <param name="ODR"></param>
+        public async Task<int> ODRSetting(double ODR)
+        {
+            Tools.Logger.Event_Log.Log($"使用者嘗試修改量測ODR({ODR})");
+            if (ODR == Settings.ODR)
+                return 0;
+            var ori_ODR = Settings.ODR;
+            Settings.ODR = ODR;
+            var state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
+            int retry_cnt = 0;
+            while (state.ErrorCode != clsErrorCode.Error.None)
+            {
+                retry_cnt++;
+                state = (await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000));
+                if (retry_cnt >= ParamSetRetryNumber)
+                    return (int)state.ErrorCode;
+                Thread.Sleep(1);
+            }
+            byte[] Param_Ret = state.DataByteList.ToArray();
+            if (!ParamRetCheck(Settings.SettingBytes, Param_Ret))
+            {
+                Tools.Logger.Event_Log.Log($"ODR Setting Fail{state.ErrorCode}");
+                Settings.ODR = ori_ODR;
+                return -1;
+            }
+            else
+            {
+                Tools.Logger.Event_Log.Log($"ODR Setting OK::{ODR}");
+                return 0;
+            }
+        }
         /// <summary>
         /// 量測範圍設定
         /// </summary>
@@ -478,12 +514,21 @@ namespace gpm_vibration_module_api
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", 8, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
-        } 
+        }
         virtual public async Task<bool> SendKXRegisterSetting(int CNTL1, int ODCNTL)
         {
             Settings._SettingBytes[3] = (byte)CNTL1;
             Settings._SettingBytes[4] = (byte)ODCNTL;
             var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
+            if (state.ErrorCode == clsErrorCode.Error.None)
+            {
+                //定義量測範圍
+                var bitStringCNTL1 = Convert.ToString(state.DataByteList[3], 2);
+                MeasureRangeDefine(bitStringCNTL1);
+                var bitStringODCNTL = Convert.ToString(state.DataByteList[4], 2);
+                ODRDefine(bitStringODCNTL);
+                //定義ODR
+            }
             return state.ErrorCode == clsErrorCode.Error.None;
         }
 
@@ -505,6 +550,76 @@ namespace gpm_vibration_module_api
         }
         #endregion
         #region Private Methods
+
+        /// <summary>
+        /// 從參數回傳值定義量測範圍
+        /// </summary>
+        /// <param name="bitString"></param>
+        private void MeasureRangeDefine(string bitString)
+        { //補0
+            var zero_com_num = 8 - bitString.Length;
+            string zerosstr = "";
+            for (int i = 0; i < zero_com_num; i++)
+                zerosstr += "0";
+            bitString = zerosstr + bitString;
+            if (bitString[3] == '1' && bitString[4] == '1')
+                Settings.mEASURE_RANGE = MEASURE_RANGE.MR_64G;
+            if (bitString[3] == '1' && bitString[4] == '0')
+                Settings.mEASURE_RANGE = MEASURE_RANGE.MR_32G;
+            if (bitString[3] == '0' && bitString[4] == '1')
+                Settings.mEASURE_RANGE = MEASURE_RANGE.MR_16G;
+            if (bitString[3] == '0' && bitString[4] == '0')
+                Settings.mEASURE_RANGE = MEASURE_RANGE.MR_8G;
+        }
+        /// <summary>
+        /// 從參數回傳值定義ODR
+        /// </summary>
+        /// <param name="bitString"></param>
+        private void ODRDefine(string bitString)
+        {
+            //補0
+            var zero_com_num = 8 - bitString.Length;
+            string zerosstr = "";
+            for (int i = 0; i < zero_com_num; i++)
+                zerosstr += "0";
+            bitString = zerosstr + bitString;
+            var osa3 = bitString[4];
+            var osa2 = bitString[5];
+            var osa1 = bitString[6];
+            var osa0 = bitString[7];
+            if (osa3 == '1' && osa2 == '1' && osa1 == '1' && osa0 == '1')
+                Settings.ODR = 25600;
+            if (osa3 == '1' && osa2 == '1' && osa1 == '1' && osa0 == '0')
+                Settings.ODR = 12800;
+            if (osa3 == '1' && osa2 == '1' && osa1 == '0' && osa0 == '1')
+                Settings.ODR = 6400;
+            if (osa3 == '1' && osa2 == '1' && osa1 == '0' && osa0 == '0')
+                Settings.ODR = 3200;
+            if (osa3 == '1' && osa2 == '0' && osa1 == '1' && osa0 == '1')
+                Settings.ODR = 1600;
+            if (osa3 == '1' && osa2 == '0' && osa1 == '1' && osa0 == '0')
+                Settings.ODR = 800;
+            if (osa3 == '1' && osa2 == '0' && osa1 == '0' && osa0 == '1')
+                Settings.ODR = 400;
+            if (osa3 == '1' && osa2 == '0' && osa1 == '0' && osa0 == '0')
+                Settings.ODR = 200;
+            if (osa3 == '0' && osa2 == '1' && osa1 == '1' && osa0 == '1')
+                Settings.ODR = 100;
+            if (osa3 == '0' && osa2 == '1' && osa1 == '1' && osa0 == '0')
+                Settings.ODR = 50;
+            if (osa3 == '0' && osa2 == '1' && osa1 == '0' && osa0 == '1')
+                Settings.ODR = 25;
+            if (osa3 == '0' && osa2 == '1' && osa1 == '0' && osa0 == '0')
+                Settings.ODR = 12.5;
+            if (osa3 == '0' && osa2 == '0' && osa1 == '1' && osa0 == '1')
+                Settings.ODR = 6.25;
+            if (osa3 == '0' && osa2 == '0' && osa1 == '1' && osa0 == '0')
+                Settings.ODR = 3.125;
+            if (osa3 == '0' && osa2 == '0' && osa1 == '0' && osa0 == '1')
+                Settings.ODR = 1.563;
+            if (osa3 == '0' && osa2 == '0' && osa1 == '0' && osa0 == '0')
+                Settings.ODR = 0.781;
+        }
         private void AsynchronousClient_DataPacketLenOnchange1(object sender, int e)
         {
             DataPacketOnchange?.BeginInvoke(e, null, null);
@@ -548,7 +663,7 @@ namespace gpm_vibration_module_api
         {
             DataPacketOnchange?.BeginInvoke(obj, null, null);
         }
-        internal async Task<int> Connect()
+        public async Task<int> Connect()
         {
             return await Connect(this.IP, this.Port);
         }
@@ -852,10 +967,10 @@ namespace gpm_vibration_module_api
         internal SettingItem settingItem = SettingItem.NotSpecify;
         public double SamplingRate { get; set; } = 10064;
         /// <summary>
-        /// [3] CNTL1
-        /// [4] ODCNTL
+        /// [3] CNTL1  預設量測範圍 = +-8G
+        /// [4] ODCNTL 預設ODR = 12800
         /// </summary>
-        public byte[] _SettingBytes = new byte[8] { 0x00, 0x02, 0x00, 0xC0, 0x2F, 0x00, 0x00, 0x00 };
+        public byte[] _SettingBytes = new byte[8] { 0x00, 0x02, 0x00, 0xC0, 0x2E, 0x00, 0x00, 0x00 };
 
         virtual internal byte[] SettingBytesWithHead
         {
@@ -953,6 +1068,17 @@ namespace gpm_vibration_module_api
             }
         }
 
+        private double _ODR = 12800;
+        public double ODR
+        {
+            get { return _ODR; }
+            set
+            {
+                _ODR = value;
+                UpdateSettingBytes();
+            }
+        }
+
         virtual internal void UpdateSettingBytes()
         {
             ///長度;先計算倍率
@@ -962,8 +1088,17 @@ namespace gpm_vibration_module_api
             _SettingBytes[1] = DLHLBytes[1];
             //量測範圍
             _SettingBytes[3] = _mEASURE_RANGE.ToKXByte();
-        }
+            //ODR 
+            var bitStringODCNTL = Convert.ToString(_SettingBytes[4], 2).To8BitString();
 
+            if (_ODR == 50)
+                bitStringODCNTL = bitStringODCNTL.Substring(0, 4) + "0110";
+            if (_ODR == 12800)
+                bitStringODCNTL = bitStringODCNTL.Substring(0, 4) + "1110";
+            var _byte = Enumerable.Range(0, bitStringODCNTL.Length / 8)
+                .Select(pos => Convert.ToByte(bitStringODCNTL.Substring(pos * 8, 8), 2)).ToArray()[0];
+            _SettingBytes[4] = _byte;
+        }
         /// <summary>
         /// Calculates the CRC16 for Modbus-RTU
         /// </summary>

@@ -9,6 +9,16 @@ namespace gpm_vibration_module_api
     /// </summary>
     public static class ExtendMethods
     {
+        internal static string To8BitString(this string string_leakZero)
+        {
+            var zero_to_add_num = 8 - string_leakZero.Length;
+            string zerostr = "";
+            for (int i = 0; i < zero_to_add_num; i++)
+            {
+                zerostr += "0";
+            }
+            return zerostr + string_leakZero;
+        }
         internal static string ToCommaString(this byte[] byteAry)
         {
             string str = "";
