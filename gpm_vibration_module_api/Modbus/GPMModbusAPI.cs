@@ -9,6 +9,9 @@ namespace gpm_vibration_module_api.Modbus
 {
     public class GPMModbusAPI
     {
+        public bool IsTest = false;
+        public bool IsReadBaudRateWhenConnected = false;
+        public int BaudRate { get; private set; } = 9600;
         #region STRUCT
         /// <summary>
         /// 暫存器位址設定
@@ -31,8 +34,8 @@ namespace gpm_vibration_module_api.Modbus
             public const int AllValuesRegLen = 20;
             //ID
             public const int IDRegIndex = 144;
-
             public const int RangeRegStart = 81;
+            public const int BaudRateSetRegIndex = 146;
         }
         #endregion
         private bool RecieveData = false;
@@ -74,8 +77,25 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient.Baudrate = BaudRate;
             modbusClient.Parity = parity;
             modbusClient.StopBits = StopBits;
-            return modbusClient.Connect();
+            bool IsConnected = modbusClient.Connect();
+            if (IsConnected && IsReadBaudRateWhenConnected)
+            {
+                int CurrentBaudRate = ReadBaudRateSetting();
+                this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
+            }
+            return IsConnected;
         }
+
+        private int ReadBaudRateSetting()
+        {
+            RecieveData = false;
+            int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1).FirstOrDefault();
+            if (ret != default)
+                return ret == 0 ? 9600 : 115200;
+            else
+                return -1;
+        }
+
         /// <summary>
         /// 讀取3軸振動能量值
         /// </summary>
@@ -131,24 +151,37 @@ namespace gpm_vibration_module_api.Modbus
             var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1).First();
             return ID_int.ToString("X2");
         }
+
         /// <summary>
-        /// 鮑率設定
+        /// 進行鮑率設定
         /// </summary>
         /// <param name="baud"></param>
-        public void BaudRateSetting(int baud)
+        /// <returns>false>設定失敗 ; true>設定成功</returns>
+        public async Task<bool> BaudRateSetting(int baud)
         {
             if (baud != 115200 | baud != 9600)
-                throw new Exception("不允許的鮑率設定值");
+                throw new Exception($"{baud}是不允許的鮑率設定值");
             RecieveData = false;
-            modbusClient.WriteSingleRegister(92, baud == 115200 ? 1 : 0);
+            await Task.Run(() => modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0));
+            BaudRate = RecieveData ? baud : BaudRate;
+            return RecieveData;
         }
         /// <summary>
-        /// 版本號查詢
+        /// 版本號查詢 
         /// </summary>
-        public void GetVersion()
+        public string GetVersion()
         {
+            var version = "err_err_err";
             RecieveData = false;
-            modbusClient.ReadHoldingRegisters(240, 2);
+            byte[] byteVals = new byte[4] { 0x31, 0x2E, 0x30, 0x36 };
+            if (!IsTest)
+            {
+                int[] intVals = modbusClient.ReadHoldingRegisters(240, 2);
+                version = Encoding.ASCII.GetString(intVals.IntAryToByteAry());
+                return version;
+            }
+            else
+                return Encoding.ASCII.GetString(byteVals);
         }
         /// <summary>
         /// 設定Device ID
@@ -236,6 +269,15 @@ namespace gpm_vibration_module_api.Modbus
                 valuesList.Add(Hex32toFloat(hexstring));
             }
             return valuesList.ToArray();
+        }
+        internal static byte[] IntAryToByteAry(this int[] intAry)
+        {
+            List<byte> byteList = new List<byte>();
+            for (int i = 0; i < intAry.Length; i++)
+            {
+                byteList.Add((byte)intAry[i]);
+            }
+            return byteList.ToArray();
         }
 
         static float Hex32toFloat(string Hex32Input)
