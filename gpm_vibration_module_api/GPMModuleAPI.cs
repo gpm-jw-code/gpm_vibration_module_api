@@ -204,7 +204,7 @@ namespace gpm_vibration_module_api
         public override async Task<string> GetDeviceParams()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
-            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
+            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
 
         /// <summary>
@@ -248,7 +248,7 @@ namespace gpm_vibration_module_api
         {
             Settings.SlaveID = ID;
             var state = await SendMessageMiddleware(Settings.READParamCmdByteForModbus, 13, 1000);
-            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
+            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
         public async Task<byte[]> GetDeviceParamsBytes_ByID(byte ID)
         {

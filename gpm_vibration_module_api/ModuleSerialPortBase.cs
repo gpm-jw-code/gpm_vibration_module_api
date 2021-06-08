@@ -62,7 +62,7 @@ namespace gpm_vibration_module_api
             StateForAPI = new StateObject();
             StateForAPI.CheckLen = CheckLen;
             receiveDone.Reset();
-            Console.WriteLine("Serial Port Send:" + cmd.ToCommaString());
+            Console.WriteLine("Serial Port Send:" + cmd.ToCommaHexString());
             module_port.Write(cmd, 0, cmd.Length);
             Thread.Sleep(1);
             Task.Run(() => TimeoutChecker(timeout));

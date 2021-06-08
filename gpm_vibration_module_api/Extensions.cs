@@ -19,7 +19,7 @@ namespace gpm_vibration_module_api
             }
             return zerostr + string_leakZero;
         }
-        internal static string ToCommaString(this byte[] byteAry)
+        internal static string ToCommaHexString(this byte[] byteAry)
         {
             string str = "";
             foreach (var byt in byteAry)

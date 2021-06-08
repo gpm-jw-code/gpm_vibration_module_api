@@ -513,7 +513,7 @@ namespace gpm_vibration_module_api
         virtual public async Task<string> GetDeviceParams()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", 8, 1000);
-            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
+            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
         virtual public async Task<bool> SendKXRegisterSetting(int CNTL1, int ODCNTL)
         {

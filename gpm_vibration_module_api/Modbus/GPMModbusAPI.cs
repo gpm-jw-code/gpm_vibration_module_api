@@ -17,6 +17,12 @@ namespace gpm_vibration_module_api.Modbus
         public bool IsReadBaudRateWhenConnected = false;
         public CONNECTION_TYPE Connection_Type { get; private set; } = CONNECTION_TYPE.RTU;
         public int BaudRate { get; private set; } = 9600;
+
+        public void DisConnect()
+        {
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                modbusClient.Disconnect();
+        }
         #region STRUCT
         /// <summary>
         /// 暫存器位址設定
@@ -39,7 +45,7 @@ namespace gpm_vibration_module_api.Modbus
             public const int AllValuesRegLen = 20;
             //ID
             public const int IDRegIndex = 144;
-            public const int RangeRegStart = 81;
+            public const int RangeRegStart = 129;
             public const int BaudRateSetRegIndex = 146;
         }
         #endregion
@@ -65,7 +71,13 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient.SerialPort = null;
             modbusClient.UnitIdentifier = byte.Parse(SlaveID);
             Connection_Type = CONNECTION_TYPE.TCP;
-            return modbusClient.Connect();
+            bool IsConnected = modbusClient.Connect();
+            if (IsConnected && IsReadBaudRateWhenConnected)
+            {
+                int CurrentBaudRate = ReadBaudRateSetting();
+                this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
+            }
+            return IsConnected;
         }
         /// <summary>
         /// Modbus RTU連線
@@ -155,7 +167,8 @@ namespace gpm_vibration_module_api.Modbus
         public string GetSlaveID()
         {
             RecieveData = false;
-            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1).First();
+            modbusClient.UnitIdentifier = 240;
+            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
             return ID_int.ToString("X2");
         }
 
