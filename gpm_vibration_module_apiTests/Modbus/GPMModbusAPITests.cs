@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace gpm_vibration_module_api.Modbus.Tests
 {
@@ -31,8 +32,10 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             var vevalues = api.ReadVEValues().Result;
+            Console.WriteLine("XYZ VE>" + string.Join(",", vevalues));
             api.DisConnect();
             Assert.AreEqual(3, vevalues.Length);
+            Assert.IsTrue(vevalues.FirstOrDefault(val => val < 0.00001) == default);
         }
 
         [TestMethod()]
@@ -41,7 +44,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             string version = api.GetVersion();
-            Console.WriteLine("ve rsion:" + version);
+            Console.WriteLine("Verssion:" + version);
             api.DisConnect();
             Assert.AreEqual("1.07", version);
         }
@@ -52,8 +55,10 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             var rmsvalues = api.ReadRMSValues().Result;
+            Console.WriteLine("XYZ RMS>" + string.Join(",", rmsvalues));
             api.DisConnect();
             Assert.AreEqual(3, rmsvalues.Length);
+            Assert.IsTrue(rmsvalues.FirstOrDefault(val => val < 0.00001) == default);
         }
 
         [TestMethod()]
@@ -62,7 +67,9 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             var totalVe = api.ReadTotalVEValues().Result;//VEx+VEy+VEz
+            Console.WriteLine("Total VE>" + totalVe);
             api.DisConnect();
+            Assert.IsTrue(totalVe > 0.0001);
         }
 
         [TestMethod()]
@@ -71,9 +78,39 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             var ID = api.GetSlaveID();
+            ID = api.GetSlaveID();
             api.DisConnect();
             Console.WriteLine(ID);
-            Assert.AreEqual("01",ID);
+            Assert.AreEqual("01", ID);
+        }
+
+        [TestMethod()]
+        public void DisconnectTest()
+        {
+            if (!Connect())
+                Assert.Fail();
+            api.DisConnect();
+        }
+
+        [TestMethod()]
+        public void GetCurrentMeasureRangeTest()
+        {
+            if (!Connect())
+                Assert.Fail();
+            api.GetCurrentMeasureRange();
+            api.DisConnect();
+        }
+
+        [TestMethod()]
+        public void MeasureRangeSetTest()
+        {
+            if (!Connect())
+                Assert.Fail();
+            int RangeSet = 4;
+            api.MeasureRangeSet(RangeSet);
+            int mesRange = api.GetCurrentMeasureRange();
+            api.DisConnect();
+            Assert.AreEqual(RangeSet, mesRange);
         }
     }
 }

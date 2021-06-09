@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.Modbus
@@ -77,6 +79,16 @@ namespace gpm_vibration_module_api.Modbus
                 int CurrentBaudRate = ReadBaudRateSetting();
                 this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
             }
+            //因應韌體Bug>連線上後會自動發一個封包過來...
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            while (modbusClient.tcpClient.Client.Available == 0)
+            {
+                if (sw.ElapsedMilliseconds > 5000)
+                    break;
+                Thread.Sleep(1);
+            }
+            modbusClient.BuferClear();
             return IsConnected;
         }
         /// <summary>
@@ -167,11 +179,25 @@ namespace gpm_vibration_module_api.Modbus
         public string GetSlaveID()
         {
             RecieveData = false;
-            modbusClient.UnitIdentifier = 240;
+            modbusClient.UnitIdentifier = 0xf0;
             var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
             return ID_int.ToString("X2");
         }
-
+        public int GetCurrentMeasureRange()
+        {
+            RecieveData = false;
+            var ints = modbusClient.ReadHoldingRegisters(Register.RangeRegStart - 1, 4);
+            if (ints[3] == 0x00)
+                return 2;
+            if (ints[3] == 0x10)
+                return 4; 
+            if (ints[3] == 0x20)
+                return 8;
+            if (ints[3] == 0x30)
+                return 16;
+            else
+                throw new Exception("Measure Range Read Failure");
+        }
         /// <summary>
         /// 進行鮑率設定
         /// </summary>
@@ -251,6 +277,7 @@ namespace gpm_vibration_module_api.Modbus
             }
             modbusClient.WriteSingleRegister(Register.RangeRegStart, valwrite);
         }
+
 
         /// <summary>
         /// 下達F03指令並轉成浮點數回傳

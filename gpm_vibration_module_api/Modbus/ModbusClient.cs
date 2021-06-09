@@ -40,7 +40,7 @@ namespace gpm_vibration_module_api.Modbus
     {
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
         private bool debug = false;
-        private TcpClient tcpClient;
+        internal TcpClient tcpClient;
         private string ipAddress = "127.0.0.1";
         private int port = 502;
         private uint transactionIdentifierInternal = 0;
@@ -185,7 +185,7 @@ namespace gpm_vibration_module_api.Modbus
                 {
                     return false;
                 }
-                tcpClient.EndConnect(result);
+                // tcpClient.EndConnect(result);
 
                 //tcpClient = new TcpClient(ipAddress, port);
                 stream = tcpClient.GetStream();
@@ -1271,7 +1271,7 @@ namespace gpm_vibration_module_api.Modbus
             return (response);
         }
 
-        private void BuferClear()
+        internal void BuferClear()
         {
             if (serialport != null)
                 return;
@@ -1291,7 +1291,6 @@ namespace gpm_vibration_module_api.Modbus
         {
             try
             {
-                BuferClear();
                 if (debug) StoreLogData.Instance.Store("FC3 (Read Holding Registers from Master device), StartingAddress: " + startingAddress + ", Quantity: " + quantity, System.DateTime.Now);
                 transactionIdentifierInternal++;
                 if (serialport != null)
@@ -1388,19 +1387,19 @@ namespace gpm_vibration_module_api.Modbus
                     }
                     else
                     {
-                        stream.Write(data, 0, data.Length - 2);
-
+                        tcpClient.Client.Send(data, data.Length - 2,SocketFlags.None);
                         Console.WriteLine("write:" + data.ToCommaHexString());
                         if (SendDataChanged != null)
                         {
                             sendData = new byte[data.Length - 2];
                             Array.Copy(data, 0, sendData, 0, data.Length - 2);
                             SendDataChanged(this);
-
                         }
                         data = new Byte[tcpClient.Client.Available];
                         Console.WriteLine("data in count>" + data.Length);
-                        int NumberOfBytes = stream.Read(data, 0, data.Length);
+                        data = new byte[64];
+                        int NumberOfBytes = tcpClient.Client.Receive(data,0,data.Length,SocketFlags.None);
+                        //int NumberOfBytes = stream.Read(data, 0, data.Length);
                         if (ReceiveDataChanged != null)
                         {
                             receiveData = new byte[NumberOfBytes];
@@ -1462,14 +1461,13 @@ namespace gpm_vibration_module_api.Modbus
                 }
                 response = new int[quantity * 2];
 
-                for (int i = 0; i < data[serialport == null ? 8 : 2]; i++)
+                for (int i = 0; i < data[8]; i++)
                     response[i] = data[i + 9];
                 Console.WriteLine("Read Hoding Register(F03)>Val=" + string.Join(",", response));
                 return (response);
             }
             catch (Exception ex)
             {
-
                 throw ex;
             }
 
