@@ -184,6 +184,7 @@ namespace gpm_vibration_module_api.Modbus
             RecieveData = false;
             modbusClient.UnitIdentifier = 0xf0;
             var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
+            modbusClient.UnitIdentifier = (byte)ID_int;
             return ID_int.ToString("X2");
         }
         public int GetCurrentMeasureRange()
@@ -242,7 +243,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             var oriID = modbusClient.UnitIdentifier;
             RecieveData = false;
-            modbusClient.UnitIdentifier = 0xF0;
+            //modbusClient.UnitIdentifier = 0xF0;
             modbusClient.WriteSingleRegister(Register.IDRegIndex, ID);
             if (RecieveData)
             {
