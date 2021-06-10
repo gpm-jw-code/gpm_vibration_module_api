@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define v110
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,8 +23,8 @@ namespace gpm_vibration_module_api.Modbus
 
         public void DisConnect()
         {
-            if (Connection_Type == CONNECTION_TYPE.TCP)
-                modbusClient.Disconnect();
+            modbusClient.Disconnect();
+
         }
         #region STRUCT
         /// <summary>
@@ -79,6 +80,7 @@ namespace gpm_vibration_module_api.Modbus
                 int CurrentBaudRate = ReadBaudRateSetting();
                 this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
             }
+#if v110
             //因應韌體Bug>連線上後會自動發一個封包過來...
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -89,6 +91,7 @@ namespace gpm_vibration_module_api.Modbus
                 Thread.Sleep(1);
             }
             modbusClient.BuferClear();
+#endif
             return IsConnected;
         }
         /// <summary>
@@ -100,7 +103,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="parity"></param>
         /// <param name="StopBits"></param>
         /// <returns></returns>
-        public bool Connect(string ComPort, string SlaveID, int BaudRate, System.IO.Ports.Parity parity, System.IO.Ports.StopBits StopBits)
+        public bool Connect(string ComPort, string SlaveID, int BaudRate, System.IO.Ports.Parity parity = System.IO.Ports.Parity.None, System.IO.Ports.StopBits StopBits = System.IO.Ports.StopBits.One)
         {
             modbusClient.SerialPort = ComPort;
             modbusClient.UnitIdentifier = byte.Parse(SlaveID);
@@ -117,10 +120,10 @@ namespace gpm_vibration_module_api.Modbus
             return IsConnected;
         }
 
-        private int ReadBaudRateSetting()
+        public int ReadBaudRateSetting()
         {
             RecieveData = false;
-            int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1).FirstOrDefault();
+            int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1)[1];
             if (ret != default)
                 return ret == 0 ? 9600 : 115200;
             else
@@ -190,7 +193,7 @@ namespace gpm_vibration_module_api.Modbus
             if (ints[3] == 0x00)
                 return 2;
             if (ints[3] == 0x10)
-                return 4; 
+                return 4;
             if (ints[3] == 0x20)
                 return 8;
             if (ints[3] == 0x30)
