@@ -55,7 +55,7 @@ namespace gpm_vibration_module_api.Modbus
         private bool udpFlag = false;
         private int portOut;
         private int baudRate = 9600;
-        private int connectTimeout = 5000;
+        private int connectTimeout = 10000;
         internal byte[] receiveData;
         internal byte[] sendData;
         private SerialPort serialport;
@@ -141,7 +141,6 @@ namespace gpm_vibration_module_api.Modbus
             catch (Exception ex)
             {
             }
-            Disconnect();
             if (serialport != null)
             {
                 if (!serialport.IsOpen)
@@ -185,8 +184,7 @@ namespace gpm_vibration_module_api.Modbus
                 {
                     return false;
                 }
-                // tcpClient.EndConnect(result);
-
+                //tcpClient.EndConnect(result);
                 //tcpClient = new TcpClient(ipAddress, port);
                 stream = tcpClient.GetStream();
                 stream.ReadTimeout = connectTimeout;
@@ -1289,6 +1287,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>Int Array which contains the holding registers</returns>
         public int[] ReadHoldingRegisters(int startingAddress, int quantity)
         {
+            Byte[] data;
             try
             {
                 if (debug) StoreLogData.Instance.Store("FC3 (Read Holding Registers from Master device), StartingAddress: " + startingAddress + ", Quantity: " + quantity, System.DateTime.Now);
@@ -1316,7 +1315,7 @@ namespace gpm_vibration_module_api.Modbus
                 this.functionCode = 0x03;
                 this.startingAddress = BitConverter.GetBytes(startingAddress);
                 this.quantity = BitConverter.GetBytes(quantity);
-                Byte[] data = new byte[]{   this.transactionIdentifier[1],
+                data = new byte[]{   this.transactionIdentifier[1],
                             this.transactionIdentifier[0],
                             this.protocolIdentifier[1],
                             this.protocolIdentifier[0],
@@ -1387,7 +1386,7 @@ namespace gpm_vibration_module_api.Modbus
                     }
                     else
                     {
-                        tcpClient.Client.Send(data, data.Length - 2,SocketFlags.None);
+                        tcpClient.Client.Send(data, data.Length - 2, SocketFlags.None);
                         Console.WriteLine("write:" + data.ToCommaHexString());
                         if (SendDataChanged != null)
                         {
@@ -1395,10 +1394,14 @@ namespace gpm_vibration_module_api.Modbus
                             Array.Copy(data, 0, sendData, 0, data.Length - 2);
                             SendDataChanged(this);
                         }
+                        while (tcpClient.Client.Available == 0)
+                        {
+                            Thread.Sleep(1);
+                        }
                         data = new Byte[tcpClient.Client.Available];
                         Console.WriteLine("data in count>" + data.Length);
                         data = new byte[64];
-                        int NumberOfBytes = tcpClient.Client.Receive(data,0,data.Length,SocketFlags.None);
+                        int NumberOfBytes = tcpClient.Client.Receive(data, 0, data.Length, SocketFlags.None);
                         //int NumberOfBytes = stream.Read(data, 0, data.Length);
                         if (ReceiveDataChanged != null)
                         {
@@ -1468,7 +1471,8 @@ namespace gpm_vibration_module_api.Modbus
             }
             catch (Exception ex)
             {
-                throw ex;
+                Console.WriteLine(ex.Message + ex.StackTrace);
+                return null;
             }
 
         }

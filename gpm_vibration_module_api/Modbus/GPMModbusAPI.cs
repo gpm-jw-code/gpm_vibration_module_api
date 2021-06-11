@@ -20,7 +20,13 @@ namespace gpm_vibration_module_api.Modbus
         public bool IsReadBaudRateWhenConnected = false;
         public CONNECTION_TYPE Connection_Type { get; private set; } = CONNECTION_TYPE.RTU;
         public int BaudRate { get; private set; } = 9600;
-
+        public bool Connected
+        {
+            get
+            {
+                return modbusClient.Connected;
+            }
+        }
         public void DisConnect()
         {
             modbusClient.Disconnect();
@@ -74,12 +80,14 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient.SerialPort = null;
             modbusClient.UnitIdentifier = byte.Parse(SlaveID);
             Connection_Type = CONNECTION_TYPE.TCP;
-            bool IsConnected = modbusClient.Connect();
-            if (IsConnected && IsReadBaudRateWhenConnected)
+            try
             {
-                int CurrentBaudRate = ReadBaudRateSetting();
-                this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
-            }
+                bool IsConnected = modbusClient.Connect();
+                if (IsConnected && IsReadBaudRateWhenConnected)
+                {
+                    int CurrentBaudRate = ReadBaudRateSetting();
+                    this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
+                }
 #if v110
             //因應韌體Bug>連線上後會自動發一個封包過來...
             Stopwatch sw = new Stopwatch();
@@ -92,7 +100,13 @@ namespace gpm_vibration_module_api.Modbus
             }
             modbusClient.BuferClear();
 #endif
-            return IsConnected;
+                return IsConnected;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
         }
         /// <summary>
         /// Modbus RTU連線
@@ -315,6 +329,8 @@ namespace gpm_vibration_module_api.Modbus
     {
         internal static double[] IEEE754FloatAry(this int[] intAry)
         {
+            if (intAry == null)
+                return null;
             List<double> valuesList = new List<double>();
             for (int i = 0; i < intAry.Length; i += 4)
             {
