@@ -15,13 +15,22 @@ namespace gpm_vibration_module_api.Modbus.Tests
     {
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
         const string slaveID = "01";
-        const string Version = "1.08";
+        const string Version = "1.06";
         private bool Connect()
         {
-            //var ret = api.Connect("192.168.0.57", 5000, slaveID);
-            var ret = api.Connect("COM4", slaveID, 115200);
+            var ret = api.Connect("127.0.0.1", 5000, slaveID);
+           // var ret = api.Connect("COM4", slaveID, 115200);
             return ret;
         }
+        
+        [TestMethod()]
+        public void NullValueTest()
+        {
+            GPMModbusAPI api = new GPMModbusAPI();
+            var ret = api.TestGetF03FloatValue().Result;
+        }
+
+
         [TestMethod()]
         public void ConnectTest()
         {
@@ -136,7 +145,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 Assert.Fail();
             int baud = api.ReadBaudRateSetting();
             api.DisConnect();
-            Assert.AreEqual(115200, baud);
+            Assert.AreEqual(9600, baud);
         }
 
     }
