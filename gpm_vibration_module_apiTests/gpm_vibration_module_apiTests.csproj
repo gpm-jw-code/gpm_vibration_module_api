@@ -72,6 +72,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Modbus_Simulator\modbus_simulator.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
