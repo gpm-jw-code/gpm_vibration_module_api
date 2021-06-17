@@ -25,11 +25,11 @@ namespace gpm_vibration_module_api.Modbus.Tests
 
         private void KillSimulator()
         {
-            var pros = Process.GetProcessesByName("modbus_simulator");
-            foreach (var item in pros)
-            {
-                item.Kill();
-            }
+            //var pros = Process.GetProcessesByName("modbus_simulator");
+            //foreach (var item in pros)
+            //{
+            //    item.Kill();
+            //}
         }
 
         private bool Connect()
@@ -60,10 +60,6 @@ namespace gpm_vibration_module_api.Modbus.Tests
         [TestMethod()]
         public void ReadVEValuesTest()
         {
-            Task.Run(() =>
-            {
-                simulator = new modbus_simulator.Form1(true);
-            });
             if (!Connect())
                 Assert.Fail();
             var vevalues = api.ReadVEValues().Result;
