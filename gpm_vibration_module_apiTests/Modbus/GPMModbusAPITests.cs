@@ -13,21 +13,43 @@ namespace gpm_vibration_module_api.Modbus.Tests
     [TestClass()]
     public class GPMModbusAPITests
     {
+        public GPMModbusAPITests()
+        {
+            Process.Start(new ProcessStartInfo()
+            {
+                WorkingDirectory = Environment.CurrentDirectory + @"\Modbus_Simulator",
+                FileName = Environment.CurrentDirectory + @"\Modbus_Simulator\modbus_simulator.exe",
+                Arguments = "CI",
+                UseShellExecute = true
+            });
+        }
+
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
         const string slaveID = "01";
         const string Version = "1.06";
+
+        private void KillSimulator()
+        {
+            var pros = Process.GetProcessesByName("modbus_simulator");
+            foreach (var item in pros)
+            {
+                item.Kill();
+            }
+        }
+
         private bool Connect()
         {
-            var ret = api.Connect("127.0.0.1", 5000, slaveID);
-           // var ret = api.Connect("COM4", slaveID, 115200);
+            var ret = api.Connect("127.0.0.1", 500, slaveID);
+            // var ret = api.Connect("COM4", slaveID, 115200);
             return ret;
         }
-        
+
         [TestMethod()]
         public void NullValueTest()
         {
             GPMModbusAPI api = new GPMModbusAPI();
             var ret = api.TestGetF03FloatValue().Result;
+            KillSimulator();
         }
 
 
@@ -37,6 +59,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             var ret = Connect();
             api.DisConnect();
             Assert.IsTrue(ret);
+            KillSimulator();
         }
 
         [TestMethod()]
@@ -47,7 +70,9 @@ namespace gpm_vibration_module_api.Modbus.Tests
             var vevalues = api.ReadVEValues().Result;
             Console.WriteLine("XYZ VE>" + string.Join(",", vevalues));
             api.DisConnect();
+            KillSimulator();
             Assert.AreEqual(3, vevalues.Length);
+            Assert.AreEqual("2,2,2", string.Join(",", vevalues));
             Assert.IsTrue(vevalues.FirstOrDefault(val => val < 0.00001) == default);
         }
 
@@ -59,6 +84,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             string version = api.GetVersion();
             Console.WriteLine("Verssion:" + version);
             api.DisConnect();
+            KillSimulator();
             Assert.AreEqual(Version, version);
         }
 
@@ -81,8 +107,10 @@ namespace gpm_vibration_module_api.Modbus.Tests
             Console.WriteLine("One Times spend:" + sw.ElapsedMilliseconds / 10 + " ms");
             Console.WriteLine("XYZ RMS>" + string.Join(",", rmsvalues));
             api.DisConnect();
+            KillSimulator();
             Assert.AreEqual(3, rmsvalues.Length);
             Assert.AreEqual(10, rmsList.Count);
+            Assert.AreEqual("2,2,2", string.Join(",", rmsvalues));
             Assert.IsTrue(rmsvalues.FirstOrDefault(val => val < 0.00001) == default);
         }
 
@@ -94,6 +122,8 @@ namespace gpm_vibration_module_api.Modbus.Tests
             var totalVe = api.ReadTotalVEValues().Result;//VEx+VEy+VEz
             Console.WriteLine("Total VE>" + totalVe);
             api.DisConnect();
+            KillSimulator();
+            Assert.AreEqual(2,totalVe);
             Assert.IsTrue(totalVe > 0.0001);
         }
 
@@ -105,6 +135,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             var ID = api.GetSlaveID();
             ID = api.GetSlaveID();
             api.DisConnect();
+            KillSimulator();
             Console.WriteLine(ID);
             Assert.AreEqual(slaveID, ID);
         }
@@ -115,6 +146,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             api.DisConnect();
+            KillSimulator();
         }
 
         [TestMethod()]
@@ -124,6 +156,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 Assert.Fail();
             api.GetCurrentMeasureRange();
             api.DisConnect();
+            KillSimulator();
         }
 
         [TestMethod()]
@@ -135,6 +168,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             api.MeasureRangeSet(RangeSet);
             int mesRange = api.GetCurrentMeasureRange();
             api.DisConnect();
+            KillSimulator();
             Assert.AreEqual(RangeSet, mesRange);
         }
 
@@ -145,8 +179,8 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 Assert.Fail();
             int baud = api.ReadBaudRateSetting();
             api.DisConnect();
+            KillSimulator();
             Assert.AreEqual(9600, baud);
         }
-
     }
 }
