@@ -15,12 +15,15 @@ namespace gpm_vibration_module_api.Modbus.Tests
     {
         public GPMModbusAPITests()
         {
+            var workDir = Environment.CurrentDirectory + @"\Modbus_Simulator";
+            var fileName = Environment.CurrentDirectory + @"\Modbus_Simulator\modbus_simulator.exe";
+            Console.WriteLine(workDir +"_"+ fileName);
             Process.Start(new ProcessStartInfo()
             {
-                WorkingDirectory = Environment.CurrentDirectory + @"\Modbus_Simulator",
-                FileName = Environment.CurrentDirectory + @"\Modbus_Simulator\modbus_simulator.exe",
+                WorkingDirectory = workDir,
+                FileName = fileName,
                 Arguments = "CI",
-                UseShellExecute = true
+                UseShellExecute = false
             });
         }
 
@@ -123,7 +126,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             Console.WriteLine("Total VE>" + totalVe);
             api.DisConnect();
             KillSimulator();
-            Assert.AreEqual(2,totalVe);
+            Assert.AreEqual(2, totalVe);
             Assert.IsTrue(totalVe > 0.0001);
         }
 
