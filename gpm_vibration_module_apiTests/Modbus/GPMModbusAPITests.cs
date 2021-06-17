@@ -15,18 +15,10 @@ namespace gpm_vibration_module_api.Modbus.Tests
     {
         public GPMModbusAPITests()
         {
-            var workDir = Environment.CurrentDirectory + @"\Modbus_Simulator";
-            var fileName = Environment.CurrentDirectory + @"\Modbus_Simulator\modbus_simulator.exe";
-            Console.WriteLine(workDir +"_"+ fileName);
-            Process.Start(new ProcessStartInfo()
-            {
-                WorkingDirectory = workDir,
-                FileName = fileName,
-                Arguments = "CI",
-                UseShellExecute = false
-            });
+
         }
 
+        modbus_simulator.Form1 simulator ;
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
         const string slaveID = "01";
         const string Version = "1.06";
@@ -68,6 +60,10 @@ namespace gpm_vibration_module_api.Modbus.Tests
         [TestMethod()]
         public void ReadVEValuesTest()
         {
+            Task.Run(() =>
+            {
+                simulator = new modbus_simulator.Form1(true);
+            });
             if (!Connect())
                 Assert.Fail();
             var vevalues = api.ReadVEValues().Result;

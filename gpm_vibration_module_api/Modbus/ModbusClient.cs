@@ -30,6 +30,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace gpm_vibration_module_api.Modbus
 {
@@ -1394,8 +1395,14 @@ namespace gpm_vibration_module_api.Modbus
                             Array.Copy(data, 0, sendData, 0, data.Length - 2);
                             SendDataChanged(this);
                         }
+                        Stopwatch sw = new Stopwatch();
+                        sw.Start();
                         while (tcpClient.Client.Available == 0)
                         {
+                            if(sw.ElapsedMilliseconds>10000)///Timeout
+                            {
+                                throw new Exception("Read Holding Register Timeout");
+                            }
                             Thread.Sleep(1);
                         }
                         data = new Byte[tcpClient.Client.Available];

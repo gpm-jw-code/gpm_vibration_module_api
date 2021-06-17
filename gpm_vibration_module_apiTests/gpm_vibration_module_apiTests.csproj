@@ -43,6 +43,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>.\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
     </Reference>
+    <Reference Include="modbus_simulator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Modbus_Simulator\modbus_simulator.exe</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
