@@ -134,11 +134,15 @@ namespace gpm_vibration_module_api.Modbus
             return IsConnected;
         }
 
+        /// <summary>
+        /// 讀取鮑率設定值
+        /// </summary>
+        /// <returns>if return -1 > 表示模組回傳的封包數據有異常 </returns>
         public int ReadBaudRateSetting()
         {
             RecieveData = false;
             int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1)[1];
-            if (ret != default)
+            if (ret == 0 | ret == 1)
                 return ret == 0 ? 9600 : 115200;
             else
                 return -1;
@@ -147,47 +151,67 @@ namespace gpm_vibration_module_api.Modbus
         /// <summary>
         /// 讀取3軸振動能量值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadVEValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取總能量值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return -1 > 表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double> ReadTotalVEValues()
         {
             RecieveData = false;
-            return (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen))[0];
+            double[] dVals = (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals.First();
+            else
+                return -1;
         }
         /// <summary>
         /// 讀取3軸RMS值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadRMSValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取3軸P2P值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadP2PValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取所有特徵值(3軸能量值+總能量值+3軸RMS值)
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1, -1, -1, -1, -1, -1, -1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadAllValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1, -1, -1, -1, -1 };
         }
         /// <summary>
         /// 查詢Device ID
@@ -243,7 +267,7 @@ namespace gpm_vibration_module_api.Modbus
             if (!IsTest)
             {
                 int[] intVals = modbusClient.ReadHoldingRegisters(240, 2);
-                version = Encoding.ASCII.GetString(intVals.IntAryToByteAry());
+                version = Encoding.ASCII.GetString(intVals.ToByteAry());
                 return version;
             }
             else
@@ -306,7 +330,13 @@ namespace gpm_vibration_module_api.Modbus
         private async Task<double[]> GetF03FloatValue(int start, int len)
         {
             int[] values = modbusClient.ReadHoldingRegisters(start, len);
-            return values.IEEE754FloatAry(); ;
+            return values.ToIEEE754FloatAry();
+        }
+
+        public async Task<double[]> TestGetF03FloatValue()
+        {
+            int[] values = null;
+            return values.ToIEEE754FloatAry();
         }
 
         private void ModbusClient_ConnectedChanged(object sender)
@@ -327,7 +357,7 @@ namespace gpm_vibration_module_api.Modbus
 
     public static class Extension
     {
-        internal static double[] IEEE754FloatAry(this int[] intAry)
+        internal static double[] ToIEEE754FloatAry(this int[] intAry)
         {
             if (intAry == null)
                 return null;
@@ -335,11 +365,12 @@ namespace gpm_vibration_module_api.Modbus
             for (int i = 0; i < intAry.Length; i += 4)
             {
                 var hexstring = intAry[i].ToString("X2") + intAry[i + 1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");
-                valuesList.Add(Hex32toFloat(hexstring));
+                double dVal = hexstring.ToFloat();
+                valuesList.Add(dVal);
             }
             return valuesList.ToArray();
         }
-        internal static byte[] IntAryToByteAry(this int[] intAry)
+        internal static byte[] ToByteAry(this int[] intAry)
         {
             List<byte> byteList = new List<byte>();
             for (int i = 0; i < intAry.Length; i++)
@@ -349,7 +380,7 @@ namespace gpm_vibration_module_api.Modbus
             return byteList.ToArray();
         }
 
-        static float Hex32toFloat(string Hex32Input)
+        static float ToFloat(this string Hex32Input)
         {
             double doubleout = 0.0;
             UInt64 bigendian;
