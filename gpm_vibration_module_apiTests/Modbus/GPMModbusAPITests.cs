@@ -138,5 +138,6 @@ namespace gpm_vibration_module_api.Modbus.Tests
             api.DisConnect();
             Assert.AreEqual(115200, baud);
         }
+
     }
 }
