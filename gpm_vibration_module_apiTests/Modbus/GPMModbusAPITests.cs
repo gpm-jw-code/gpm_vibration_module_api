@@ -15,7 +15,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
     {
         public GPMModbusAPITests()
         {
-            KillSimulator();
+            //KillSimulator();
         }
 
         modbus_simulator.Form1 simulator ;
