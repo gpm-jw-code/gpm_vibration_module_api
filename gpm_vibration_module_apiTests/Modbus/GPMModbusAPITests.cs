@@ -19,6 +19,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
         }
 
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
+        private int excepectedBaudRateForTest=9600;
         const string slaveID = "01";
         const string Version = "1.06";
         //const string IP = "192.168.0.57";
@@ -165,7 +166,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 Assert.Fail();
             int baud = api.ReadBaudRateSetting();
             api.DisConnect();
-            Assert.AreEqual(115200, baud);
+            Assert.AreEqual(excepectedBaudRateForTest, baud);
         }
     }
 }
