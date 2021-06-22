@@ -46,7 +46,7 @@ namespace gpm_vibration_module_api
         {
             IsKX134Sensor = true;
             _Is485Module = false;
-            Settings = new ModuleSetting();
+            Settings = new ModuleSetting() { _mEASURE_RANGE = MEASURE_RANGE.MR_8G };
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
@@ -771,7 +771,7 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        _raw_bytes = new byte[IsKX134Sensor? Settings.Mode== DAQMode.High_Sampling? 512: Settings.DataLength * 6 : Settings.DataLength * 6];
+                        _raw_bytes = new byte[!IsKX134Sensor ? Settings.Mode == DAQMode.High_Sampling ? 512 * 6 : Settings.DataLength * 6 : Settings.DataLength * 6];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }
                     catch (Exception ex)

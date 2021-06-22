@@ -21,7 +21,7 @@ namespace gpm_vibration_module_api
         public GPMModuleAPI()
         {
             Logger.Event_Log.Log("GPMMODULEAPI OBJECT BUILD");
-            base.Settings = new ModuleSetting_GEN(); //<<<<<<<< Must do it..2021年3月的某一天，我卡在永進一個下午，部分原因是因為這個.^_^
+            base.Settings = new ModuleSetting_GEN() { _mEASURE_RANGE = MEASURE_RANGE.MR_2G }; //<<<<<<<< Must do it..2021年3月的某一天，我卡在永進一個下午，部分原因是因為這個.^_^
             IsKX134Sensor = false;
             DataLenMiniLen = 512;
             LowPassFilterCutOffFreq = 3000;
