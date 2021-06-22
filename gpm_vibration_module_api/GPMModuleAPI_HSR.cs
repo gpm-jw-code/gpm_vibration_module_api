@@ -486,6 +486,7 @@ namespace gpm_vibration_module_api
 
         }
 
+
         /// <summary>
         /// 中斷GetData任務
         /// </summary>
@@ -770,7 +771,7 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        _raw_bytes = new byte[Settings.DataLength * 6];
+                        _raw_bytes = new byte[IsKX134Sensor? Settings.Mode== DAQMode.High_Sampling? 512: Settings.DataLength * 6 : Settings.DataLength * 6];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }
                     catch (Exception ex)
