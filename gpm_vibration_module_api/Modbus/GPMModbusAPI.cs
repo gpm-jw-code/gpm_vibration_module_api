@@ -12,6 +12,11 @@ namespace gpm_vibration_module_api.Modbus
 {
     public class GPMModbusAPI
     {
+        public enum MODBUS_ERRORCODE
+        {
+            API_INNER_EXCEPTION = -400,
+            PACKET_LOSS = -404
+        }
         public enum CONNECTION_TYPE
         {
             TCP, RTU
@@ -141,11 +146,15 @@ namespace gpm_vibration_module_api.Modbus
         public int ReadBaudRateSetting()
         {
             RecieveData = false;
-            int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1)[1];
-            if (ret == 0 | ret == 1)
-                return ret == 0 ? 9600 : 115200;
+            int[] intAry = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1);
+            if (intAry != null && intAry.ToList().All(val => val >= 0))
+            {
+                if (intAry[0] != 0)
+                    return (int)MODBUS_ERRORCODE.PACKET_LOSS;
+                return intAry[1] == 0 ? 9600 : 115200;
+            }
             else
-                return -1;
+                return intAry == null ? (int)MODBUS_ERRORCODE.API_INNER_EXCEPTION : intAry[0];
         }
 
         /// <summary>

@@ -1399,9 +1399,9 @@ namespace gpm_vibration_module_api.Modbus
                         sw.Start();
                         while (tcpClient.Client.Available == 0)
                         {
-                            if(sw.ElapsedMilliseconds>10000)///Timeout
+                            if (sw.ElapsedMilliseconds > 10000)///Timeout
                             {
-                                throw new Exception("Read Holding Register Timeout");
+                                throw new Exception("ERROR_CODE_-401_Read Holding Register Timeout");
                             }
                             Thread.Sleep(1);
                         }
@@ -1465,20 +1465,35 @@ namespace gpm_vibration_module_api.Modbus
                             countRetries++;
                             return ReadHoldingRegisters(startingAddress, quantity);
                         }
-
-
                     }
                 }
                 response = new int[quantity * 2];
+                try
+                {
+                    for (int i = 0; i < data[8]; i++)
+                        response[i] = data[i + 9];
+                    Console.WriteLine("Read Hoding Register(F03)>Val=" + string.Join(",", response));
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("ERROR_CODE_-402_");
+                }
 
-                for (int i = 0; i < data[8]; i++)
-                    response[i] = data[i + 9];
-                Console.WriteLine("Read Hoding Register(F03)>Val=" + string.Join(",", response));
                 return (response);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message + ex.StackTrace);
+                if (ex.Message.ToUpper().Contains("ERROR_CODE"))
+                {
+                    string[] splits = ex.Message.Split('_');
+                    string Error_Code = splits[1];
+                    string Error_Msg = splits[2];
+                    if (Error_Code == "-401")
+                        return new int[1] { -1 };
+                    if (Error_Code == "-402")
+                        return new int[1] { -2 };
+                }
                 return null;
             }
 
