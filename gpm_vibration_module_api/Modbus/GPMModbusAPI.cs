@@ -21,7 +21,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             TCP, RTU
         }
-        public bool IsTest = false;
+        internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
         public CONNECTION_TYPE Connection_Type { get; private set; } = CONNECTION_TYPE.RTU;
         public int BaudRate { get; private set; } = 9600;
@@ -254,15 +254,16 @@ namespace gpm_vibration_module_api.Modbus
         /// </summary>
         /// <param name="baud"></param>
         /// <returns>false>設定失敗 ; true>設定成功</returns>
-        public async Task<bool> BaudRateSetting(int baud)
+        public  bool BaudRateSetting(int baud)
         {
             if (Connection_Type != CONNECTION_TYPE.TCP)
                 throw new Exception("鮑率設定必須在Modbus TCP模式下操作");
-            if (baud != 115200 | baud != 9600)
+            if (baud != 115200 && baud != 9600)
                 throw new Exception($"{baud}是不允許的鮑率設定值");
             RecieveData = false;
-            await Task.Run(() => modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0));
+            modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0);
             BaudRate = RecieveData ? baud : BaudRate;
+            modbusClient.BuferClear();
             return RecieveData;
         }
         /// <summary>

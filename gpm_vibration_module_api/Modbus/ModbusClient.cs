@@ -1274,8 +1274,8 @@ namespace gpm_vibration_module_api.Modbus
         {
             if (serialport != null)
                 return;
-
             var len = tcpClient.Client.Available;
+            if (len == 0) return;
             byte[] buf = new byte[len];
             tcpClient.Client.Receive(buf, buf.Length, SocketFlags.None);
 
@@ -1407,7 +1407,7 @@ namespace gpm_vibration_module_api.Modbus
                         }
                         data = new Byte[tcpClient.Client.Available];
                         Console.WriteLine("data in count>" + data.Length);
-                        data = new byte[64];
+                        //data = new byte[64];
                         int NumberOfBytes = tcpClient.Client.Receive(data, 0, data.Length, SocketFlags.None);
                         //int NumberOfBytes = stream.Read(data, 0, data.Length);
                         if (ReceiveDataChanged != null)
@@ -1985,13 +1985,8 @@ namespace gpm_vibration_module_api.Modbus
                 }
                 else
                 {
-                    stream.Write(data, 0, data.Length - 2);
-                    if (debug)
-                    {
-                        byte[] debugData = new byte[data.Length - 2];
-                        Array.Copy(data, 0, debugData, 0, data.Length - 2);
-                        if (debug) StoreLogData.Instance.Store("Send ModbusTCP-Data: " + BitConverter.ToString(debugData), System.DateTime.Now);
-                    }
+                    tcpClient.Client.Send(data, data.Length - 2, SocketFlags.None);
+                    //stream.Write(data, 0, data.Length - 2);
                     if (SendDataChanged != null)
                     {
                         sendData = new byte[data.Length - 2];
@@ -1999,8 +1994,19 @@ namespace gpm_vibration_module_api.Modbus
                         SendDataChanged(this);
 
                     }
-                    data = new Byte[2100];
-                    int NumberOfBytes = stream.Read(data, 0, data.Length);
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    while (tcpClient.Client.Available == 0)
+                    {
+                        if (sw.ElapsedMilliseconds > 10000)///Timeout
+                        {
+                            throw new Exception("ERROR_CODE_-403_Read WriteSingleRegister  Timeout");
+                        }
+                        Thread.Sleep(1);
+                    }
+                    data = new Byte[tcpClient.Client.Available];
+                    int NumberOfBytes = tcpClient.Client.Receive(data, 0, data.Length, SocketFlags.None);
+                    //int NumberOfBytes = stream.Read(data, 0, data.Length);
                     if (ReceiveDataChanged != null)
                     {
                         receiveData = new byte[NumberOfBytes];
