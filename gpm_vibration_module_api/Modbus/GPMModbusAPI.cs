@@ -277,6 +277,8 @@ namespace gpm_vibration_module_api.Modbus
             if (!IsTest)
             {
                 int[] intVals = modbusClient.ReadHoldingRegisters(240, 2);
+                if (intVals == null)
+                    return "READ VERSION ERROR!";
                 version = Encoding.ASCII.GetString(intVals.ToByteAry());
                 return version;
             }

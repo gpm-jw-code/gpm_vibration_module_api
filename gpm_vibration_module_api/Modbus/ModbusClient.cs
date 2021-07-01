@@ -785,13 +785,11 @@ namespace gpm_vibration_module_api.Modbus
                         SerialDataReceivedEventArgs e)
         {
             serialport.DataReceived -= DataReceivedHandler;
-
             //while (receiveActive | dataReceived)
             //	System.Threading.Thread.Sleep(10);
             receiveActive = true;
 
             const long ticksWait = TimeSpan.TicksPerMillisecond * 2000;//((40*10000000) / this.baudRate);
-
 
             SerialPort sp = (SerialPort)sender;
             if (bytesToRead == 0)
@@ -817,7 +815,6 @@ namespace gpm_vibration_module_api.Modbus
                             break;
                     }
                     numbytes = sp.BytesToRead;
-
 
                     byte[] rxbytearray = new byte[numbytes];
                     sp.Read(rxbytearray, 0, numbytes);
@@ -845,9 +842,6 @@ namespace gpm_vibration_module_api.Modbus
             Array.Copy(readBuffer, 0, receiveData, 0, (actualPositionToRead < readBuffer.Length) ? actualPositionToRead : readBuffer.Length);
             if (debug) StoreLogData.Instance.Store("Received Serial-Data: " + BitConverter.ToString(readBuffer), System.DateTime.Now);
             bytesToRead = 0;
-
-
-
 
             dataReceived = true;
             receiveActive = false;
@@ -1273,7 +1267,10 @@ namespace gpm_vibration_module_api.Modbus
         internal void BuferClear()
         {
             if (serialport != null)
-                return;
+            {
+                serialport.DiscardInBuffer();
+                serialport.DiscardOutBuffer();
+            }
             var len = tcpClient.Client.Available;
             if (len == 0) return;
             byte[] buf = new byte[len];
@@ -1941,18 +1938,12 @@ namespace gpm_vibration_module_api.Modbus
                 bytesToRead = 8;
                 //                serialport.ReceivedBytesThreshold = bytesToRead;
                 serialport.Write(data, 6, 8);
-                if (debug)
-                {
-                    byte[] debugData = new byte[8];
-                    Array.Copy(data, 6, debugData, 0, 8);
-                    if (debug) StoreLogData.Instance.Store("Send Serial-Data: " + BitConverter.ToString(debugData), System.DateTime.Now);
-                }
+               
                 if (SendDataChanged != null)
                 {
                     sendData = new byte[8];
                     Array.Copy(data, 6, sendData, 0, 8);
                     SendDataChanged(this);
-
                 }
                 data = new byte[2100];
                 readBuffer = new byte[256];
