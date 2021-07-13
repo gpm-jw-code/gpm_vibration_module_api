@@ -206,7 +206,11 @@ namespace gpm_vibration_module_api
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
-
+        public  async Task<byte[]> GetDeviceParams_bytes_Format()
+        {
+            var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
+            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray() : null;
+        }
         /// <summary>
         /// 設定量測資料長度
         /// </summary>

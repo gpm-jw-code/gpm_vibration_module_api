@@ -22,7 +22,7 @@ namespace gpm_module_api.UVSensor
         public new event Action<DateTime> DisconnectEvent;
 
 
-        public  async Task<UVDataSet> GetData()
+        public  new async Task<UVDataSet> GetData()
         {
             var state=  await SendMessageMiddleware("READUVVAL\r\n",4,3000);
             if (state.ErrorCode != clsErrorCode.Error.None)
