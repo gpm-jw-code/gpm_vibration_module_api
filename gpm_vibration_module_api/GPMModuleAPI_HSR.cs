@@ -92,6 +92,7 @@ namespace gpm_vibration_module_api
         {
             get
             {
+                if (AsynchronousClient == null) return false;
                 try
                 {
                     if (!_Is485Module)
@@ -191,12 +192,12 @@ namespace gpm_vibration_module_api
                 this.Port = Port;
                 AsynchronousClient = new AsynchronousClient();
                 AsynchronousClient.DataPacketLenOnchange += AsynchronousClient_DataPacketLenOnchange1;
-                int isconnect = await AsynchronousClient.AsyncConnect(IP, Port);
-                if (isconnect != 0)
+                int errorCode = await AsynchronousClient.AsyncConnect(IP, Port);
+                if (errorCode != 0)
                 {
                     Disconnect();
-                    Tools.Logger.Event_Log.Log("TCP/IP Connecet fail.");
-                    return isconnect;
+                    Tools.Logger.Event_Log.Log($"TCP/IP Connecet fail,ErrorCode:{errorCode}");
+                    return errorCode;
                 }
                 await GetDataInterupt();
                 Tools.Logger.Event_Log.Log("Device Connected.");
@@ -771,7 +772,8 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        _raw_bytes = new byte[!IsKX134Sensor ? Settings.Mode == DAQMode.High_Sampling ? 512 * 6 : Settings.DataLength * 6 : Settings.DataLength * 6];
+                        int len = IsKX134Sensor ? Settings.DataLength * 6 : (raw_bytes.Count);
+                        _raw_bytes = new byte[len];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }
                     catch (Exception ex)
