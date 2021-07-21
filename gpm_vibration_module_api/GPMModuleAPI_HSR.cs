@@ -770,7 +770,8 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        _raw_bytes = new byte[Settings.DataLength * 6];
+                        int len = IsKX134Sensor ? Settings.DataLength * 6 : (raw_bytes.Count);
+                        _raw_bytes = new byte[len];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }
                     catch (Exception ex)

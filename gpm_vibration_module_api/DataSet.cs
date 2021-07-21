@@ -23,17 +23,33 @@ namespace gpm_vibration_module_api
                 AccData.acc_z_with_window.Add(AccData.Z[i] * w[i]);
             }
         }
+
+
+        [NonSerialized]
         internal bool IsReady = false;
         public int ID = -1;
+
+        [NonSerialized]
         public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
+
+        [NonSerialized]
         public clsAcc AccData_Filtered = new clsAcc();
         public clsFFTData FFTData = new clsFFTData();
+
+        [NonSerialized]
         public clsFFTData PSDData = new clsFFTData();
+
+        [NonSerialized]
         public clsFFTData FFTData_Filtered = new clsFFTData();
+
+        [NonSerialized]
         public clsFFTData MelBankData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();
+        [NonSerialized]
         public clsOtherFeatures Features_Filtered = new clsOtherFeatures();
+
+        [NonSerialized]
         public ADCError DATAERROR = new ADCError();
         public long TimeSpend;
         public DateTime RecieveTime;
@@ -48,9 +64,9 @@ namespace gpm_vibration_module_api
             this.AccData_Filtered.X.AddRange(NewData.AccData_Filtered.X);
             this.AccData_Filtered.Y.AddRange(NewData.AccData_Filtered.Y);
             this.AccData_Filtered.Z.AddRange(NewData.AccData_Filtered.Z);
-            this.FFTData.X.AddRange(NewData.FFTData.X);
-            this.FFTData.Y.AddRange(NewData.FFTData.Y);
-            this.FFTData.Z.AddRange(NewData.FFTData.Z);
+            //this.FFTData.X.AddRange(NewData.FFTData.X);
+            //this.FFTData.Y.AddRange(NewData.FFTData.Y);
+            //this.FFTData.Z.AddRange(NewData.FFTData.Z);
             this.DATAERROR.X.AddRange(NewData.DATAERROR.X);
             this.DATAERROR.Y.AddRange(NewData.DATAERROR.Y);
             this.DATAERROR.Z.AddRange(NewData.DATAERROR.Z);
