@@ -46,7 +46,7 @@ namespace gpm_vibration_module_api
         {
             IsKX134Sensor = true;
             _Is485Module = false;
-            Settings = new ModuleSetting();
+            Settings = new ModuleSetting() { _mEASURE_RANGE = MEASURE_RANGE.MR_8G };
             Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
@@ -92,6 +92,7 @@ namespace gpm_vibration_module_api
         {
             get
             {
+                if (AsynchronousClient == null) return false;
                 try
                 {
                     if (!_Is485Module)
@@ -191,12 +192,12 @@ namespace gpm_vibration_module_api
                 this.Port = Port;
                 AsynchronousClient = new AsynchronousClient();
                 AsynchronousClient.DataPacketLenOnchange += AsynchronousClient_DataPacketLenOnchange1;
-                int isconnect = await AsynchronousClient.AsyncConnect(IP, Port);
-                if (isconnect != 0)
+                int errorCode = await AsynchronousClient.AsyncConnect(IP, Port);
+                if (errorCode != 0)
                 {
                     Disconnect();
-                    Tools.Logger.Event_Log.Log("TCP/IP Connecet fail.");
-                    return isconnect;
+                    Tools.Logger.Event_Log.Log($"TCP/IP Connecet fail,ErrorCode:{errorCode}");
+                    return errorCode;
                 }
                 await GetDataInterupt();
                 Tools.Logger.Event_Log.Log("Device Connected.");
@@ -486,6 +487,7 @@ namespace gpm_vibration_module_api
 
         }
 
+
         /// <summary>
         /// 中斷GetData任務
         /// </summary>
@@ -513,7 +515,7 @@ namespace gpm_vibration_module_api
         virtual public async Task<string> GetDeviceParams()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", 8, 1000);
-            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaString() : state.ErrorCode.ToString();
+            return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
         virtual public async Task<bool> SendKXRegisterSetting(int CNTL1, int ODCNTL)
         {

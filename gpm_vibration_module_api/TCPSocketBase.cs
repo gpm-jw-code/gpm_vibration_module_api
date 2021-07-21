@@ -23,7 +23,7 @@ namespace gpm_vibration_module_api.GPMBase
         private bool SyncRevRunning = false;
         private AsyncCallback DataRecieveCallBack = null;
         public Socket client;
-        public StateObject StateForAPI { get; private set; } = new StateObject() {};
+        public StateObject StateForAPI { get; private set; } = new StateObject() { };
         private StateObject NoConnectionStateForAPI = new StateObject { ErrorCode = clsErrorCode.Error.NoConnection };
         // ManualResetEvent instances signal completion.
         private ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -211,6 +211,7 @@ namespace gpm_vibration_module_api.GPMBase
                 StateForAPI.DataByteList.AddRange(buf);
                 Thread.Sleep(1);
             }
+            //client.Send(new byte[11] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, }, 0, 11, SocketFlags.None);
             SyncRevRunning = false;
             Tools.Logger.Event_Log.Log($"Data Sync Receieve Done( Data Size = {StateForAPI.DataByteList.Count})");
             StateForAPI.ErrorCode = StateForAPI.IsDataReach ? clsErrorCode.Error.None : clsErrorCode.Error.DATA_GET_TIMEOUT;

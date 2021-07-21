@@ -1,22 +1,42 @@
-﻿using System;
+﻿//#define v110
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.Modbus
 {
     public class GPMModbusAPI
     {
+        public enum MODBUS_ERRORCODE
+        {
+            API_INNER_EXCEPTION = -400,
+            PACKET_LOSS = -404
+        }
         public enum CONNECTION_TYPE
         {
             TCP, RTU
         }
-        public bool IsTest = false;
+        internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
         public CONNECTION_TYPE Connection_Type { get; private set; } = CONNECTION_TYPE.RTU;
         public int BaudRate { get; private set; } = 9600;
+        public bool Connected
+        {
+            get
+            {
+                return modbusClient.Connected;
+            }
+        }
+        public void DisConnect()
+        {
+            modbusClient.Disconnect();
+
+        }
         #region STRUCT
         /// <summary>
         /// 暫存器位址設定
@@ -39,7 +59,7 @@ namespace gpm_vibration_module_api.Modbus
             public const int AllValuesRegLen = 20;
             //ID
             public const int IDRegIndex = 144;
-            public const int RangeRegStart = 81;
+            public const int RangeRegStart = 129;
             public const int BaudRateSetRegIndex = 146;
         }
         #endregion
@@ -65,7 +85,33 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient.SerialPort = null;
             modbusClient.UnitIdentifier = byte.Parse(SlaveID);
             Connection_Type = CONNECTION_TYPE.TCP;
-            return modbusClient.Connect();
+            try
+            {
+                bool IsConnected = modbusClient.Connect();
+                if (IsConnected && IsReadBaudRateWhenConnected)
+                {
+                    int CurrentBaudRate = ReadBaudRateSetting();
+                    this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
+                }
+#if v110
+            //因應韌體Bug>連線上後會自動發一個封包過來...
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            while (modbusClient.tcpClient.Client.Available == 0)
+            {
+                if (sw.ElapsedMilliseconds > 5000)
+                    break;
+                Thread.Sleep(1);
+            }
+            modbusClient.BuferClear();
+#endif
+                return IsConnected;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
         }
         /// <summary>
         /// Modbus RTU連線
@@ -76,7 +122,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="parity"></param>
         /// <param name="StopBits"></param>
         /// <returns></returns>
-        public bool Connect(string ComPort, string SlaveID, int BaudRate, System.IO.Ports.Parity parity, System.IO.Ports.StopBits StopBits)
+        public bool Connect(string ComPort, string SlaveID, int BaudRate, System.IO.Ports.Parity parity = System.IO.Ports.Parity.None, System.IO.Ports.StopBits StopBits = System.IO.Ports.StopBits.One)
         {
             modbusClient.SerialPort = ComPort;
             modbusClient.UnitIdentifier = byte.Parse(SlaveID);
@@ -93,60 +139,88 @@ namespace gpm_vibration_module_api.Modbus
             return IsConnected;
         }
 
-        private int ReadBaudRateSetting()
+        /// <summary>
+        /// 讀取鮑率設定值
+        /// </summary>
+        /// <returns>if return -1 > 表示模組回傳的封包數據有異常 </returns>
+        public int ReadBaudRateSetting()
         {
             RecieveData = false;
-            int ret = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1).FirstOrDefault();
-            if (ret != default)
-                return ret == 0 ? 9600 : 115200;
+            int[] intAry = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1);
+            if (intAry != null && intAry.ToList().All(val => val >= 0))
+            {
+                if (intAry[0] != 0)
+                    return (int)MODBUS_ERRORCODE.PACKET_LOSS;
+                return intAry[1] == 0 ? 9600 : 115200;
+            }
             else
-                return -1;
+                return intAry == null ? (int)MODBUS_ERRORCODE.API_INNER_EXCEPTION : intAry[0];
         }
 
         /// <summary>
         /// 讀取3軸振動能量值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadVEValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取總能量值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return -1 > 表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double> ReadTotalVEValues()
         {
             RecieveData = false;
-            return (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen))[0];
+            double[] dVals = (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals.First();
+            else
+                return -1;
         }
         /// <summary>
         /// 讀取3軸RMS值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadRMSValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取3軸P2P值
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadP2PValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
         }
         /// <summary>
         /// 讀取所有特徵值(3軸能量值+總能量值+3軸RMS值)
         /// </summary>
-        /// <returns></returns>
+        /// <returns>If return double array = [-1, -1, -1, -1, -1, -1, -1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadAllValues()
         {
             RecieveData = false;
-            return await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen);
+            double[] dVals = (await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1, -1, -1, -1, -1 };
         }
         /// <summary>
         /// 查詢Device ID
@@ -155,24 +229,41 @@ namespace gpm_vibration_module_api.Modbus
         public string GetSlaveID()
         {
             RecieveData = false;
-            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1).First();
+            modbusClient.UnitIdentifier = 0xf0;
+            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
+            modbusClient.UnitIdentifier = (byte)ID_int;
             return ID_int.ToString("X2");
         }
-
+        public int GetCurrentMeasureRange()
+        {
+            RecieveData = false;
+            var ints = modbusClient.ReadHoldingRegisters(Register.RangeRegStart - 1, 4);
+            if (ints[3] == 0x00)
+                return 2;
+            if (ints[3] == 0x10)
+                return 4;
+            if (ints[3] == 0x20)
+                return 8;
+            if (ints[3] == 0x30)
+                return 16;
+            else
+                throw new Exception("Measure Range Read Failure");
+        }
         /// <summary>
         /// 進行鮑率設定
         /// </summary>
         /// <param name="baud"></param>
         /// <returns>false>設定失敗 ; true>設定成功</returns>
-        public async Task<bool> BaudRateSetting(int baud)
+        public  bool BaudRateSetting(int baud)
         {
             if (Connection_Type != CONNECTION_TYPE.TCP)
                 throw new Exception("鮑率設定必須在Modbus TCP模式下操作");
-            if (baud != 115200 | baud != 9600)
+            if (baud != 115200 && baud != 9600)
                 throw new Exception($"{baud}是不允許的鮑率設定值");
             RecieveData = false;
-            await Task.Run(() => modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0));
+            modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0);
             BaudRate = RecieveData ? baud : BaudRate;
+            modbusClient.BuferClear();
             return RecieveData;
         }
         /// <summary>
@@ -186,7 +277,7 @@ namespace gpm_vibration_module_api.Modbus
             if (!IsTest)
             {
                 int[] intVals = modbusClient.ReadHoldingRegisters(240, 2);
-                version = Encoding.ASCII.GetString(intVals.IntAryToByteAry());
+                version = Encoding.ASCII.GetString(intVals.ToByteAry());
                 return version;
             }
             else
@@ -200,7 +291,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             var oriID = modbusClient.UnitIdentifier;
             RecieveData = false;
-            modbusClient.UnitIdentifier = 0xF0;
+            //modbusClient.UnitIdentifier = 0xF0;
             modbusClient.WriteSingleRegister(Register.IDRegIndex, ID);
             if (RecieveData)
             {
@@ -239,6 +330,7 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient.WriteSingleRegister(Register.RangeRegStart, valwrite);
         }
 
+
         /// <summary>
         /// 下達F03指令並轉成浮點數回傳
         /// </summary>
@@ -248,7 +340,13 @@ namespace gpm_vibration_module_api.Modbus
         private async Task<double[]> GetF03FloatValue(int start, int len)
         {
             int[] values = modbusClient.ReadHoldingRegisters(start, len);
-            return values.IEEE754FloatAry(); ;
+            return values.ToIEEE754FloatAry();
+        }
+
+        public async Task<double[]> TestGetF03FloatValue()
+        {
+            int[] values = null;
+            return values.ToIEEE754FloatAry();
         }
 
         private void ModbusClient_ConnectedChanged(object sender)
@@ -269,17 +367,20 @@ namespace gpm_vibration_module_api.Modbus
 
     public static class Extension
     {
-        internal static double[] IEEE754FloatAry(this int[] intAry)
+        internal static double[] ToIEEE754FloatAry(this int[] intAry)
         {
+            if (intAry == null)
+                return null;
             List<double> valuesList = new List<double>();
             for (int i = 0; i < intAry.Length; i += 4)
             {
                 var hexstring = intAry[i].ToString("X2") + intAry[i + 1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");
-                valuesList.Add(Hex32toFloat(hexstring));
+                double dVal = hexstring.ToFloat();
+                valuesList.Add(dVal);
             }
             return valuesList.ToArray();
         }
-        internal static byte[] IntAryToByteAry(this int[] intAry)
+        internal static byte[] ToByteAry(this int[] intAry)
         {
             List<byte> byteList = new List<byte>();
             for (int i = 0; i < intAry.Length; i++)
@@ -289,7 +390,7 @@ namespace gpm_vibration_module_api.Modbus
             return byteList.ToArray();
         }
 
-        static float Hex32toFloat(string Hex32Input)
+        static float ToFloat(this string Hex32Input)
         {
             double doubleout = 0.0;
             UInt64 bigendian;
