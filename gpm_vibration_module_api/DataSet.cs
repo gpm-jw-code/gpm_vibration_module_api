@@ -14,6 +14,7 @@ namespace gpm_vibration_module_api
         {
             this.FFTData.SamplingRate = samplingRate;
         }
+        public DataSet() { }
         internal void AddWindow(double[] w)
         {
             for (int i = 0; i < AccData.X.Count; i++)

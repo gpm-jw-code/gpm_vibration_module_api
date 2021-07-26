@@ -83,6 +83,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataSets\ThreeInOneModuleDataSet.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GpmMath\Filters.cs" />
     <Compile Include="GpmMath\NWaves\Audio\ByteConverter.cs" />
@@ -322,6 +323,7 @@
     <Compile Include="GpmMath\FFT.cs" />
     <Compile Include="GpmMath\Numeric.cs" />
     <Compile Include="GpmMath\Window.cs" />
+    <Compile Include="IApiForEndUser.cs" />
     <Compile Include="JSON\JSONParser.cs" />
     <Compile Include="JSON\JSONWriter.cs" />
     <Compile Include="License\CHECK_RESULT.cs" />
@@ -351,6 +353,9 @@
     <Compile Include="sys\Utility.cs" />
     <Compile Include="sys\Version.cs" />
     <Compile Include="TCPSocketBase.cs" />
+    <Compile Include="ThreeInOne\Emulator.cs" />
+    <Compile Include="ThreeInOne\SerialProtocolBase.cs" />
+    <Compile Include="ThreeInOne\ThreeInOneModuleAPI.cs" />
     <Compile Include="Tools\ConverterTools.cs" />
     <Compile Include="Tools\EthernetControllerTool.cs" />
     <Compile Include="Tools\FirmwareBurning.cs" />

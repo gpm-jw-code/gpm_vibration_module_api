@@ -47,6 +47,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Modbus_Simulator\modbus_simulator.exe</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -61,6 +64,7 @@
     <Compile Include="GPMAPITests.cs" />
     <Compile Include="Modbus\GPMModbusAPITests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThreeInOne\ThreeInOneModuleAPITests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Modbus_Simulator\modbus_simulator.exe.config">
