@@ -26,14 +26,27 @@ namespace gpm_vibration_module_api.ThreeInOne
             byte[] fakeData = new byte[3096];
 
             #region Fake Data Defined
+
+            for (int i = 0; i < 512; i++)
+            {
+                fakeData[i+512] = (byte)i;
+                int r = (i * DateTime.Now.Second);
+                fakeData[i+1024] = (byte)r;
+                fakeData[i + 2048] = (byte)r;
+            }
+
             //t1 : 32.3
             fakeData[3072] = 0x42;
-            fakeData[3073] = 0x01;
-            fakeData[3074] = 0x33;
-            fakeData[3075] = 0x33;
+            //fakeData[3073] = 0x11;
+            fakeData[3073] = (byte)DateTime.Now.Second;
+            //fakeData[3074] = 0x73;
+            fakeData[3074] =(byte) DateTime.Now.Second;
+            //fakeData[3075] = 0x33;
+            fakeData[3075] = (byte)DateTime.Now.Second;
             //p1 : 123.3
             fakeData[3076] = 0x42;
-            fakeData[3077] = 0xf6;
+            //fakeData[3077] = 0xf6;
+            fakeData[3077] = (byte)DateTime.Now.Second;
             fakeData[3078] = 0x99;
             fakeData[3079] = 0x9a;
 
@@ -81,6 +94,11 @@ namespace gpm_vibration_module_api.ThreeInOne
                 sp.Write(returnBytes, 0, 8);
             }
 
+        }
+
+        public void Close()
+        {
+            base.Close();
         }
     }
 }

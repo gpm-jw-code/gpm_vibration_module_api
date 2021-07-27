@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.ThreeInOne
 {
-    public class ThreeInOneModuleAPI : SerialProtocolBase
+    public class ThreeInOneModuleAPI : SerialProtocolBase, IDisposable
     {
-        private ThreeInOneModuleDataSet _currentDataSet;
+        private ThreeInOneModuleDataSet _currentDataSet = new ThreeInOneModuleDataSet();
         private bool isGetDataRunning = false;
         private bool isMeasureRangeSetRunning = false;
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
@@ -19,15 +19,15 @@ namespace gpm_vibration_module_api.ThreeInOne
 
 
 
-        public int Connect(string PortName)
+        public int Connect(string PortName, int baudRate = 115200)
         {
-            return base.Open(PortName, 115200) ? 0 : (int)clsErrorCode.Error.SerialPortOpenFail;
+            return base.Open(PortName, baudRate) ? 0 : (int)clsErrorCode.Error.SerialPortOpenFail;
         }
         public void Close()
         {
             base.Close();
+            Dispose();
         }
-
 
         public async Task<ThreeInOneModuleDataSet> GetData()
         {
@@ -38,9 +38,16 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
             isGetDataRunning = true;
             TotalDataByteLen = 3092;
-            SendCommand("READVALUE\r\n");
+            bool SendSuccess = SendCommand("READVALUE\r\n");
+            if (!SendSuccess)
+            {
+                isGetDataRunning = false;
+                _currentDataSet.ErrorCode = (int)clsErrorCode.Error.NoConnection;
+                return _currentDataSet;
+            }
             bool isTimeout = await DataRecieveDone();
-            DataSetPrepareProcessing();
+            if (!isTimeout)
+                DataSetPrepareProcessing();
             _currentDataSet.ErrorCode = !isTimeout ? 0 : (int)clsErrorCode.Error.DATA_GET_TIMEOUT;
             isGetDataRunning = false;
             return _currentDataSet;
@@ -54,7 +61,12 @@ namespace gpm_vibration_module_api.ThreeInOne
             isMeasureRangeSetRunning = true;
             TotalDataByteLen = 8;
             MeasureRangeByteDefine(mEASURE);
-            SendCommand(ParamsSendOutBytes);
+            bool SendSuccess = SendCommand(ParamsSendOutBytes);
+            if (!SendSuccess)
+            {
+                isMeasureRangeSetRunning = false;
+                return (int)clsErrorCode.Error.NoConnection;
+            }
             bool isTimeout = await DataRecieveDone();
             if (isTimeout)
                 return (int)clsErrorCode.Error.PARAM_HS_TIMEOUT;
@@ -162,8 +174,8 @@ namespace gpm_vibration_module_api.ThreeInOne
                 VibrationData = new DataSet.clsAcc
                 {
                     X = axisDatasList[0],
-                    Y = axisDatasList[0],
-                    Z = axisDatasList[0],
+                    Y = axisDatasList[1],
+                    Z = axisDatasList[2],
                 },
                 RawBytes = TempDataByteList,
                 ErrorCode = 0
@@ -200,6 +212,11 @@ namespace gpm_vibration_module_api.ThreeInOne
                     doubleout = sign * (1 + (fraction / fractionDivide)) * Math.Pow(2, exponent);
             }
             return (float)doubleout;
+        }
+
+        public void Dispose()
+        {
+
         }
     }
 }

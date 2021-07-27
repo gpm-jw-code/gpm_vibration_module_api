@@ -65,20 +65,29 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
         }
 
-        internal void SendCommand(string asciiCmd)
+        internal bool SendCommand(string asciiCmd)
         {
-            SendCommand(Encoding.ASCII.GetBytes(asciiCmd));
+            return SendCommand(Encoding.ASCII.GetBytes(asciiCmd));
         }
-        internal void SendCommand(byte[] bytesCmd)
+        internal bool SendCommand(byte[] bytesCmd)
         {
-            _serialPort.DiscardOutBuffer();
-            _serialPort.DiscardInBuffer();
-            TempDataByteList.Clear();
-            _isDataRecieveDone = false;
-            _serialPort.DataReceived += _serialPort_DataReceived;
-            if (_serialPort == null | !_serialPort.IsOpen)
-                throw new Exception("Serial Port 尚未開啟,無法進行'Write'作業");
-            _serialPort.Write(bytesCmd, 0, bytesCmd.Length);
+            try
+            {
+                _serialPort.DiscardOutBuffer();
+                _serialPort.DiscardInBuffer();
+                TempDataByteList.Clear();
+                _isDataRecieveDone = false;
+                _serialPort.DataReceived += _serialPort_DataReceived;
+                if (_serialPort == null | !_serialPort.IsOpen)
+                    throw new Exception("Serial Port 尚未開啟,無法進行'Write'作業");
+
+                _serialPort.Write(bytesCmd, 0, bytesCmd.Length);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
