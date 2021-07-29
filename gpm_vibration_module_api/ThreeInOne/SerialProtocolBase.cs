@@ -11,7 +11,7 @@ namespace gpm_vibration_module_api.ThreeInOne
     {
         internal string ErrorState = "";
         private SerialPort _serialPort;
-        public int TotalDataByteLen = 3092;
+        internal int TotalDataByteLen = 3092;
         internal bool _isDataRecieveDone = false;
         internal List<byte> TempDataByteList = new List<byte>();
         internal bool IsSimulator = false;

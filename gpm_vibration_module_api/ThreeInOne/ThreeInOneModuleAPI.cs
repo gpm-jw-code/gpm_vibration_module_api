@@ -11,33 +11,51 @@ namespace gpm_vibration_module_api.ThreeInOne
 {
     public class ThreeInOneModuleAPI : SerialProtocolBase, IDisposable
     {
+        private const int GetDataPacketLen = 3096;
+        private const int ParametersPacketLen = 8;
+
         private ThreeInOneModuleDataSet _currentDataSet = new ThreeInOneModuleDataSet();
         private bool isGetDataRunning = false;
-        private bool isMeasureRangeSetRunning = false;
+        private bool isParametersSettingRunning = false;
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
         private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
 
 
-
+        /// <summary>
+        /// 透過Serial Port與模組連線
+        /// </summary>
+        /// <param name="PortName">COM 名</param>
+        /// <param name="baudRate">鮑率(預設值 115200)</param>
+        /// <returns></returns>
         public int Connect(string PortName, int baudRate = 115200)
         {
             return base.Open(PortName, baudRate) ? 0 : (int)clsErrorCode.Error.SerialPortOpenFail;
         }
+
+        /// <summary>
+        /// 嘗試斷開與模組的連線
+        /// </summary>
         public void Close()
         {
             base.Close();
             Dispose();
         }
 
+        /// <summary>
+        /// (可等候)取得數據物件(包含三軸振動G值/ 溫度 / 壓力 / 濕度 * 2 SET)
+        /// </summary>
+        /// <returns>物件 : ThreeInOneModuleDataSet 
+        /// (Namepace: gpm_vibration_module_api.DataSets) 
+        /// </returns>
         public async Task<ThreeInOneModuleDataSet> GetData()
         {
-            if (isMeasureRangeSetRunning)
+            if (isParametersSettingRunning)
             {
                 _currentDataSet.ErrorCode = (int)clsErrorCode.Error.ModuleIsBusy;
                 return _currentDataSet;
             }
             isGetDataRunning = true;
-            TotalDataByteLen = 3092;
+            TotalDataByteLen = GetDataPacketLen;
             bool SendSuccess = SendCommand("READVALUE\r\n");
             if (!SendSuccess)
             {
@@ -46,25 +64,77 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return _currentDataSet;
             }
             bool isTimeout = await DataRecieveDone();
-            if (!isTimeout)
-                DataSetPrepareProcessing();
-            _currentDataSet.ErrorCode = !isTimeout ? 0 : (int)clsErrorCode.Error.DATA_GET_TIMEOUT;
             isGetDataRunning = false;
+            _currentDataSet.ErrorCode = (!isTimeout ? 0 : (int)clsErrorCode.Error.DATA_GET_TIMEOUT);
+
+            if (isTimeout)
+                return _currentDataSet;
+            DataSetPrepareProcessing();
             return _currentDataSet;
         }
 
+        /// <summary>
+        /// 設定量測範圍 
+        /// </summary>
+        /// <param name="mEASURE">量測範圍列舉</param>
+        /// <returns></returns>
         public async Task<int> MeasureRangeSetting(clsEnum.Module_Setting_Enum.MEASURE_RANGE mEASURE)
+        {
+            TotalDataByteLen = ParametersPacketLen;
+            MeasureRangeByteDefine(mEASURE);
+            return await WriteParameters();
+        }
+
+        /// <summary>
+        /// 寫入參數組(8byte),如果不知道參數組的定義請不要輕易嘗試
+        /// </summary>
+        /// <param name="EightBytesParamesSet"></param>
+        /// <returns></returns>
+        public async Task<int> WriteParameters(byte[] EightBytesParamesSet)
+        {
+            if (EightBytesParamesSet.Length != ParametersPacketLen)
+                throw new Exception("參數數據位元組長度不足 '8'");
+            TotalDataByteLen = ParametersPacketLen;
+            Array.Copy(EightBytesParamesSet, 0, ParamsSendOutBytes, 1, 8);
+            return await WriteParameters();
+        }
+
+        /// <summary>
+        /// 讀取振動加速規模組的參數組
+        /// </summary>
+        /// <returns> "Tuple" >> item1 : ErrorCode; item2 : 8byte參數位元組</returns>
+        public async Task<Tuple<int, byte[]>> ReadParameters()
+        {
+            if (isParametersSettingRunning)
+            {
+                return new Tuple<int, byte[]>((int)clsErrorCode.Error.ModuleIsBusy, null);
+            }
+            isParametersSettingRunning = true;
+            TotalDataByteLen = ParametersPacketLen;
+            bool SendSuccess = SendCommand("READSTVAL\r\n");
+            if (!SendSuccess)
+            {
+                isParametersSettingRunning = false;
+                return new Tuple<int, byte[]>((int)clsErrorCode.Error.NoConnection, null);
+            }
+            bool isTimeout = await DataRecieveDone();
+            isParametersSettingRunning = false;
+            var ErrorCode = !isTimeout ? 0 : (int)clsErrorCode.Error.DATA_GET_TIMEOUT;
+            return new Tuple<int, byte[]>(ErrorCode, isTimeout ? null : TempDataByteList.ToArray());
+        }
+
+
+
+        private async Task<int> WriteParameters()
         {
             if (isGetDataRunning)
                 return (int)clsErrorCode.Error.ModuleIsBusy;
-
-            isMeasureRangeSetRunning = true;
+            isParametersSettingRunning = true;
             TotalDataByteLen = 8;
-            MeasureRangeByteDefine(mEASURE);
             bool SendSuccess = SendCommand(ParamsSendOutBytes);
+            isParametersSettingRunning = false;
             if (!SendSuccess)
             {
-                isMeasureRangeSetRunning = false;
                 return (int)clsErrorCode.Error.NoConnection;
             }
             bool isTimeout = await DataRecieveDone();
@@ -73,7 +143,6 @@ namespace gpm_vibration_module_api.ThreeInOne
             if (IsParametersError())
                 return (int)clsErrorCode.Error.ERROR_PARAM_RETURN_FROM_CONTROLLER;
             MeasureReangDefineByByteVal();
-            isMeasureRangeSetRunning = false;
             return 0; //done
         }
 
@@ -137,49 +206,59 @@ namespace gpm_vibration_module_api.ThreeInOne
         private void DataSetPrepareProcessing()
         {
             //TempDataByteList
-            byte[] AccDataBytes = new byte[3072];
-            byte[] temperature1 = new byte[4];
-            byte[] pressure1 = new byte[4];
-            byte[] humidity1 = new byte[4];
-            byte[] temperature2 = new byte[4];
-            byte[] pressure2 = new byte[4];
-            byte[] humidity2 = new byte[4];
-
-            byte[] tmpeDataByteListAry = TempDataByteList.ToArray();
-            Array.Copy(tmpeDataByteListAry, 0, AccDataBytes, 0, 3072);
-            Array.Copy(tmpeDataByteListAry, 3072, temperature1, 0, 4);
-            Array.Copy(tmpeDataByteListAry, 3076, pressure1, 0, 4);
-            Array.Copy(tmpeDataByteListAry, 3080, humidity1, 0, 4);
-            Array.Copy(tmpeDataByteListAry, 3084, temperature2, 0, 4);
-            Array.Copy(tmpeDataByteListAry, 3088, pressure2, 0, 4);
-            Array.Copy(tmpeDataByteListAry, 3092, humidity2, 0, 4);
-
-            List<List<double>> axisDatasList = Tools.ConverterTools.AccPacketToListDouble(AccDataBytes, MEASURE_RANGE, DAQMode.High_Sampling);
-
-            double t1 = GetDoubleByIEEE754(temperature1);
-            double p1 = GetDoubleByIEEE754(pressure1);
-            double h1 = GetDoubleByIEEE754(humidity1);
-            double t2 = GetDoubleByIEEE754(temperature2);
-            double p2 = GetDoubleByIEEE754(pressure2);
-            double h2 = GetDoubleByIEEE754(humidity2);
-
-            _currentDataSet = new ThreeInOneModuleDataSet
+            try
             {
-                Temperature1 = t1,
-                Temperature2 = t2,
-                Humidity1 = h1,
-                Humidity2 = h2,
-                Pressure1 = p1,
-                Pressure2 = p2,
-                VibrationData = new DataSet.clsAcc
+                byte[] AccDataBytes = new byte[3072];
+                byte[] temperature1 = new byte[4];
+                byte[] pressure1 = new byte[4];
+                byte[] humidity1 = new byte[4];
+                byte[] temperature2 = new byte[4];
+                byte[] pressure2 = new byte[4];
+                byte[] humidity2 = new byte[4];
+                byte[] tmpeDataByteListAry = TempDataByteList.ToArray();
+                Array.Copy(tmpeDataByteListAry, 0, AccDataBytes, 0, 3072);
+                Array.Copy(tmpeDataByteListAry, 3072, temperature1, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 3076, pressure1, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 3080, humidity1, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 3084, temperature2, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 3088, pressure2, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 3092, humidity2, 0, 4);
+
+                List<List<double>> axisDatasList = Tools.ConverterTools.AccPacketToListDouble(AccDataBytes, MEASURE_RANGE, DAQMode.High_Sampling);
+
+                double t1 = GetDoubleByIEEE754(temperature1);
+                double p1 = GetDoubleByIEEE754(pressure1);
+                double h1 = GetDoubleByIEEE754(humidity1);
+                double t2 = GetDoubleByIEEE754(temperature2);
+                double p2 = GetDoubleByIEEE754(pressure2);
+                double h2 = GetDoubleByIEEE754(humidity2);
+
+                _currentDataSet = new ThreeInOneModuleDataSet
                 {
-                    X = axisDatasList[0],
-                    Y = axisDatasList[1],
-                    Z = axisDatasList[2],
-                },
-                RawBytes = TempDataByteList,
-                ErrorCode = 0
-            };
+                    Temperature1 = t1,
+                    Temperature2 = t2,
+                    Humidity1 = h1,
+                    Humidity2 = h2,
+                    Pressure1 = p1,
+                    Pressure2 = p2,
+                    VibrationData = new DataSet.clsAcc
+                    {
+                        X = axisDatasList[0],
+                        Y = axisDatasList[1],
+                        Z = axisDatasList[2],
+                    },
+                    RawBytes = TempDataByteList,
+                    ErrorCode = 0
+                };
+            }
+            catch (Exception ex)
+            {
+                _currentDataSet = new ThreeInOneModuleDataSet
+                {
+                    ErrorCode = (int)clsErrorCode.Error.SYSTEM_ERROR
+                };
+            }
+
 
         }
 

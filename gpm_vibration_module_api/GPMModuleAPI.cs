@@ -463,7 +463,7 @@ namespace gpm_vibration_module_api
         public ModuleSetting_GEN()
         {
             //When use low sampling mode and data length set > 8192 , last index value must set 0x20 or higher.
-            base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00 };
+            base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x20 };
         }
 
         /// <summary>
