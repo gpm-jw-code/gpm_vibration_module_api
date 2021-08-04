@@ -29,7 +29,8 @@
             DATA_LENGTH_SETTING_VALUE_ILLEGAL = 144445,
             Cancel = 144446,
             ParticleSensorConvertError_Source_Data_Insufficient = 52110,
-            PostProcessingError = 144447
+            PostProcessingError = 144447,
+            MRSettingOutOfRange = 144449
         }
 
     }
