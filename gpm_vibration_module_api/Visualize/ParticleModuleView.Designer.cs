@@ -376,9 +376,9 @@
             // 
             this.PM05NumberLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.PM05NumberLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM05NumberLabel.Location = new System.Drawing.Point(83, 22);
+            this.PM05NumberLabel.Location = new System.Drawing.Point(83, 18);
             this.PM05NumberLabel.Name = "PM05NumberLabel";
-            this.PM05NumberLabel.Size = new System.Drawing.Size(77, 27);
+            this.PM05NumberLabel.Size = new System.Drawing.Size(77, 31);
             this.PM05NumberLabel.TabIndex = 6;
             this.PM05NumberLabel.Tag = "0.5_Num";
             this.PM05NumberLabel.Text = "134";
@@ -388,9 +388,9 @@
             // label13
             // 
             this.label13.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label13.Location = new System.Drawing.Point(64, 22);
+            this.label13.Location = new System.Drawing.Point(64, 18);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(19, 27);
+            this.label13.Size = new System.Drawing.Size(19, 31);
             this.label13.TabIndex = 7;
             this.label13.Text = "\\";
             this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -399,9 +399,9 @@
             // 
             this.PM05MassLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.PM05MassLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM05MassLabel.Location = new System.Drawing.Point(0, 22);
+            this.PM05MassLabel.Location = new System.Drawing.Point(0, 18);
             this.PM05MassLabel.Name = "PM05MassLabel";
-            this.PM05MassLabel.Size = new System.Drawing.Size(64, 27);
+            this.PM05MassLabel.Size = new System.Drawing.Size(64, 31);
             this.PM05MassLabel.TabIndex = 5;
             this.PM05MassLabel.Text = "N/A";
             this.PM05MassLabel.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
@@ -414,7 +414,7 @@
             this.label4.Font = new System.Drawing.Font("微軟正黑體", 10F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.label4.Location = new System.Drawing.Point(0, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(62, 22);
+            this.label4.Size = new System.Drawing.Size(51, 18);
             this.label4.TabIndex = 8;
             this.label4.Text = "PM0.5";
             this.label4.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ParticleItemClick);
@@ -437,9 +437,9 @@
             // 
             this.PM10Dot0NumberLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.PM10Dot0NumberLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM10Dot0NumberLabel.Location = new System.Drawing.Point(83, 22);
+            this.PM10Dot0NumberLabel.Location = new System.Drawing.Point(83, 18);
             this.PM10Dot0NumberLabel.Name = "PM10Dot0NumberLabel";
-            this.PM10Dot0NumberLabel.Size = new System.Drawing.Size(77, 29);
+            this.PM10Dot0NumberLabel.Size = new System.Drawing.Size(77, 33);
             this.PM10Dot0NumberLabel.TabIndex = 6;
             this.PM10Dot0NumberLabel.Tag = "10_Num";
             this.PM10Dot0NumberLabel.Text = "134";
@@ -449,9 +449,9 @@
             // label23
             // 
             this.label23.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label23.Location = new System.Drawing.Point(64, 22);
+            this.label23.Location = new System.Drawing.Point(64, 18);
             this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(19, 29);
+            this.label23.Size = new System.Drawing.Size(19, 33);
             this.label23.TabIndex = 7;
             this.label23.Text = "\\";
             this.label23.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -460,9 +460,9 @@
             // 
             this.PM10Dot0MassLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.PM10Dot0MassLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM10Dot0MassLabel.Location = new System.Drawing.Point(0, 22);
+            this.PM10Dot0MassLabel.Location = new System.Drawing.Point(0, 18);
             this.PM10Dot0MassLabel.Name = "PM10Dot0MassLabel";
-            this.PM10Dot0MassLabel.Size = new System.Drawing.Size(64, 29);
+            this.PM10Dot0MassLabel.Size = new System.Drawing.Size(64, 33);
             this.PM10Dot0MassLabel.TabIndex = 5;
             this.PM10Dot0MassLabel.Tag = "10_Mass";
             this.PM10Dot0MassLabel.Text = "224";
@@ -476,7 +476,7 @@
             this.label25.Font = new System.Drawing.Font("微軟正黑體", 10F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.label25.Location = new System.Drawing.Point(0, 0);
             this.label25.Name = "label25";
-            this.label25.Size = new System.Drawing.Size(72, 22);
+            this.label25.Size = new System.Drawing.Size(59, 18);
             this.label25.TabIndex = 8;
             this.label25.Text = "PM10.0";
             this.label25.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ParticleItemClick);
@@ -500,9 +500,9 @@
             // 
             this.PM1Dot0NumberLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.PM1Dot0NumberLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM1Dot0NumberLabel.Location = new System.Drawing.Point(83, 22);
+            this.PM1Dot0NumberLabel.Location = new System.Drawing.Point(83, 18);
             this.PM1Dot0NumberLabel.Name = "PM1Dot0NumberLabel";
-            this.PM1Dot0NumberLabel.Size = new System.Drawing.Size(77, 27);
+            this.PM1Dot0NumberLabel.Size = new System.Drawing.Size(77, 31);
             this.PM1Dot0NumberLabel.TabIndex = 6;
             this.PM1Dot0NumberLabel.Tag = "1_Num";
             this.PM1Dot0NumberLabel.Text = "134";
@@ -512,9 +512,9 @@
             // label6
             // 
             this.label6.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label6.Location = new System.Drawing.Point(64, 22);
+            this.label6.Location = new System.Drawing.Point(64, 18);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(19, 27);
+            this.label6.Size = new System.Drawing.Size(19, 31);
             this.label6.TabIndex = 7;
             this.label6.Text = "\\";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -524,9 +524,9 @@
             // 
             this.PM1Dot0MassLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.PM1Dot0MassLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM1Dot0MassLabel.Location = new System.Drawing.Point(0, 22);
+            this.PM1Dot0MassLabel.Location = new System.Drawing.Point(0, 18);
             this.PM1Dot0MassLabel.Name = "PM1Dot0MassLabel";
-            this.PM1Dot0MassLabel.Size = new System.Drawing.Size(64, 27);
+            this.PM1Dot0MassLabel.Size = new System.Drawing.Size(64, 31);
             this.PM1Dot0MassLabel.TabIndex = 5;
             this.PM1Dot0MassLabel.Tag = "1_Mass";
             this.PM1Dot0MassLabel.Text = "224";
@@ -540,7 +540,7 @@
             this.label10.Font = new System.Drawing.Font("微軟正黑體", 10F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.label10.Location = new System.Drawing.Point(0, 0);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(62, 22);
+            this.label10.Size = new System.Drawing.Size(51, 18);
             this.label10.TabIndex = 8;
             this.label10.Text = "PM1.0";
             this.label10.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ParticleItemClick);
@@ -564,9 +564,9 @@
             // 
             this.PM4Dot0NumberLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.PM4Dot0NumberLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM4Dot0NumberLabel.Location = new System.Drawing.Point(83, 22);
+            this.PM4Dot0NumberLabel.Location = new System.Drawing.Point(83, 18);
             this.PM4Dot0NumberLabel.Name = "PM4Dot0NumberLabel";
-            this.PM4Dot0NumberLabel.Size = new System.Drawing.Size(77, 27);
+            this.PM4Dot0NumberLabel.Size = new System.Drawing.Size(77, 31);
             this.PM4Dot0NumberLabel.TabIndex = 6;
             this.PM4Dot0NumberLabel.Tag = "4_Num";
             this.PM4Dot0NumberLabel.Text = "134";
@@ -576,9 +576,9 @@
             // label19
             // 
             this.label19.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label19.Location = new System.Drawing.Point(64, 22);
+            this.label19.Location = new System.Drawing.Point(64, 18);
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(19, 27);
+            this.label19.Size = new System.Drawing.Size(19, 31);
             this.label19.TabIndex = 7;
             this.label19.Text = "\\";
             this.label19.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -588,9 +588,9 @@
             // 
             this.PM4Dot0MassLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.PM4Dot0MassLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM4Dot0MassLabel.Location = new System.Drawing.Point(0, 22);
+            this.PM4Dot0MassLabel.Location = new System.Drawing.Point(0, 18);
             this.PM4Dot0MassLabel.Name = "PM4Dot0MassLabel";
-            this.PM4Dot0MassLabel.Size = new System.Drawing.Size(64, 27);
+            this.PM4Dot0MassLabel.Size = new System.Drawing.Size(64, 31);
             this.PM4Dot0MassLabel.TabIndex = 5;
             this.PM4Dot0MassLabel.Tag = "4_Mass";
             this.PM4Dot0MassLabel.Text = "224";
@@ -604,7 +604,7 @@
             this.PM40label.Font = new System.Drawing.Font("微軟正黑體", 10F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.PM40label.Location = new System.Drawing.Point(0, 0);
             this.PM40label.Name = "PM40label";
-            this.PM40label.Size = new System.Drawing.Size(62, 22);
+            this.PM40label.Size = new System.Drawing.Size(51, 18);
             this.PM40label.TabIndex = 8;
             this.PM40label.Text = "PM4.0";
             this.PM40label.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ParticleItemClick);
@@ -627,9 +627,9 @@
             // 
             this.PM2Dot5NumberLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.PM2Dot5NumberLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM2Dot5NumberLabel.Location = new System.Drawing.Point(83, 22);
+            this.PM2Dot5NumberLabel.Location = new System.Drawing.Point(83, 18);
             this.PM2Dot5NumberLabel.Name = "PM2Dot5NumberLabel";
-            this.PM2Dot5NumberLabel.Size = new System.Drawing.Size(77, 27);
+            this.PM2Dot5NumberLabel.Size = new System.Drawing.Size(77, 31);
             this.PM2Dot5NumberLabel.TabIndex = 6;
             this.PM2Dot5NumberLabel.Tag = "2.5_Num";
             this.PM2Dot5NumberLabel.Text = "134";
@@ -639,9 +639,9 @@
             // label15
             // 
             this.label15.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label15.Location = new System.Drawing.Point(64, 22);
+            this.label15.Location = new System.Drawing.Point(64, 18);
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(19, 27);
+            this.label15.Size = new System.Drawing.Size(19, 31);
             this.label15.TabIndex = 7;
             this.label15.Text = "\\";
             this.label15.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -650,9 +650,9 @@
             // 
             this.PM2Dot5MassLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.PM2Dot5MassLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.PM2Dot5MassLabel.Location = new System.Drawing.Point(0, 22);
+            this.PM2Dot5MassLabel.Location = new System.Drawing.Point(0, 18);
             this.PM2Dot5MassLabel.Name = "PM2Dot5MassLabel";
-            this.PM2Dot5MassLabel.Size = new System.Drawing.Size(64, 27);
+            this.PM2Dot5MassLabel.Size = new System.Drawing.Size(64, 31);
             this.PM2Dot5MassLabel.TabIndex = 5;
             this.PM2Dot5MassLabel.Tag = "2.5_Mass";
             this.PM2Dot5MassLabel.Text = "224";
@@ -666,7 +666,7 @@
             this.label17.Font = new System.Drawing.Font("微軟正黑體", 10F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.label17.Location = new System.Drawing.Point(0, 0);
             this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(62, 22);
+            this.label17.Size = new System.Drawing.Size(51, 18);
             this.label17.TabIndex = 8;
             this.label17.Text = "PM2.5";
             this.label17.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ParticleItemClick);
@@ -788,9 +788,9 @@
             this.ModuleIPLabel.AutoSize = true;
             this.ModuleIPLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.ModuleIPLabel.ForeColor = System.Drawing.Color.CadetBlue;
-            this.ModuleIPLabel.Location = new System.Drawing.Point(294, 0);
+            this.ModuleIPLabel.Location = new System.Drawing.Point(234, 0);
             this.ModuleIPLabel.Name = "ModuleIPLabel";
-            this.ModuleIPLabel.Size = new System.Drawing.Size(54, 19);
+            this.ModuleIPLabel.Size = new System.Drawing.Size(45, 16);
             this.ModuleIPLabel.TabIndex = 3;
             this.ModuleIPLabel.Text = "0.0.0.0";
             // 
@@ -799,9 +799,9 @@
             this.label8.AutoSize = true;
             this.label8.Dock = System.Windows.Forms.DockStyle.Left;
             this.label8.ForeColor = System.Drawing.Color.CadetBlue;
-            this.label8.Location = new System.Drawing.Point(242, 0);
+            this.label8.Location = new System.Drawing.Point(192, 0);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(52, 19);
+            this.label8.Size = new System.Drawing.Size(42, 16);
             this.label8.TabIndex = 2;
             this.label8.Text = "模組IP";
             // 
@@ -811,9 +811,9 @@
             this.MonitorSpotNameLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.MonitorSpotNameLabel.Font = new System.Drawing.Font("微軟正黑體", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.MonitorSpotNameLabel.ForeColor = System.Drawing.Color.CadetBlue;
-            this.MonitorSpotNameLabel.Location = new System.Drawing.Point(72, 0);
+            this.MonitorSpotNameLabel.Location = new System.Drawing.Point(57, 0);
             this.MonitorSpotNameLabel.Name = "MonitorSpotNameLabel";
-            this.MonitorSpotNameLabel.Size = new System.Drawing.Size(170, 32);
+            this.MonitorSpotNameLabel.Size = new System.Drawing.Size(135, 25);
             this.MonitorSpotNameLabel.TabIndex = 1;
             this.MonitorSpotNameLabel.Text = "SPOT_NAME";
             // 
@@ -825,7 +825,7 @@
             this.label5.ForeColor = System.Drawing.Color.CadetBlue;
             this.label5.Location = new System.Drawing.Point(0, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(72, 25);
+            this.label5.Size = new System.Drawing.Size(57, 20);
             this.label5.TabIndex = 0;
             this.label5.Text = "監測點";
             // 
@@ -923,7 +923,7 @@
             this.label12.ForeColor = System.Drawing.Color.CadetBlue;
             this.label12.Location = new System.Drawing.Point(21, 53);
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(110, 31);
+            this.label12.Size = new System.Drawing.Size(86, 24);
             this.label12.TabIndex = 6;
             this.label12.Text = "閥值設定";
             // 
@@ -948,7 +948,7 @@
             this.label11.ForeColor = System.Drawing.Color.CadetBlue;
             this.label11.Location = new System.Drawing.Point(29, 171);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(107, 22);
+            this.label11.Size = new System.Drawing.Size(81, 17);
             this.label11.TabIndex = 3;
             this.label11.Text = "Lower Limit";
             // 
@@ -967,7 +967,7 @@
             0,
             -2147483648});
             this.NUM_LowerLimit.Name = "NUM_LowerLimit";
-            this.NUM_LowerLimit.Size = new System.Drawing.Size(120, 29);
+            this.NUM_LowerLimit.Size = new System.Drawing.Size(120, 25);
             this.NUM_LowerLimit.TabIndex = 2;
             // 
             // label9
@@ -977,7 +977,7 @@
             this.label9.ForeColor = System.Drawing.Color.CadetBlue;
             this.label9.Location = new System.Drawing.Point(29, 116);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(108, 22);
+            this.label9.Size = new System.Drawing.Size(81, 17);
             this.label9.TabIndex = 1;
             this.label9.Text = "Upper Limit";
             // 
@@ -996,7 +996,7 @@
             0,
             -2147483648});
             this.NUM_UpperLimit.Name = "NUM_UpperLimit";
-            this.NUM_UpperLimit.Size = new System.Drawing.Size(120, 29);
+            this.NUM_UpperLimit.Size = new System.Drawing.Size(120, 25);
             this.NUM_UpperLimit.TabIndex = 0;
             // 
             // panel1
@@ -1028,7 +1028,7 @@
             // 
             // ParticleModuleView
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 19F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.BackColor = System.Drawing.Color.Transparent;
