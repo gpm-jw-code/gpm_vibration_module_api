@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gpm_vibration_module_api", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gpm_vibration_module_apiTests", "gpm_vibration_module_apiTests\gpm_vibration_module_apiTests.csproj", "{F61EC749-C595-4DC5-ABB3-896502C47C0F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "gpm_module_api_standard", "gpm_module_api_standard\gpm_module_api_standard.csproj", "{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,14 @@ Global
 		{F61EC749-C595-4DC5-ABB3-896502C47C0F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F61EC749-C595-4DC5-ABB3-896502C47C0F}.Release|x64.ActiveCfg = Release|Any CPU
 		{F61EC749-C595-4DC5-ABB3-896502C47C0F}.Release|x64.Build.0 = Release|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Debug|x64.Build.0 = Debug|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Release|x64.ActiveCfg = Release|Any CPU
+		{99F09C0A-B2D4-4C13-B7BA-6ABF2303B1A7}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

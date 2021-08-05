@@ -47,7 +47,8 @@ namespace gpm_vibration_module_api
             IsKX134Sensor = true;
             _Is485Module = false;
             Settings = new ModuleSetting() { _mEASURE_RANGE = MEASURE_RANGE.MR_8G };
-            Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
+            Console.WriteLine($"GPMModuleAPI_HSR 物件建立");
+            //Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
         public string IP { get; set; }
@@ -366,6 +367,8 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         virtual public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
         {
+            if (((int)mr_select) > 4096)
+                return (int)clsErrorCode.Error.MRSettingOutOfRange;
             Tools.Logger.Event_Log.Log($"使用者嘗試修改量測範圍({mr_select})");
             var ori_Set = Settings.mEASURE_RANGE;
             //await GetDataInterupt();
@@ -433,7 +436,7 @@ namespace gpm_vibration_module_api
         private StateObject state_obj = new StateObject() { ErrorCode = clsErrorCode.Error.DATA_GET_TIMEOUT };
         virtual public async Task<DataSet> GetData(bool IsGetFFT, bool IsGetOtherFeatures)
         {
-            Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
+            //Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
 
             GetDataCalledStasify();
             GetDataInteruptFlag = 0;
@@ -457,14 +460,14 @@ namespace gpm_vibration_module_api
                     state_obj = SendGetRawDataCmd(_Is485Module ? 1000 : Settings.AccDataRevTimeout);
                     retcode = state_obj.ErrorCode;
                     retry += 1;
-                    Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
+                    //Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
                     Thread.Sleep(1);
                 }
 
                 HSStopWatch.Stop();
                 GetDataFirstCall = false;
                 //DataUploadToWeb();
-                Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
+                //Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
                 if (state_obj.ErrorCode == clsErrorCode.Error.None)
                 {
                     GetDataSuccessNum++;

@@ -1,17 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using gpm_module_api.ParticalSensor;
+using System;
 using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using gpm_module_api.ParticalSensor;
-using System.Runtime;
-using Microsoft.Win32;
-using System.Windows.Forms.DataVisualization.Charting;
-using System.Net;
 
 namespace gpm_module_api.Visualize
 {

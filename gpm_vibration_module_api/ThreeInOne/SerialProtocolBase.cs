@@ -34,6 +34,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             catch (Exception ex)
             {
                 ErrorState = ex.Message + ex.StackTrace;
+                Console.WriteLine(ErrorState);
                 return false;
             }
         }

@@ -38,10 +38,15 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// <summary>
         /// 嘗試斷開與模組的連線
         /// </summary>
-        public void Close()
+        public new void Close()
         {
             base.Close();
             Dispose();
+        }
+
+        public void TEST()
+        {
+            Console.WriteLine("Hi, I am function in framework 4.6.1 dll...");
         }
 
         /// <summary>
