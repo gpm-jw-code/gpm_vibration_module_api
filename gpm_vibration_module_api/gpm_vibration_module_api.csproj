@@ -323,7 +323,6 @@
     <Compile Include="GpmMath\FFT.cs" />
     <Compile Include="GpmMath\Numeric.cs" />
     <Compile Include="GpmMath\Window.cs" />
-    <Compile Include="IApiForEndUser.cs" />
     <Compile Include="JSON\JSONParser.cs" />
     <Compile Include="JSON\JSONWriter.cs" />
     <Compile Include="License\CHECK_RESULT.cs" />
