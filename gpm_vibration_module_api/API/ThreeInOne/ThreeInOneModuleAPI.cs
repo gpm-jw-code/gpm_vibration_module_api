@@ -17,7 +17,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool isGetDataRunning = false;
         private bool isParametersSettingRunning = false;
         private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
-
+        private bool isMeasureRangeSettingReady = false;
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
         /// <summary>
         /// 封包接收Timeout設定。
@@ -57,6 +57,11 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// </returns>
         public async Task<ThreeInOneModuleDataSet> GetData()
         {
+            if(!isMeasureRangeSettingReady)
+            {
+                _currentDataSet.ErrorCode = (int)clsErrorCode.Error.VibrationMeasureRangeNotSetYet;
+                return _currentDataSet;
+            }
             if (isParametersSettingRunning)
             {
                 _currentDataSet.ErrorCode = (int)clsErrorCode.Error.ModuleIsBusy;
@@ -92,7 +97,9 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             TotalDataByteLen = ParametersPacketLen;
             MeasureRangeByteDefine(mEASURE);
-            return await WriteParameters();
+            int errorCode = await WriteParameters();
+            isMeasureRangeSettingReady = errorCode == 0;
+            return errorCode;
         }
 
         /// <summary>
