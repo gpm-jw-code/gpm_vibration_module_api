@@ -30,7 +30,11 @@
             Cancel = 144446,
             ParticleSensorConvertError_Source_Data_Insufficient = 52110,
             PostProcessingError = 144447,
-            MRSettingOutOfRange = 144449
+            MRSettingOutOfRange = 144449,
+            /// <summary>
+            /// 量測範圍尚未進行設定,
+            /// </summary>
+            VibrationMeasureRangeNotSetYet = 144450
         }
 
     }

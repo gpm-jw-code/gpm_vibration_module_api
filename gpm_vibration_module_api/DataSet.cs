@@ -152,9 +152,9 @@ namespace gpm_vibration_module_api
 
         public class AxisListValue
         {
-            public List<double> X = new List<double>();
-            public List<double> Y = new List<double>();
-            public List<double> Z = new List<double>();
+            public List<double> X { get; internal set; } = new List<double>();
+            public List<double> Y { get; internal set; } = new List<double>();
+            public List<double> Z { get; internal set; } = new List<double>();
         }
 
         public class AxisDoubleValue
