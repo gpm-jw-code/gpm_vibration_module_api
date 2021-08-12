@@ -101,7 +101,7 @@ namespace gpm_vibration_module_api
                         return AsynchronousClient.client.Connected;
                     else
                         return false;
-                        //return SerialPortBase.module_port.IsOpen;
+                    //return SerialPortBase.module_port.IsOpen;
                 }
                 catch (Exception)
                 {
@@ -370,7 +370,9 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         virtual public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
         {
-            if (((int)mr_select) > 4096)
+            if (!IsKX134Sensor && ((int)mr_select) < 2048)
+                return (int)clsErrorCode.Error.MRSettingOutOfRange;
+            if (IsKX134Sensor && ((int)mr_select) > 4096)
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             Tools.Logger.Event_Log.Log($"使用者嘗試修改量測範圍({mr_select})");
             var ori_Set = Settings.mEASURE_RANGE;
@@ -658,7 +660,7 @@ namespace gpm_vibration_module_api
             if (!_Is485Module)
                 return await AsynchronousClient.SendMessage(msg, CheckLen, Timeout);
             else
-                return new StateObject { ErrorCode =  clsErrorCode.Error.SYSTEM_ERROR };
+                return new StateObject { ErrorCode = clsErrorCode.Error.SYSTEM_ERROR };
             //else
             //    return await SerialPortBase.SendMessage(msg, CheckLen, Timeout);
         }
