@@ -122,7 +122,6 @@ namespace gpm_vibration_module_api
             {
                 get
                 {
-
                     return _FreqVec;
                 }
                 set

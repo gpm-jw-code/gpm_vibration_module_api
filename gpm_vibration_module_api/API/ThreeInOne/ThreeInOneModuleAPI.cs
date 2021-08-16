@@ -1,4 +1,5 @@
 ﻿using gpm_vibration_module_api.DataSets;
+using gpm_vibration_module_api.GpmMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,6 +20,8 @@ namespace gpm_vibration_module_api.ThreeInOne
         private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
         private bool isMeasureRangeSettingReady = false;
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+        public double SamplingRate { get;  set; } = 8000;
+
         /// <summary>
         /// 封包接收Timeout設定。
         /// 單位:ms 毫秒
@@ -57,7 +60,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// </returns>
         public async Task<ThreeInOneModuleDataSet> GetData()
         {
-            if(!isMeasureRangeSettingReady)
+            if (!isMeasureRangeSettingReady)
             {
                 _currentDataSet.ErrorCode = (int)clsErrorCode.Error.VibrationMeasureRangeNotSetYet;
                 return _currentDataSet;
@@ -247,6 +250,10 @@ namespace gpm_vibration_module_api.ThreeInOne
 
                 List<List<double>> axisDatasList = Tools.ConverterTools.AccPacketToListDouble(AccDataBytes, MEASURE_RANGE, DAQMode.High_Sampling);
 
+                List<double> fft_x = FFT.GetFFT(axisDatasList[0]);
+                List<double> fft_y = FFT.GetFFT(axisDatasList[1]);
+                List<double> fft_z = FFT.GetFFT(axisDatasList[2]);
+
                 double t1 = GetDoubleByIEEE754(temperature1);
                 double p1 = GetDoubleByIEEE754(pressure1);
                 double h1 = GetDoubleByIEEE754(humidity1);
@@ -268,6 +275,14 @@ namespace gpm_vibration_module_api.ThreeInOne
                         Y = axisDatasList[1],
                         Z = axisDatasList[2],
                     },
+                    FFTData = new DataSet.clsFFTData
+                    {
+                        SamplingRate = SamplingRate,
+                        FreqVec = FreqVecCal(fft_x.Count, SamplingRate),
+                        X = fft_x,
+                        Y = fft_y,
+                        Z = fft_z
+                    },
                     RawBytes = TempDataByteList,
                     ErrorCode = 0
                 };
@@ -282,7 +297,16 @@ namespace gpm_vibration_module_api.ThreeInOne
 
 
         }
-
+        internal List<double> FreqVecCal(int FFTWindowSize, double samplingRate)
+        {
+            var freqVec = new List<double>();
+            var NysFreq = samplingRate / 2;
+            for (int i = 0; i < FFTWindowSize; i++)
+            {
+                freqVec.Add((NysFreq / (double)FFTWindowSize) * (double)i);
+            }
+            return freqVec;
+        }
         private double GetDoubleByIEEE754(byte[] byteAry)
         {
             if (byteAry == null)
