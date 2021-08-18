@@ -367,7 +367,9 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         virtual public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
         {
-            if (((int)mr_select) > 4096)
+            if (!IsKX134Sensor && ((int)mr_select) <2048)
+                    return (int)clsErrorCode.Error.MRSettingOutOfRange;
+            if ( IsKX134Sensor && ((int)mr_select) > 4096)
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             Tools.Logger.Event_Log.Log($"使用者嘗試修改量測範圍({mr_select})");
             var ori_Set = Settings.mEASURE_RANGE;
