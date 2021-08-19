@@ -1,4 +1,5 @@
 ﻿//#define v110
+using gpm_vibration_module_api.API.Modbus;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,6 +22,8 @@ namespace gpm_vibration_module_api.Modbus
         {
             TCP, RTU
         }
+        private string SlaveID;
+        private string PortName;
         internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
         public CONNECTION_TYPE Connection_Type { get; private set; } = CONNECTION_TYPE.RTU;
@@ -29,12 +32,12 @@ namespace gpm_vibration_module_api.Modbus
         {
             get
             {
-                return modbusClient.Connected;
+                return modbusClient_TCP.Connected;
             }
         }
         public void DisConnect()
         {
-            modbusClient.Disconnect();
+            modbusClient_TCP.Disconnect();
 
         }
         #region STRUCT
@@ -64,13 +67,13 @@ namespace gpm_vibration_module_api.Modbus
         }
         #endregion
         private bool RecieveData = false;
-        private ModbusClient modbusClient = new ModbusClient();
+        private ModbusClient modbusClient_TCP = new ModbusClient();
 
         public GPMModbusAPI()
         {
-            modbusClient.ReceiveDataChanged += new ModbusClient.ReceiveDataChangedHandler(ModbusClient_ReceiveDataChanged);
-            modbusClient.SendDataChanged += new ModbusClient.SendDataChangedHandler(ModbusClient_SendDataChanged);
-            modbusClient.ConnectedChanged += new ModbusClient.ConnectedChangedHandler(ModbusClient_ConnectedChanged);
+            modbusClient_TCP.ReceiveDataChanged += new ModbusClient.ReceiveDataChangedHandler(ModbusClient_ReceiveDataChanged);
+            modbusClient_TCP.SendDataChanged += new ModbusClient.SendDataChangedHandler(ModbusClient_SendDataChanged);
+            modbusClient_TCP.ConnectedChanged += new ModbusClient.ConnectedChangedHandler(ModbusClient_ConnectedChanged);
         }
         /// <summary>
         /// Modbus TCP連線
@@ -80,14 +83,15 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns></returns>
         public bool Connect(string IP, int Port, string SlaveID)
         {
-            modbusClient.IPAddress = IP;
-            modbusClient.Port = Port;
-            modbusClient.SerialPort = null;
-            modbusClient.UnitIdentifier = byte.Parse(SlaveID);
+            this.SlaveID = SlaveID;
+            modbusClient_TCP.IPAddress = IP;
+            modbusClient_TCP.Port = Port;
+            modbusClient_TCP.SerialPort = null;
+            modbusClient_TCP.UnitIdentifier = byte.Parse(SlaveID);
             Connection_Type = CONNECTION_TYPE.TCP;
             try
             {
-                bool IsConnected = modbusClient.Connect();
+                bool IsConnected = modbusClient_TCP.Connect();
                 if (IsConnected && IsReadBaudRateWhenConnected)
                 {
                     int CurrentBaudRate = ReadBaudRateSetting();
@@ -124,19 +128,20 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns></returns>
         public bool Connect(string ComPort, string SlaveID, int BaudRate, System.IO.Ports.Parity parity = System.IO.Ports.Parity.None, System.IO.Ports.StopBits StopBits = System.IO.Ports.StopBits.One)
         {
-            modbusClient.SerialPort = ComPort;
-            modbusClient.UnitIdentifier = byte.Parse(SlaveID);
-            modbusClient.Baudrate = BaudRate;
-            modbusClient.Parity = parity;
-            modbusClient.StopBits = StopBits;
-            bool IsConnected = modbusClient.Connect();
-            if (IsConnected && IsReadBaudRateWhenConnected)
+            this.SlaveID = SlaveID;
+            this.PortName = ComPort;
+            ModbusClient modbus_cli = SerialPortManager.OpenRTU(ComPort, BaudRate, SlaveID);
+            //modbusClient.SerialPort = ComPort;
+            //modbusClient.Baudrate = BaudRate;
+            //modbusClient.Parity = parity;
+            //modbusClient.StopBits = StopBits;
+            if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
             {
                 int CurrentBaudRate = ReadBaudRateSetting();
                 this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
             }
             Connection_Type = CONNECTION_TYPE.RTU;
-            return IsConnected;
+            return modbus_cli.Connected;
         }
 
         /// <summary>
@@ -146,7 +151,12 @@ namespace gpm_vibration_module_api.Modbus
         public int ReadBaudRateSetting()
         {
             RecieveData = false;
-            int[] intAry = modbusClient.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1);
+            int[] intAry = null;
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                intAry = modbusClient_TCP.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1);
+            else //RTU 要排隊
+                intAry = SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, Register.BaudRateSetRegIndex, 1);
+
             if (intAry != null && intAry.ToList().All(val => val >= 0))
             {
                 if (intAry[0] != 0)
@@ -155,6 +165,7 @@ namespace gpm_vibration_module_api.Modbus
             }
             else
                 return intAry == null ? (int)MODBUS_ERRORCODE.API_INNER_EXCEPTION : intAry[0];
+
         }
 
         /// <summary>
@@ -229,15 +240,23 @@ namespace gpm_vibration_module_api.Modbus
         public string GetSlaveID()
         {
             RecieveData = false;
-            modbusClient.UnitIdentifier = 0xf0;
-            var ID_int = modbusClient.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
-            modbusClient.UnitIdentifier = (byte)ID_int;
-            return ID_int.ToString("X2");
+            int ID_int = -1;
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+            {
+                modbusClient_TCP.UnitIdentifier = 0xf0;
+                ID_int = modbusClient_TCP.ReadHoldingRegisters(Register.IDRegIndex, 1)[1];
+                modbusClient_TCP.UnitIdentifier = (byte)ID_int;
+            }
+            else
+                ID_int = SerialPortManager.ReadHoldingRegisters("240", PortName, Register.IDRegIndex, 1)[1];
+            return ID_int+"";
         }
         public int GetCurrentMeasureRange()
         {
             RecieveData = false;
-            var ints = modbusClient.ReadHoldingRegisters(Register.RangeRegStart - 1, 4);
+            var ints = Connection_Type == CONNECTION_TYPE.TCP ?
+                modbusClient_TCP.ReadHoldingRegisters(Register.RangeRegStart - 1, 4) :
+                SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, Register.RangeRegStart - 1, 4);
             if (ints[3] == 0x00)
                 return 2;
             if (ints[3] == 0x10)
@@ -254,16 +273,16 @@ namespace gpm_vibration_module_api.Modbus
         /// </summary>
         /// <param name="baud"></param>
         /// <returns>false>設定失敗 ; true>設定成功</returns>
-        public  bool BaudRateSetting(int baud)
+        public bool BaudRateSetting(int baud)
         {
             if (Connection_Type != CONNECTION_TYPE.TCP)
                 throw new Exception("鮑率設定必須在Modbus TCP模式下操作");
             if (baud != 115200 && baud != 9600)
                 throw new Exception($"{baud}是不允許的鮑率設定值");
             RecieveData = false;
-            modbusClient.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0);
+            modbusClient_TCP.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0);
             BaudRate = RecieveData ? baud : BaudRate;
-            modbusClient.BuferClear();
+            modbusClient_TCP.BuferClear();
             return RecieveData;
         }
         /// <summary>
@@ -276,7 +295,9 @@ namespace gpm_vibration_module_api.Modbus
             byte[] byteVals = new byte[4] { 0x31, 0x2E, 0x30, 0x36 };
             if (!IsTest)
             {
-                int[] intVals = modbusClient.ReadHoldingRegisters(240, 2);
+                int[] intVals = Connection_Type == CONNECTION_TYPE.TCP ?
+                    modbusClient_TCP.ReadHoldingRegisters(240, 2) :
+                    SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, 240, 2);
                 if (intVals == null)
                     return "READ VERSION ERROR!";
                 version = Encoding.ASCII.GetString(intVals.ToByteAry());
@@ -291,17 +312,26 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="ID"></param>
         public void SlaveIDSetting(byte ID)
         {
-            var oriID = modbusClient.UnitIdentifier;
-            RecieveData = false;
-            //modbusClient.UnitIdentifier = 0xF0;
-            modbusClient.WriteSingleRegister(Register.IDRegIndex, ID);
-            if (RecieveData)
+            if (Connection_Type == CONNECTION_TYPE.TCP)
             {
-                modbusClient.UnitIdentifier = ID;
+                var oriID = modbusClient_TCP.UnitIdentifier;
+                RecieveData = false;
+                //modbusClient.UnitIdentifier = 0xF0;
+                modbusClient_TCP.WriteSingleRegister(Register.IDRegIndex, ID);
+
+                if (RecieveData)
+                {
+                    modbusClient_TCP.UnitIdentifier = ID;
+                }
+                else
+                {
+                    modbusClient_TCP.UnitIdentifier = oriID;
+                }
             }
             else
             {
-                modbusClient.UnitIdentifier = oriID;
+                var oriID = SlaveID;
+                SerialPortManager.WriteSingleRegister(SlaveID, PortName, Register.IDRegIndex, ID);
             }
         }
         /// <summary>
@@ -329,7 +359,10 @@ namespace gpm_vibration_module_api.Modbus
                 default:
                     break;
             }
-            modbusClient.WriteSingleRegister(Register.RangeRegStart, valwrite);
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                modbusClient_TCP.WriteSingleRegister(Register.RangeRegStart, valwrite);
+            else
+                SerialPortManager.WriteSingleRegister(SlaveID, PortName, Register.RangeRegStart, valwrite);
         }
 
 
@@ -341,7 +374,9 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns></returns>
         private async Task<double[]> GetF03FloatValue(int start, int len)
         {
-            int[] values = modbusClient.ReadHoldingRegisters(start, len);
+            int[] values = null;
+            values = Connection_Type == CONNECTION_TYPE.TCP ? modbusClient_TCP.ReadHoldingRegisters(start, len) :
+                SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, start, len);
             return values.ToIEEE754FloatAry();
         }
 

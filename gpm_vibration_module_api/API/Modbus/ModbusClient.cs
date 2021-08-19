@@ -41,25 +41,22 @@ namespace gpm_vibration_module_api.Modbus
     {
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
         private bool debug = false;
+        internal bool IsBusy = false;
         internal TcpClient tcpClient;
-        private string ipAddress = "127.0.0.1";
-        private int port = 502;
+        public List<string> SlaveIDList = new List<string>();
         private uint transactionIdentifierInternal = 0;
         private byte[] transactionIdentifier = new byte[2];
         private byte[] protocolIdentifier = new byte[2];
         private byte[] crc = new byte[2];
         private byte[] length = new byte[2];
-        private byte unitIdentifier = 0x01;
         private byte functionCode;
         private byte[] startingAddress = new byte[2];
         private byte[] quantity = new byte[2];
-        private bool udpFlag = false;
         private int portOut;
-        private int baudRate = 9600;
         private int connectTimeout = 10000;
         internal byte[] receiveData;
         internal byte[] sendData;
-        private SerialPort serialport;
+        internal SerialPort serialport;
         private Parity parity = Parity.Even;
         private StopBits stopBits = StopBits.One;
         private bool connected = false;
@@ -75,6 +72,7 @@ namespace gpm_vibration_module_api.Modbus
         internal delegate void ConnectedChangedHandler(object sender);
         internal event ConnectedChangedHandler ConnectedChanged;
 
+        private Thread RTURequestHandleThread = null;
         NetworkStream stream;
 
         /// <summary>
@@ -85,13 +83,9 @@ namespace gpm_vibration_module_api.Modbus
         public ModbusClient(string ipAddress, int port)
         {
             if (debug) StoreLogData.Instance.Store("EasyModbus library initialized for Modbus-TCP, IPAddress: " + ipAddress + ", Port: " + port, System.DateTime.Now);
-#if (!COMMERCIAL)
-            Console.WriteLine("EasyModbus Client Library Version: " + Assembly.GetExecutingAssembly().GetName().Version.ToString());
-            Console.WriteLine("Copyright (c) Stefan Rossmann Engineering Solutions");
-            Console.WriteLine();
-#endif
-            this.ipAddress = ipAddress;
-            this.port = port;
+
+            this.IPAddress = ipAddress;
+            this.Port = port;
         }
 
         /// <summary>
@@ -101,14 +95,10 @@ namespace gpm_vibration_module_api.Modbus
         public ModbusClient(string serialPort)
         {
             if (debug) StoreLogData.Instance.Store("EasyModbus library initialized for Modbus-RTU, COM-Port: " + serialPort, System.DateTime.Now);
-#if (!COMMERCIAL)
-            Console.WriteLine("EasyModbus Client Library Version: " + Assembly.GetExecutingAssembly().GetName().Version.ToString());
-            Console.WriteLine("Copyright (c) Stefan Rossmann Engineering Solutions");
-            Console.WriteLine();
-#endif
+
             this.serialport = new SerialPort();
             serialport.PortName = serialPort;
-            serialport.BaudRate = baudRate;
+            serialport.BaudRate = Baudrate;
             serialport.Parity = parity;
             serialport.StopBits = stopBits;
             serialport.WriteTimeout = 10000;
@@ -123,11 +113,7 @@ namespace gpm_vibration_module_api.Modbus
         public ModbusClient()
         {
             if (debug) StoreLogData.Instance.Store("EasyModbus library initialized for Modbus-TCP", System.DateTime.Now);
-#if (!COMMERCIAL)
-            Console.WriteLine("EasyModbus Client Library Version: " + Assembly.GetExecutingAssembly().GetName().Version.ToString());
-            Console.WriteLine("Copyright (c) Stefan Rossmann Engineering Solutions");
-            Console.WriteLine();
-#endif
+
         }
 
         /// <summary>
@@ -147,7 +133,7 @@ namespace gpm_vibration_module_api.Modbus
                 if (!serialport.IsOpen)
                 {
                     if (debug) StoreLogData.Instance.Store("Open Serial port " + serialport.PortName, System.DateTime.Now);
-                    serialport.BaudRate = baudRate;
+                    serialport.BaudRate = Baudrate;
                     serialport.Parity = parity;
                     serialport.StopBits = stopBits;
                     serialport.WriteTimeout = 10000;
@@ -162,24 +148,22 @@ namespace gpm_vibration_module_api.Modbus
                         Console.WriteLine(ex.Message);
                         connected = false;
                     }
+                    if (RTURequestHandleThread == null)
+                    {
+                        RTURequestHandleThread = new Thread(RTURequestHandle);
+                        RTURequestHandleThread.IsBackground = true;
+                        RTURequestHandleThread.Start();
+                    }
                     return connected;
 
                 }
-                if (ConnectedChanged != null)
-                    try
-                    {
-                        ConnectedChanged(connected);
-                    }
-                    catch
-                    {
 
-                    }
             }
-            if (!udpFlag)
+            if (!UDPFlag)
             {
-                if (debug) StoreLogData.Instance.Store("Open TCP-Socket, IP-Address: " + ipAddress + ", Port: " + port, System.DateTime.Now);
+                if (debug) StoreLogData.Instance.Store("Open TCP-Socket, IP-Address: " + IPAddress + ", Port: " + Port, System.DateTime.Now);
                 tcpClient = new TcpClient();
-                var result = tcpClient.BeginConnect(ipAddress, port, null, null);
+                var result = tcpClient.BeginConnect(IPAddress, Port, null, null);
                 var success = result.AsyncWaitHandle.WaitOne(connectTimeout);
                 if (!success)
                 {
@@ -208,12 +192,20 @@ namespace gpm_vibration_module_api.Modbus
             return connected;
         }
 
+        private void RTURequestHandle()
+        {
+            while (true)
+            {
+                Thread.Sleep(1);
+            }
+        }
+
         /// <summary>
         /// Establish connection to Master device in case of Modbus TCP.
         /// </summary>
         internal void Connect(string ipAddress, int port)
         {
-            if (!udpFlag)
+            if (!UDPFlag)
             {
                 if (debug) StoreLogData.Instance.Store("Open TCP-Socket, IP-Address: " + ipAddress + ", Port: " + port, System.DateTime.Now);
                 tcpClient = new TcpClient();
@@ -781,8 +773,7 @@ namespace gpm_vibration_module_api.Modbus
          */
 
 
-        private void DataReceivedHandler(object sender,
-                        SerialDataReceivedEventArgs e)
+        private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
         {
             serialport.DataReceived -= DataReceivedHandler;
             //while (receiveActive | dataReceived)
@@ -890,7 +881,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -915,7 +906,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -956,7 +947,7 @@ namespace gpm_vibration_module_api.Modbus
                 byte receivedUnitIdentifier = 0xFF;
 
 
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -964,21 +955,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -1086,7 +1077,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -1110,7 +1101,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -1149,7 +1140,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -1158,21 +1149,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -1277,6 +1268,10 @@ namespace gpm_vibration_module_api.Modbus
             tcpClient.Client.Receive(buf, buf.Length, SocketFlags.None);
 
         }
+
+
+
+
         /// <summary>
         /// Read Holding Registers from Master device (FC3).
         /// </summary>
@@ -1285,6 +1280,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>Int Array which contains the holding registers</returns>
         public int[] ReadHoldingRegisters(int startingAddress, int quantity)
         {
+            IsBusy = true;
             Byte[] data;
             try
             {
@@ -1296,7 +1292,7 @@ namespace gpm_vibration_module_api.Modbus
                         if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                         throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                     }
-                if (tcpClient == null & !udpFlag & serialport == null)
+                if (tcpClient == null & !UDPFlag & serialport == null)
                 {
                     if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                     throw new Exceptions.ConnectionException("connection error");
@@ -1319,7 +1315,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -1356,30 +1352,31 @@ namespace gpm_vibration_module_api.Modbus
 
                     DateTime dateTimeSend = DateTime.Now;
                     byte receivedUnitIdentifier = 0xFF;
-                    while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                    while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                     {
                         while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                             System.Threading.Thread.Sleep(1);
+
                         data = new byte[2100];
                         Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
 
                         receivedUnitIdentifier = data[6];
                     }
-                    if (receivedUnitIdentifier != this.unitIdentifier)
+                    if (receivedUnitIdentifier != this.UnitIdentifier)
                         data = new byte[2100];
                     else
                         countRetries = 0;
                 }
-                else if (tcpClient.Client.Connected | udpFlag)
+                else if (tcpClient.Client.Connected | UDPFlag)
                 {
-                    if (udpFlag)
+                    if (UDPFlag)
                     {
                         UdpClient udpClient = new UdpClient();
-                        IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                        IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                         udpClient.Send(data, data.Length - 2, endPoint);
                         portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                         udpClient.Client.ReceiveTimeout = 5000;
-                        endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                        endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                         data = udpClient.Receive(ref endPoint);
                     }
                     else
@@ -1446,6 +1443,7 @@ namespace gpm_vibration_module_api.Modbus
                         else
                         {
                             countRetries++;
+                            IsBusy = false;
                             return ReadHoldingRegisters(startingAddress, quantity);
                         }
                     }
@@ -1460,6 +1458,7 @@ namespace gpm_vibration_module_api.Modbus
                         else
                         {
                             countRetries++;
+                            IsBusy = false;
                             return ReadHoldingRegisters(startingAddress, quantity);
                         }
                     }
@@ -1476,6 +1475,7 @@ namespace gpm_vibration_module_api.Modbus
                     throw new Exception("ERROR_CODE_-402_");
                 }
 
+                IsBusy = false;
                 return (response);
             }
             catch (Exception ex)
@@ -1491,6 +1491,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (Error_Code == "-402")
                         return new int[1] { -2 };
                 }
+                IsBusy = false;
                 return null;
             }
 
@@ -1515,7 +1516,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -1538,7 +1539,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -1576,7 +1577,7 @@ namespace gpm_vibration_module_api.Modbus
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
 
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -1585,21 +1586,21 @@ namespace gpm_vibration_module_api.Modbus
                     receivedUnitIdentifier = data[6];
                 }
 
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -1716,7 +1717,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -1741,7 +1742,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -1776,7 +1777,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -1785,22 +1786,22 @@ namespace gpm_vibration_module_api.Modbus
                     receivedUnitIdentifier = data[6];
                 }
 
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
 
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -1893,6 +1894,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="value">Register Value to be written</param>
         internal void WriteSingleRegister(int startingAddress, int value)
         {
+            IsBusy = true;
             if (debug) StoreLogData.Instance.Store("FC6 (Write single register to Master device), StartingAddress: " + startingAddress + ", Value: " + value, System.DateTime.Now);
             transactionIdentifierInternal++;
             if (serialport != null)
@@ -1901,7 +1903,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -1920,7 +1922,7 @@ namespace gpm_vibration_module_api.Modbus
                             this.protocolIdentifier[0],
                             this.length[1],
                             this.length[0],
-                            this.unitIdentifier,
+                            this.UnitIdentifier,
                             this.functionCode,
                             this.startingAddress[1],
                             this.startingAddress[0],
@@ -1938,7 +1940,7 @@ namespace gpm_vibration_module_api.Modbus
                 bytesToRead = 8;
                 //                serialport.ReceivedBytesThreshold = bytesToRead;
                 serialport.Write(data, 6, 8);
-               
+
                 if (SendDataChanged != null)
                 {
                     sendData = new byte[8];
@@ -1949,7 +1951,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -1957,21 +1959,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -2006,6 +2008,7 @@ namespace gpm_vibration_module_api.Modbus
                         ReceiveDataChanged(this);
                     }
                 }
+                IsBusy = false;
             }
             if (data[7] == 0x86 & data[8] == 0x01)
             {
@@ -2059,6 +2062,8 @@ namespace gpm_vibration_module_api.Modbus
                         WriteSingleRegister(startingAddress, value);
                     }
                 }
+
+                IsBusy = false;
             }
         }
 
@@ -2083,7 +2088,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -2103,7 +2108,7 @@ namespace gpm_vibration_module_api.Modbus
             data[3] = this.protocolIdentifier[0];
             data[4] = this.length[1];
             data[5] = this.length[0];
-            data[6] = this.unitIdentifier;
+            data[6] = this.UnitIdentifier;
             data[7] = this.functionCode;
             data[8] = this.startingAddress[1];
             data[9] = this.startingAddress[0];
@@ -2151,7 +2156,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -2159,21 +2164,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -2278,7 +2283,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -2296,7 +2301,7 @@ namespace gpm_vibration_module_api.Modbus
             data[3] = this.protocolIdentifier[0];
             data[4] = this.length[1];
             data[5] = this.length[0];
-            data[6] = this.unitIdentifier;
+            data[6] = this.UnitIdentifier;
             data[7] = this.functionCode;
             data[8] = this.startingAddress[1];
             data[9] = this.startingAddress[0];
@@ -2336,7 +2341,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -2344,21 +2349,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -2469,7 +2474,7 @@ namespace gpm_vibration_module_api.Modbus
                     if (debug) StoreLogData.Instance.Store("SerialPortNotOpenedException Throwed", System.DateTime.Now);
                     throw new Exceptions.SerialPortNotOpenedException("serial port not opened");
                 }
-            if (tcpClient == null & !udpFlag & serialport == null)
+            if (tcpClient == null & !UDPFlag & serialport == null)
             {
                 if (debug) StoreLogData.Instance.Store("ConnectionException Throwed", System.DateTime.Now);
                 throw new Exceptions.ConnectionException("connection error");
@@ -2496,7 +2501,7 @@ namespace gpm_vibration_module_api.Modbus
             data[3] = this.protocolIdentifier[0];
             data[4] = this.length[1];
             data[5] = this.length[0];
-            data[6] = this.unitIdentifier;
+            data[6] = this.UnitIdentifier;
             data[7] = this.functionCode;
             data[8] = startingAddressReadLocal[1];
             data[9] = startingAddressReadLocal[0];
@@ -2539,7 +2544,7 @@ namespace gpm_vibration_module_api.Modbus
                 readBuffer = new byte[256];
                 DateTime dateTimeSend = DateTime.Now;
                 byte receivedUnitIdentifier = 0xFF;
-                while (receivedUnitIdentifier != this.unitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
+                while (receivedUnitIdentifier != this.UnitIdentifier & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                 {
                     while (dataReceived == false & !((DateTime.Now.Ticks - dateTimeSend.Ticks) > TimeSpan.TicksPerMillisecond * this.connectTimeout))
                         System.Threading.Thread.Sleep(1);
@@ -2547,21 +2552,21 @@ namespace gpm_vibration_module_api.Modbus
                     Array.Copy(readBuffer, 0, data, 6, readBuffer.Length);
                     receivedUnitIdentifier = data[6];
                 }
-                if (receivedUnitIdentifier != this.unitIdentifier)
+                if (receivedUnitIdentifier != this.UnitIdentifier)
                     data = new byte[2100];
                 else
                     countRetries = 0;
             }
-            else if (tcpClient.Client.Connected | udpFlag)
+            else if (tcpClient.Client.Connected | UDPFlag)
             {
-                if (udpFlag)
+                if (UDPFlag)
                 {
                     UdpClient udpClient = new UdpClient();
-                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), port);
+                    IPEndPoint endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), Port);
                     udpClient.Send(data, data.Length - 2, endPoint);
                     portOut = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
                     udpClient.Client.ReceiveTimeout = 5000;
-                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(ipAddress), portOut);
+                    endPoint = new IPEndPoint(System.Net.IPAddress.Parse(IPAddress), portOut);
                     data = udpClient.Receive(ref endPoint);
                 }
                 else
@@ -2663,7 +2668,7 @@ namespace gpm_vibration_module_api.Modbus
                     serialport.Close();
                 return;
             }
-            if (tcpClient != null & !udpFlag)
+            if (tcpClient != null & !UDPFlag)
             {
                 if (stream != null)
                     stream.Close();
@@ -2683,7 +2688,7 @@ namespace gpm_vibration_module_api.Modbus
                     return (serialport.IsOpen);
                 }
 
-                if (udpFlag & tcpClient != null)
+                if (UDPFlag & tcpClient != null)
                     return true;
                 if (tcpClient == null)
                     return false;
@@ -2700,7 +2705,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             // Ping's the local machine.
             System.Net.NetworkInformation.Ping pingSender = new System.Net.NetworkInformation.Ping();
-            IPAddress address = System.Net.IPAddress.Parse(ipAddress);
+            IPAddress address = System.Net.IPAddress.Parse(IPAddress);
 
             // Create a buffer of 32 bytes of data to be transmitted.
             string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -2718,78 +2723,28 @@ namespace gpm_vibration_module_api.Modbus
         /// <summary>
         /// Gets or Sets the IP-Address of the Server.
         /// </summary>
-		internal string IPAddress
-        {
-            get
-            {
-                return ipAddress;
-            }
-            set
-            {
-                ipAddress = value;
-            }
-        }
+		internal string IPAddress { get; set; } = "127.0.0.1";
 
         /// <summary>
         /// Gets or Sets the Port were the Modbus-TCP Server is reachable (Standard is 502).
         /// </summary>
-		internal int Port
-        {
-            get
-            {
-                return port;
-            }
-            set
-            {
-                port = value;
-            }
-        }
+		internal int Port { get; set; } = 502;
 
         /// <summary>
         /// Gets or Sets the UDP-Flag to activate Modbus UDP.
         /// </summary>
-        internal bool UDPFlag
-        {
-            get
-            {
-                return udpFlag;
-            }
-            set
-            {
-                udpFlag = value;
-            }
-        }
+        internal bool UDPFlag { get; set; } = false;
 
         /// <summary>
         /// Gets or Sets the Unit identifier in case of serial connection (Default = 0)
         /// </summary>
-        internal byte UnitIdentifier
-        {
-            get
-            {
-                return unitIdentifier;
-            }
-            set
-            {
-                unitIdentifier = value;
-            }
-        }
+        internal byte UnitIdentifier { get; set; } = 0x01;
 
 
         /// <summary>
         /// Gets or Sets the Baudrate for serial connection (Default = 9600)
         /// </summary>
-        internal int Baudrate
-        {
-            get
-            {
-                return baudRate;
-            }
-            set
-            {
-                baudRate = value;
-            }
-        }
+        internal int Baudrate { get; set; } = 9600;
 
         /// <summary>
         /// Gets or Sets the of Parity in case of serial connection
@@ -2866,7 +2821,7 @@ namespace gpm_vibration_module_api.Modbus
                     serialport.Close();
                 this.serialport = new SerialPort();
                 this.serialport.PortName = value;
-                serialport.BaudRate = baudRate;
+                serialport.BaudRate = Baudrate;
                 serialport.Parity = parity;
                 serialport.StopBits = stopBits;
                 serialport.WriteTimeout = 10000;

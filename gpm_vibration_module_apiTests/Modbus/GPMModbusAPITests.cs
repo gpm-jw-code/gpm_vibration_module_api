@@ -18,14 +18,15 @@ namespace gpm_vibration_module_api.Modbus.Tests
             TCP, RTU
         }
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
-        string PortName = "COM4";
-        private int excepectedBaudRateForTest = 9600;
-        string slaveID = "01";
+        string PortName = "COM3";
+        private int excepectedBaudRateForTest = 115200;
+        string slaveID = "65";
         const string SensorFwVersion = "1.09";
         const string IP = "192.168.0.59";
         const int Port = 5000;
-        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.TCP;
+        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.RTU;
         bool connected = false;
+
 
         private bool Connect()
         {
@@ -35,7 +36,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (connected)
             {
                 //刷新目前ID
-                slaveID = api.GetSlaveID();
+                //slaveID = api.GetSlaveID();
                 api.DisConnect();
 
             }
@@ -43,7 +44,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
             return connected;
         }
 
-        [Ignore()]
+        [TestMethod()]
         public void ConnectTest()
         {
             var ret = Connect();
@@ -107,10 +108,9 @@ namespace gpm_vibration_module_api.Modbus.Tests
             if (!Connect())
                 Assert.Fail();
             var ID = api.GetSlaveID();
-            ID = api.GetSlaveID();
             api.DisConnect();
             Console.WriteLine(ID);
-            //Assert.AreEqual(slaveID, ID);
+            Assert.AreEqual(slaveID, ID);
         }
 
         [TestMethod()]
