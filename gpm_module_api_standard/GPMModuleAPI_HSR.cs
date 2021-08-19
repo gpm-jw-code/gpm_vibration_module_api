@@ -419,7 +419,16 @@ namespace gpm_vibration_module_api
                 return 0;
             var oriMode = Settings.Mode;
             Settings.Mode = Mode;
-            var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
+            StateObject state;
+            int cnt = 0;
+            while ( (state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 1000)).ErrorCode!= clsErrorCode.Error.None)
+            {
+                cnt += 1;
+                if (cnt == 2)
+                    break;
+                Thread.Sleep(1);
+            }   
+
             if (state.ErrorCode != clsErrorCode.Error.None)
             {
                 Settings.Mode = oriMode;

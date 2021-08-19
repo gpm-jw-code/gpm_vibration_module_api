@@ -134,6 +134,8 @@ namespace gpm_vibration_module_api.GPMBase
                     Tools.Logger.Event_Log.Log("SEND FAIL! SOCKET連線未建立 ");
                     return StateForAPI;
                 }
+                if (Timeout == -1)
+                    return StateForAPI;
                 sendDone.WaitOne();
                 await SyncReceive(client, Timeout);
                 //if (Timeout == -1)
