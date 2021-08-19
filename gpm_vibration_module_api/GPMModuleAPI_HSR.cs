@@ -367,9 +367,9 @@ namespace gpm_vibration_module_api
         /// <returns></returns>
         virtual public async Task<int> Measure_Range_Setting(MEASURE_RANGE mr_select)
         {
-            if (!IsKX134Sensor && ((int)mr_select) <2048)
-                    return (int)clsErrorCode.Error.MRSettingOutOfRange;
-            if ( IsKX134Sensor && ((int)mr_select) > 4096)
+            if (!IsKX134Sensor && ((int)mr_select) < 2048)
+                return (int)clsErrorCode.Error.MRSettingOutOfRange;
+            if (IsKX134Sensor && ((int)mr_select) > 4096)
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             Tools.Logger.Event_Log.Log($"使用者嘗試修改量測範圍({mr_select})");
             var ori_Set = Settings.mEASURE_RANGE;
@@ -416,7 +416,16 @@ namespace gpm_vibration_module_api
                 return 0;
             var oriMode = Settings.Mode;
             Settings.Mode = Mode;
-            var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
+            StateObject state;
+            int cnt = 0;
+            while ((state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 1000)).ErrorCode != clsErrorCode.Error.None)
+            {
+                cnt += 1;
+                if (cnt == 2)
+                    break;
+                Thread.Sleep(1);
+            }
+
             if (state.ErrorCode != clsErrorCode.Error.None)
             {
                 Settings.Mode = oriMode;
