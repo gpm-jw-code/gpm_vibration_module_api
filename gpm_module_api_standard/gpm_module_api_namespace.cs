@@ -19,7 +19,7 @@ namespace gpm_module_api.VibrationSensor
         /// </summary>
         High_Sampling = 8000,
         /// <summary>
-        /// 取樣率4K, Without Gap
+        /// 取樣率4K(如果BR=460800), Without Gap
         /// </summary>
         Low_Sampling = 4000,
         BULK = 8001
