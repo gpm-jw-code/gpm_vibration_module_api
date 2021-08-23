@@ -12,7 +12,15 @@ namespace gpm_vibration_module_api.API.Modbus
     public static class SerialPortManager
     {
         public static Dictionary<string, ModbusClient> DictModbusRTU = new Dictionary<string, ModbusClient>();
-        public static ModbusClient OpenRTU(string ComName, int BaudRate, string SlaveID)
+
+        /// <summary>
+        /// 註冊一個Comport來使用
+        /// </summary>
+        /// <param name="ComName"></param>
+        /// <param name="BaudRate"></param>
+        /// <param name="SlaveID"></param>
+        /// <returns></returns>
+        public static ModbusClient SerialPortRegist(string ComName, int BaudRate, string SlaveID)
         {
             if (!DictModbusRTU.ContainsKey(ComName))
                 DictModbusRTU.Add(ComName, new ModbusClient());
@@ -30,7 +38,7 @@ namespace gpm_vibration_module_api.API.Modbus
             return mdc;
         }
 
-        internal static ModbusClient.Request ReadHoldingRegisters(string slaveID,string ComeName, int RegIndex, int length)
+        internal static ModbusClient.Request SendReadHoldingRegistersRequest(string slaveID,string ComeName, int RegIndex, int length)
         {
             ModbusClient RTUClient = DictModbusRTU[ComeName];
             var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.READHOLDING, RegIndex, length,DateTime.Now.ToString("yyyyMMddHHmmssffff"));
@@ -38,7 +46,7 @@ namespace gpm_vibration_module_api.API.Modbus
             return req;
         }
 
-        internal static void WriteSingleRegister(string slaveID, string ComeName, int RegIndex, int value)
+        internal static void SendWriteSingleRegisterRequest(string slaveID, string ComeName, int RegIndex, int value)
         {
             ModbusClient RUTClient = DictModbusRTU[ComeName];
             var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));

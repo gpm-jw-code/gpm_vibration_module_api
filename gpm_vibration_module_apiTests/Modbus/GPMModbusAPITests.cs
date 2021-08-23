@@ -20,9 +20,9 @@ namespace gpm_vibration_module_api.Modbus.Tests
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
         string PortName = "COM3";
         private int excepectedBaudRateForTest = 115200;
-        string slaveID = "65";
+        string slaveID = "08";
         const string SensorFwVersion = "1.09";
-        const string IP = "192.168.0.59";
+        const string IP = "192.168.0.9";
         const int Port = 5000;
         PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.RTU;
         bool connected = false;
@@ -33,20 +33,14 @@ namespace gpm_vibration_module_api.Modbus.Tests
         public void TEST2()
         {
             GPMModbusAPI api1 = new GPMModbusAPI();
-            api1.Connect("COM3", "64", 115200);
-            GPMModbusAPI api2 = new GPMModbusAPI();
-            api2.Connect("COM3", "65", 115200);
+            api1.Connect("192.168.0.9",5000,"9");
 
             for (int i = 0; i < 10; i++)
             {
-                var data1 = api2.ReadRMSValues().Result;
+                var data1 = api1.ReadRMSValues().Result;
                 Console.WriteLine($"[65]RMS:{string.Join(",", data1)}");
-                var data2 = api1.ReadP2PValues().Result;
-                Console.WriteLine($"[64]p2p:{string.Join(",", data2)}");
             }
-            
             api1.DisConnect();
-            api2.DisConnect();
         }
 
         private bool Connect()

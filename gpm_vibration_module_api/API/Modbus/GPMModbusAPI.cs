@@ -138,7 +138,7 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient_TCP = null;
             this.SlaveID = SlaveID;
             this.PortName = ComPort;
-            modbus_cli = SerialPortManager.OpenRTU(ComPort, BaudRate, SlaveID);
+            modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID);
             //modbusClient.SerialPort = ComPort;
             //modbusClient.Baudrate = BaudRate;
             //modbusClient.Parity = parity;
@@ -352,7 +352,7 @@ namespace gpm_vibration_module_api.Modbus
             else
             {
                 var oriID = SlaveID;
-                SerialPortManager.WriteSingleRegister(SlaveID, PortName, Register.IDRegIndex, ID);
+                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.IDRegIndex, ID);
             }
         }
         /// <summary>
@@ -383,13 +383,13 @@ namespace gpm_vibration_module_api.Modbus
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 modbusClient_TCP.WriteSingleRegister(Register.RangeRegStart, valwrite);
             else
-                SerialPortManager.WriteSingleRegister(SlaveID, PortName, Register.RangeRegStart, valwrite);
+                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.RangeRegStart, valwrite);
         }
 
 
         private async Task<int[]> RTUReadHoldingRegister(int start, int len, string SlaveID)
         {
-            ModbusClient.Request req = SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, start, len);
+            ModbusClient.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, PortName, start, len);
             ModbusClient.Request req_final = null;
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -431,7 +431,13 @@ namespace gpm_vibration_module_api.Modbus
         {
             int[] values = null;
             if (Connection_Type == CONNECTION_TYPE.TCP)
+            {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 values = modbusClient_TCP.ReadHoldingRegisters(start, len);
+                sw.Stop();
+                Console.WriteLine($"[TCP] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
+            }
             else
             {
                 values = await RTUReadHoldingRegister(start, len, SlaveID);

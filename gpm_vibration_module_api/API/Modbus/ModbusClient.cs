@@ -154,7 +154,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             while (true)
             {
-                Thread.Sleep(300);
+                Thread.Sleep( SlaveIDList.Count==1? 1:300);
                 try
                 {
                     if (RequestQueue.Count != 0)
@@ -167,7 +167,13 @@ namespace gpm_vibration_module_api.Modbus
                             continue;
                         UnitIdentifier = CurrentRequest.SlaveID;
                         if (CurrentRequest.request == Request.REQUEST.READHOLDING)
+                        {
+                            Stopwatch sw = new Stopwatch();
+                            sw.Start();
                             ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                            sw.Stop();
+                            Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
+                        }
                         else
                             WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
                         //}
