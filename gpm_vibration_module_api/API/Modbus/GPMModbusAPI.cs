@@ -139,10 +139,6 @@ namespace gpm_vibration_module_api.Modbus
             this.SlaveID = SlaveID;
             this.PortName = ComPort;
             modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID);
-            //modbusClient.SerialPort = ComPort;
-            //modbusClient.Baudrate = BaudRate;
-            //modbusClient.Parity = parity;
-            //modbusClient.StopBits = StopBits;
             if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
             {
                 int CurrentBaudRate = ReadBaudRateSetting().Result;
@@ -446,26 +442,6 @@ namespace gpm_vibration_module_api.Modbus
             return values.ToIEEE754FloatAry();
         }
 
-        public async Task<double[]> TestGetF03FloatValue()
-        {
-            int[] values = null;
-            return values.ToIEEE754FloatAry();
-        }
-
-        private void ModbusClient_ConnectedChanged(object sender)
-        {
-            Console.WriteLine(sender);
-        }
-
-        private void ModbusClient_SendDataChanged(object sender)
-        {
-
-        }
-
-        private void ModbusClient_ReceiveDataChanged(object sender)
-        {
-            RecieveData = true;
-        }
     }
 
     public static class Extension
