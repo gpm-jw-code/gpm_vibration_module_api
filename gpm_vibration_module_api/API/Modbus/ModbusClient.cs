@@ -64,8 +64,15 @@ namespace gpm_vibration_module_api.Modbus
             public bool IsReachDone = false;
             public readonly string key;
         }
-
+        public enum CONNECTION_TYPE
+        {
+            TCP, RTU
+        }
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
+
+
+        internal CONNECTION_TYPE connect_type = CONNECTION_TYPE.TCP;
+
         private bool debug = false;
         internal bool IsBusy = false;
         internal TcpClient tcpClient;
@@ -130,20 +137,15 @@ namespace gpm_vibration_module_api.Modbus
             serialport.StopBits = stopBits;
             serialport.WriteTimeout = 10000;
             serialport.ReadTimeout = connectTimeout;
-
             serialport.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
         }
 
         /// <summary>
         /// Parameterless constructor
         /// </summary>
-        public ModbusClient(bool IsQueueRequestMethodActive = false)
+        public ModbusClient()
         {
-            if (!IsQueueRequestMethodActive)
-                return;
-            Thread th = new Thread(QueueRequestHandle);
-            th.IsBackground = true;
-            th.Start();
+
         }
 
 
@@ -152,23 +154,23 @@ namespace gpm_vibration_module_api.Modbus
         {
             while (true)
             {
-                Thread.Sleep(1);
+                Thread.Sleep(300);
                 try
                 {
                     if (RequestQueue.Count != 0)
                     {
                         //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
-                        lock (RequestQueue)
-                        {
-                            CurrentRequest = RequestQueue.Dequeue();
-                            if (CurrentRequest == null)
-                                continue;
-                            UnitIdentifier = CurrentRequest.SlaveID;
-                            if (CurrentRequest.request == Request.REQUEST.READHOLDING)
-                                ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-                            else
-                                WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-                        }
+                        //lock (RequestQueue)
+                        //{
+                        CurrentRequest = RequestQueue.Dequeue();
+                        if (CurrentRequest == null)
+                            continue;
+                        UnitIdentifier = CurrentRequest.SlaveID;
+                        if (CurrentRequest.request == Request.REQUEST.READHOLDING)
+                            ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        else
+                            WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        //}
                     }
                 }
                 catch (Exception ex)
@@ -205,7 +207,7 @@ namespace gpm_vibration_module_api.Modbus
             catch (Exception ex)
             {
             }
-            if (serialport != null)
+            if (connect_type == CONNECTION_TYPE.RTU)
             {
                 if (!serialport.IsOpen)
                 {
@@ -219,6 +221,7 @@ namespace gpm_vibration_module_api.Modbus
                     {
                         serialport.Open();
                         connected = true;
+                        Task.Run(()=>QueueRequestHandle());
                     }
                     catch (Exception ex)
                     {
@@ -231,27 +234,31 @@ namespace gpm_vibration_module_api.Modbus
                 }
 
             }
-            if (!UDPFlag)
-            {
-                if (debug) StoreLogData.Instance.Store("Open TCP-Socket, IP-Address: " + IPAddress + ", Port: " + Port, System.DateTime.Now);
-                tcpClient = new TcpClient();
-                var result = tcpClient.BeginConnect(IPAddress, Port, null, null);
-                var success = result.AsyncWaitHandle.WaitOne(connectTimeout);
-                if (!success)
-                {
-                    return false;
-                }
-                //tcpClient.EndConnect(result);
-                //tcpClient = new TcpClient(ipAddress, port);
-                stream = tcpClient.GetStream();
-                stream.ReadTimeout = connectTimeout;
-                connected = true;
-            }
             else
             {
-                tcpClient = new TcpClient();
-                connected = true;
+                if (!UDPFlag)
+                {
+                    if (debug) StoreLogData.Instance.Store("Open TCP-Socket, IP-Address: " + IPAddress + ", Port: " + Port, System.DateTime.Now);
+                    tcpClient = new TcpClient();
+                    var result = tcpClient.BeginConnect(IPAddress, Port, null, null);
+                    var success = result.AsyncWaitHandle.WaitOne(connectTimeout);
+                    if (!success)
+                    {
+                        return false;
+                    }
+                    //tcpClient.EndConnect(result);
+                    //tcpClient = new TcpClient(ipAddress, port);
+                    stream = tcpClient.GetStream();
+                    stream.ReadTimeout = connectTimeout;
+                    connected = true;
+                }
+                else
+                {
+                    tcpClient = new TcpClient();
+                    connected = true;
+                }
             }
+
             if (ConnectedChanged != null)
                 try
                 {
@@ -1454,7 +1461,7 @@ namespace gpm_vibration_module_api.Modbus
                     else
                     {
                         tcpClient.Client.Send(data, data.Length - 2, SocketFlags.None);
-                        Console.WriteLine("write:" + data.ToCommaHexString());
+                        //Console.WriteLine("write:" + data.ToCommaHexString());
                         if (SendDataChanged != null)
                         {
                             sendData = new byte[data.Length - 2];
@@ -1472,8 +1479,12 @@ namespace gpm_vibration_module_api.Modbus
                             Thread.Sleep(1);
                         }
                         data = new Byte[tcpClient.Client.Available];
-                        Console.WriteLine("data in count>" + data.Length);
+                        //Console.WriteLine("data in count>" + data.Length);
                         //data = new byte[64];
+                        if (data.Length == 0)
+                        {
+
+                        }
                         int NumberOfBytes = tcpClient.Client.Receive(data, 0, data.Length, SocketFlags.None);
                         //int NumberOfBytes = stream.Read(data, 0, data.Length);
                         if (ReceiveDataChanged != null)
@@ -1484,6 +1495,10 @@ namespace gpm_vibration_module_api.Modbus
                             ReceiveDataChanged(this);
                         }
                     }
+                }
+                if(data.Length<8)
+                {
+
                 }
                 if (data[7] == 0x83 & data[8] == 0x01)
                 {
@@ -1548,10 +1563,12 @@ namespace gpm_vibration_module_api.Modbus
                 }
 
                 IsBusy = false;
-                Request ret = new Request(CurrentRequest.SlaveID, CurrentRequest.request, CurrentRequest.StartIndex, CurrentRequest.ValueOrLength, CurrentRequest.key);
-                ret.ReadHoldingRegisterData = response;
-                ReadHoldingResults.Add(ret);
-                //ReadHoldingRegistersDataReachEvent(CurrentRequest, null);
+                if (connect_type == CONNECTION_TYPE.RTU)
+                {
+                    Request ret = new Request(CurrentRequest.SlaveID, CurrentRequest.request, CurrentRequest.StartIndex, CurrentRequest.ValueOrLength, CurrentRequest.key);
+                    ret.ReadHoldingRegisterData = response;
+                    ReadHoldingResults.Add(ret);
+                }
                 return (response);
             }
             catch (Exception ex)

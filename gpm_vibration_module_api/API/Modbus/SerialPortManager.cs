@@ -15,8 +15,9 @@ namespace gpm_vibration_module_api.API.Modbus
         public static ModbusClient OpenRTU(string ComName, int BaudRate, string SlaveID)
         {
             if (!DictModbusRTU.ContainsKey(ComName))
-                DictModbusRTU.Add(ComName, new ModbusClient(true));
+                DictModbusRTU.Add(ComName, new ModbusClient());
             ModbusClient mdc = DictModbusRTU[ComName];
+            mdc.connect_type = ModbusClient.CONNECTION_TYPE.RTU;
             if (!mdc.SlaveIDList.Contains(SlaveID))
                 mdc.SlaveIDList.Add(SlaveID);
             if (mdc.Connected)
