@@ -116,10 +116,10 @@ namespace gpm_vibration_module_api.ThreeInOne
         public async Task<int> ODRSetting(ODR odr)
         {
             TotalDataByteLen = ParametersPacketLen;
-            ParamsSendOutBytes[3] = (byte)(odr == ODR.Hz5367 ? 0x9F : 0x97);
-            MeasureRangeByteDefine(MEASURE_RANGE);
+            MeasureRangeByteDefine(odr, MEASURE_RANGE);
             int errorCode = await WriteParametersAndDefine();
             isMeasureRangeSettingReady = errorCode == 0;
+
             return errorCode;
         }
 
@@ -134,7 +134,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_32G | mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_64G)
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             TotalDataByteLen = ParametersPacketLen;
-            MeasureRangeByteDefine(mEASURE);
+            MeasureRangeByteDefine(Odr,mEASURE);
             int errorCode = await WriteParametersAndDefine();
             isMeasureRangeSettingReady = errorCode == 0;
             return errorCode;
@@ -220,13 +220,15 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return (int)clsErrorCode.Error.PARAM_HS_TIMEOUT;
             if (IsParametersError())
                 return (int)clsErrorCode.Error.ERROR_PARAM_RETURN_FROM_CONTROLLER;
-            MeasureReangDefineByByteVal();
+            PropertiesDefineByByteVal();
             return 0; //done
         }
 
-        private void MeasureReangDefineByByteVal()
+        private void PropertiesDefineByByteVal()
         {
             byte mbyte = TempDataByteList[3];
+
+            Odr = TempDataByteList[2] == 0x9F ? ODR.Hz5367 : ODR.Hz1344;
 
             if (mbyte == (Odr == ODR.Hz1344 ? 0x08 : 0x00))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
@@ -244,12 +246,14 @@ namespace gpm_vibration_module_api.ThreeInOne
 
         }
 
-        private void MeasureRangeByteDefine(clsEnum.Module_Setting_Enum.MEASURE_RANGE mEASURE)
+        private void MeasureRangeByteDefine(ODR odr, clsEnum.Module_Setting_Enum.MEASURE_RANGE mEASURE)
         {
             byte mByte = 0x00;
 
-            if (Odr == ODR.Hz5367)
-            {
+            if (odr == ODR.Hz5367)
+            { //    HERE ↓↓
+                //53 01 00 ◯ 10 00 00 00 00 0d 0a
+                ParamsSendOutBytes[3] = 0x9F;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
                     mByte = 0x00;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G)
@@ -261,7 +265,9 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
             else
             {
-
+                //    HERE ↓↓
+                //53 01 00 ◯ 10 00 00 00 00 0d 0a
+                ParamsSendOutBytes[3] = 0x97;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
                     mByte = 0x08;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G)
@@ -271,7 +277,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G)
                     mByte = 0x38;
             }
-            //       HERE ↓↓
+            //        HERE ↓↓
             //53 01 00 9f  ◯ 00 00 00 00 0d 0a
             ParamsSendOutBytes[4] = mByte;
         }
