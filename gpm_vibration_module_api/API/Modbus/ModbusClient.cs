@@ -39,6 +39,32 @@ namespace gpm_vibration_module_api.Modbus
     /// </summary>
     public partial class ModbusClient
     {
+        public class Request
+        {
+            public Request()
+            {
+
+            }
+            public Request(byte SlaveID, REQUEST request, int StartIndex, int ValueOrLength, string key)
+            {
+                this.SlaveID = SlaveID;
+                this.request = request;
+                this.StartIndex = StartIndex;
+                this.ValueOrLength = ValueOrLength;
+                this.key = key;
+            }
+            public enum REQUEST
+            {
+                READHOLDING, WRITESIGNLE
+            }
+            public byte SlaveID;
+            public readonly REQUEST request = REQUEST.READHOLDING;
+            public readonly int StartIndex, ValueOrLength;
+            public int[] ReadHoldingRegisterData;
+            public bool IsReachDone = false;
+            public readonly string key;
+        }
+
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
         private bool debug = false;
         internal bool IsBusy = false;
@@ -72,7 +98,8 @@ namespace gpm_vibration_module_api.Modbus
         internal delegate void ConnectedChangedHandler(object sender);
         internal event ConnectedChangedHandler ConnectedChanged;
 
-        private Thread RTURequestHandleThread = null;
+        private Queue<Request> RequestQueue = new Queue<Request>();
+
         NetworkStream stream;
 
         /// <summary>
@@ -110,10 +137,60 @@ namespace gpm_vibration_module_api.Modbus
         /// <summary>
         /// Parameterless constructor
         /// </summary>
-        public ModbusClient()
+        public ModbusClient(bool IsQueueRequestMethodActive = false)
         {
-            if (debug) StoreLogData.Instance.Store("EasyModbus library initialized for Modbus-TCP", System.DateTime.Now);
+            if (!IsQueueRequestMethodActive)
+                return;
+            Thread th = new Thread(QueueRequestHandle);
+            th.IsBackground = true;
+            th.Start();
+        }
 
+
+        internal Request CurrentRequest;
+        private void QueueRequestHandle()
+        {
+            while (true)
+            {
+                Thread.Sleep(1);
+                try
+                {
+                    if (RequestQueue.Count != 0)
+                    {
+                        //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
+                        lock (RequestQueue)
+                        {
+                            CurrentRequest = RequestQueue.Dequeue();
+                            if (CurrentRequest == null)
+                                continue;
+                            UnitIdentifier = CurrentRequest.SlaveID;
+                            if (CurrentRequest.request == Request.REQUEST.READHOLDING)
+                                ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                            else
+                                WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        internal void AddRequest(Request request)
+        {
+            try
+            {
+                lock (RequestQueue)
+                {
+                    RequestQueue.Enqueue(request);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         /// <summary>
@@ -148,12 +225,7 @@ namespace gpm_vibration_module_api.Modbus
                         Console.WriteLine(ex.Message);
                         connected = false;
                     }
-                    if (RTURequestHandleThread == null)
-                    {
-                        RTURequestHandleThread = new Thread(RTURequestHandle);
-                        RTURequestHandleThread.IsBackground = true;
-                        RTURequestHandleThread.Start();
-                    }
+
                     return connected;
 
                 }
@@ -1270,7 +1342,7 @@ namespace gpm_vibration_module_api.Modbus
         }
 
 
-
+        internal List<Request> ReadHoldingResults = new List<Request>();
 
         /// <summary>
         /// Read Holding Registers from Master device (FC3).
@@ -1468,7 +1540,7 @@ namespace gpm_vibration_module_api.Modbus
                 {
                     for (int i = 0; i < data[8]; i++)
                         response[i] = data[i + 9];
-                    Console.WriteLine("Read Hoding Register(F03)>Val=" + string.Join(",", response));
+                    //Console.WriteLine("Read Hoding Register(F03)>Val=" + string.Join(",", response));
                 }
                 catch (Exception ex)
                 {
@@ -1476,6 +1548,10 @@ namespace gpm_vibration_module_api.Modbus
                 }
 
                 IsBusy = false;
+                Request ret = new Request(CurrentRequest.SlaveID, CurrentRequest.request, CurrentRequest.StartIndex, CurrentRequest.ValueOrLength, CurrentRequest.key);
+                ret.ReadHoldingRegisterData = response;
+                ReadHoldingResults.Add(ret);
+                //ReadHoldingRegistersDataReachEvent(CurrentRequest, null);
                 return (response);
             }
             catch (Exception ex)

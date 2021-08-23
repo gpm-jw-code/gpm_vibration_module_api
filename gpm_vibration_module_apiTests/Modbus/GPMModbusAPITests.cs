@@ -28,6 +28,27 @@ namespace gpm_vibration_module_api.Modbus.Tests
         bool connected = false;
 
 
+
+        [TestMethod]
+        public void TEST2()
+        {
+            GPMModbusAPI api1 = new GPMModbusAPI();
+            api1.Connect("COM3", "64", 115200);
+            GPMModbusAPI api2 = new GPMModbusAPI();
+            api2.Connect("COM3", "65", 115200);
+
+            for (int i = 0; i < 10; i++)
+            {
+                var data1 = api2.ReadRMSValues().Result;
+                Console.WriteLine($"[65]RMS:{string.Join(",", data1)}");
+                var data2 = api1.ReadP2PValues().Result;
+                Console.WriteLine($"[64]p2p:{string.Join(",", data2)}");
+            }
+            
+            api1.DisConnect();
+            api2.DisConnect();
+        }
+
         private bool Connect()
         {
             if (this.connected)
@@ -151,7 +172,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
         {
             if (!Connect())
                 Assert.Fail();
-            int baud = api.ReadBaudRateSetting();
+            int baud = api.ReadBaudRateSetting().Result;
             api.DisConnect();
             Assert.AreEqual(excepectedBaudRateForTest, baud);
         }
@@ -166,7 +187,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 if (!Connect())
                     Assert.Fail();
                 //先讀
-                var currentBaudRate = api.ReadBaudRateSetting();
+                var currentBaudRate = api.ReadBaudRateSetting().Result;
                 buadRateToSetting = currentBaudRate == 9600 ? 115200 : 9600; //變更設定
                 bool success = api.BaudRateSetting(buadRateToSetting);
                 if (success)

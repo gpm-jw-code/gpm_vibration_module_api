@@ -15,7 +15,7 @@ namespace gpm_vibration_module_api.API.Modbus
         public static ModbusClient OpenRTU(string ComName, int BaudRate, string SlaveID)
         {
             if (!DictModbusRTU.ContainsKey(ComName))
-                DictModbusRTU.Add(ComName, new ModbusClient());
+                DictModbusRTU.Add(ComName, new ModbusClient(true));
             ModbusClient mdc = DictModbusRTU[ComName];
             if (!mdc.SlaveIDList.Contains(SlaveID))
                 mdc.SlaveIDList.Add(SlaveID);
@@ -29,26 +29,20 @@ namespace gpm_vibration_module_api.API.Modbus
             return mdc;
         }
 
-        internal static int[] ReadHoldingRegisters(string slaveID,string ComeName, int RegIndex, int length)
+        internal static ModbusClient.Request ReadHoldingRegisters(string slaveID,string ComeName, int RegIndex, int length)
         {
-            ModbusClient RUTClient = DictModbusRTU[ComeName];
-            while (RUTClient.IsBusy)
-            {
-                Thread.Sleep(1);
-            }
-            RUTClient.UnitIdentifier = byte.Parse(slaveID);
-            return RUTClient.ReadHoldingRegisters(RegIndex, length);
+            ModbusClient RTUClient = DictModbusRTU[ComeName];
+            var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.READHOLDING, RegIndex, length,DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            RTUClient.AddRequest(req);
+            return req;
         }
 
         internal static void WriteSingleRegister(string slaveID, string ComeName, int RegIndex, int value)
         {
             ModbusClient RUTClient = DictModbusRTU[ComeName];
-            while (RUTClient.IsBusy)
-            {
-                Thread.Sleep(1);
-            }
-            RUTClient.UnitIdentifier = byte.Parse(slaveID);
-            RUTClient.WriteSingleRegister(RegIndex, value);
+            var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            RUTClient.AddRequest(req);
+           
         }
     }
 }

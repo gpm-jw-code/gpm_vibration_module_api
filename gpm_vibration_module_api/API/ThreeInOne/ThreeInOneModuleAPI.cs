@@ -12,15 +12,32 @@ namespace gpm_vibration_module_api.ThreeInOne
 {
     public class ThreeInOneModuleAPI : SerialProtocolBase, IDisposable
     {
+        public enum PRESSURE_DATA_ACQ_MODE
+        {
+            NON_ZERO_REST = 0,
+            ZERO_REST = 1
+        }
+
+        public enum ODR
+        {
+            Hz1344 = 1344,
+            Hz5367 = 5367
+        }
+
         private const int GetDataPacketLen = 3096;
         private const int ParametersPacketLen = 8;
         private ThreeInOneModuleDataSet _currentDataSet = new ThreeInOneModuleDataSet();
         private bool isGetDataRunning = false;
         private bool isParametersSettingRunning = false;
-        private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
+        private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x97, 0x08, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
         private bool isMeasureRangeSettingReady = false;
+
+        public ODR Odr = ODR.Hz1344;
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-        public double SamplingRate { get;  set; } = 8000;
+        public PRESSURE_DATA_ACQ_MODE Pressure_1_DataMode { get; private set; } = PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+        public PRESSURE_DATA_ACQ_MODE Pressure_2_DataMode { get; private set; } = PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+
+        public double SamplingRate { get; set; } = 8000;
 
         /// <summary>
         /// 封包接收Timeout設定。
@@ -41,6 +58,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// <summary>
         /// 嘗試斷開與模組的連線
         /// </summary>
+        /// 
         public new void Close()
         {
             base.Close();
@@ -89,6 +107,23 @@ namespace gpm_vibration_module_api.ThreeInOne
             return _currentDataSet;
         }
 
+
+        /// <summary>
+        /// (可等候)設定量測範圍 
+        /// </summary>
+        /// <param name="mEASURE">量測範圍列舉</param>
+        /// <returns></returns>
+        public async Task<int> ODRSetting(ODR odr)
+        {
+            TotalDataByteLen = ParametersPacketLen;
+            ParamsSendOutBytes[3] = (byte)(odr == ODR.Hz5367 ? 0x9F : 0x97);
+            MeasureRangeByteDefine(MEASURE_RANGE);
+            int errorCode = await WriteParametersAndDefine();
+            isMeasureRangeSettingReady = errorCode == 0;
+            return errorCode;
+        }
+
+
         /// <summary>
         /// (可等候)設定量測範圍 
         /// </summary>
@@ -100,8 +135,27 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             TotalDataByteLen = ParametersPacketLen;
             MeasureRangeByteDefine(mEASURE);
-            int errorCode = await WriteParameters();
+            int errorCode = await WriteParametersAndDefine();
             isMeasureRangeSettingReady = errorCode == 0;
+            return errorCode;
+        }
+
+        /// <summary>
+        /// (可等候)設定壓力數值顯示模式
+        /// </summary>
+        /// <param name="Channel">欲設定的壓力感測Channel</param>
+        /// <param name="mode">壓力數值顯示模式</param>
+        /// <returns></returns>
+        public async Task<int> PresssureValueModeSetting(int Channel, PRESSURE_DATA_ACQ_MODE mode)
+        {
+            if (Channel != 1 && Channel != 2)
+                return (int)clsErrorCode.Error.PressChannelNotExit;
+            TotalDataByteLen = ParametersPacketLen;
+
+            int indexOfPbyte = Channel == 1 ? 7 : 8;
+            int byteOfModeSet = mode == PRESSURE_DATA_ACQ_MODE.ZERO_REST ? 1 : 2;
+            ParamsSendOutBytes[indexOfPbyte] = (byte)byteOfModeSet;
+            int errorCode = await WriteParametersAndDefine();
             return errorCode;
         }
 
@@ -116,7 +170,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 throw new Exception("參數數據位元組長度不足 '8'");
             TotalDataByteLen = ParametersPacketLen;
             Array.Copy(EightBytesParamesSet, 0, ParamsSendOutBytes, 1, 8);
-            return await WriteParameters();
+            return await WriteParametersAndDefine();
         }
 
         /// <summary>
@@ -149,7 +203,7 @@ namespace gpm_vibration_module_api.ThreeInOne
 
         #region Private Methods
 
-        private async Task<int> WriteParameters()
+        private async Task<int> WriteParametersAndDefine()
         {
             if (isGetDataRunning)
                 return (int)clsErrorCode.Error.ModuleIsBusy;
@@ -173,28 +227,51 @@ namespace gpm_vibration_module_api.ThreeInOne
         private void MeasureReangDefineByByteVal()
         {
             byte mbyte = TempDataByteList[3];
-            if (mbyte == 0x00)
+
+            if (mbyte == (Odr == ODR.Hz1344 ? 0x08 : 0x00))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
-            if (mbyte == 0x10)
+            if (mbyte == (Odr == ODR.Hz1344 ? 0x18 : 0x10))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G;
-            if (mbyte == 0x20)
+            if (mbyte == (Odr == ODR.Hz1344 ? 0x28 : 0x20))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G;
-            if (mbyte == 0x30)
+            if (mbyte == (Odr == ODR.Hz1344 ? 0x38 : 0x30))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
+
+            byte pressure_1_AcqModeByte = TempDataByteList[6];
+            byte pressure_2_AcqModeByte = TempDataByteList[7];
+            Pressure_1_DataMode = pressure_1_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+            Pressure_2_DataMode = pressure_2_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+
         }
 
         private void MeasureRangeByteDefine(clsEnum.Module_Setting_Enum.MEASURE_RANGE mEASURE)
         {
             byte mByte = 0x00;
-            if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
-                mByte = 0x00;
-            if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G)
-                mByte = 0x10;
-            if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G)
-                mByte = 0x20;
-            if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G)
-                mByte = 0x30;
-            ///       HERE ↓↓
+
+            if (Odr == ODR.Hz5367)
+            {
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
+                    mByte = 0x00;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G)
+                    mByte = 0x10;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G)
+                    mByte = 0x20;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G)
+                    mByte = 0x30;
+            }
+            else
+            {
+
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
+                    mByte = 0x08;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_4G)
+                    mByte = 0x18;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_8G)
+                    mByte = 0x28;
+                if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G)
+                    mByte = 0x38;
+            }
+            //       HERE ↓↓
             //53 01 00 9f  ◯ 00 00 00 00 0d 0a
             ParamsSendOutBytes[4] = mByte;
         }

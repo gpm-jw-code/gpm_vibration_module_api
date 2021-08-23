@@ -68,12 +68,12 @@ namespace gpm_vibration_module_api.Modbus
         #endregion
         private bool RecieveData = false;
         private ModbusClient modbusClient_TCP = new ModbusClient();
-
+        private ModbusClient modbus_cli;
         public GPMModbusAPI()
         {
-            modbusClient_TCP.ReceiveDataChanged += new ModbusClient.ReceiveDataChangedHandler(ModbusClient_ReceiveDataChanged);
-            modbusClient_TCP.SendDataChanged += new ModbusClient.SendDataChangedHandler(ModbusClient_SendDataChanged);
-            modbusClient_TCP.ConnectedChanged += new ModbusClient.ConnectedChangedHandler(ModbusClient_ConnectedChanged);
+            //modbusClient_TCP.ReceiveDataChanged += new ModbusClient.ReceiveDataChangedHandler(ModbusClient_ReceiveDataChanged);
+            //modbusClient_TCP.SendDataChanged += new ModbusClient.SendDataChangedHandler(ModbusClient_SendDataChanged);
+            //modbusClient_TCP.ConnectedChanged += new ModbusClient.ConnectedChangedHandler(ModbusClient_ConnectedChanged);
         }
         /// <summary>
         /// Modbus TCP連線
@@ -94,7 +94,7 @@ namespace gpm_vibration_module_api.Modbus
                 bool IsConnected = modbusClient_TCP.Connect();
                 if (IsConnected && IsReadBaudRateWhenConnected)
                 {
-                    int CurrentBaudRate = ReadBaudRateSetting();
+                    int CurrentBaudRate = ReadBaudRateSetting().Result;
                     this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
                 }
 #if v110
@@ -130,32 +130,33 @@ namespace gpm_vibration_module_api.Modbus
         {
             this.SlaveID = SlaveID;
             this.PortName = ComPort;
-            ModbusClient modbus_cli = SerialPortManager.OpenRTU(ComPort, BaudRate, SlaveID);
+            modbus_cli = SerialPortManager.OpenRTU(ComPort, BaudRate, SlaveID);
             //modbusClient.SerialPort = ComPort;
             //modbusClient.Baudrate = BaudRate;
             //modbusClient.Parity = parity;
             //modbusClient.StopBits = StopBits;
             if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
             {
-                int CurrentBaudRate = ReadBaudRateSetting();
+                int CurrentBaudRate = ReadBaudRateSetting().Result;
                 this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
             }
             Connection_Type = CONNECTION_TYPE.RTU;
             return modbus_cli.Connected;
         }
+        
 
         /// <summary>
         /// 讀取鮑率設定值
         /// </summary>
         /// <returns>if return -1 > 表示模組回傳的封包數據有異常 </returns>
-        public int ReadBaudRateSetting()
+        public async Task<int> ReadBaudRateSetting()
         {
             RecieveData = false;
             int[] intAry = null;
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 intAry = modbusClient_TCP.ReadHoldingRegisters(Register.BaudRateSetRegIndex, 1);
             else //RTU 要排隊
-                intAry = SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, Register.BaudRateSetRegIndex, 1);
+                intAry = RTUReadHoldingRegister(Register.BaudRateSetRegIndex, 1,SlaveID);
 
             if (intAry != null && intAry.ToList().All(val => val >= 0))
             {
@@ -201,7 +202,7 @@ namespace gpm_vibration_module_api.Modbus
         public async Task<double[]> ReadRMSValues()
         {
             RecieveData = false;
-            double[] dVals = (await GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen));
+            double[] dVals = GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen).Result;
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
             else
@@ -248,15 +249,17 @@ namespace gpm_vibration_module_api.Modbus
                 modbusClient_TCP.UnitIdentifier = (byte)ID_int;
             }
             else
-                ID_int = SerialPortManager.ReadHoldingRegisters("240", PortName, Register.IDRegIndex, 1)[1];
-            return ID_int+"";
+                ID_int =RTUReadHoldingRegister(Register.IDRegIndex, 1,"240")[1];
+            return ID_int + "";
         }
         public int GetCurrentMeasureRange()
         {
             RecieveData = false;
-            var ints = Connection_Type == CONNECTION_TYPE.TCP ?
-                modbusClient_TCP.ReadHoldingRegisters(Register.RangeRegStart - 1, 4) :
-                SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, Register.RangeRegStart - 1, 4);
+            int[] ints = null;
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                ints = modbusClient_TCP.ReadHoldingRegisters(Register.RangeRegStart - 1, 4);
+            else
+                ints = RTUReadHoldingRegister(Register.RangeRegStart - 1, 4,SlaveID);
             if (ints[3] == 0x00)
                 return 2;
             if (ints[3] == 0x10)
@@ -268,6 +271,12 @@ namespace gpm_vibration_module_api.Modbus
             else
                 throw new Exception("Measure Range Read Failure");
         }
+        internal ManualResetEvent mre_data_reach_done_ctl = new ManualResetEvent(false);
+        private async Task WaitDataReachDone()
+        {
+            mre_data_reach_done_ctl.WaitOne();
+        }
+
         /// <summary>
         /// 進行鮑率設定
         /// </summary>
@@ -295,9 +304,13 @@ namespace gpm_vibration_module_api.Modbus
             byte[] byteVals = new byte[4] { 0x31, 0x2E, 0x30, 0x36 };
             if (!IsTest)
             {
-                int[] intVals = Connection_Type == CONNECTION_TYPE.TCP ?
-                    modbusClient_TCP.ReadHoldingRegisters(240, 2) :
-                    SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, 240, 2);
+                int[] intVals = null;
+                if (Connection_Type == CONNECTION_TYPE.TCP)
+                    intVals = modbusClient_TCP.ReadHoldingRegisters(240, 2);
+                else
+                {
+                    intVals = RTUReadHoldingRegister(240,2,SlaveID);
+                }
                 if (intVals == null)
                     return "READ VERSION ERROR!";
                 version = Encoding.ASCII.GetString(intVals.ToByteAry());
@@ -366,6 +379,34 @@ namespace gpm_vibration_module_api.Modbus
         }
 
 
+        private int[] RTUReadHoldingRegister(int start, int len,string SlaveID)
+        {
+            ModbusClient.Request req = SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, start, len);
+            ModbusClient.Request req_final;
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            while ((req_final = modbus_cli.ReadHoldingResults.ToArray().FirstOrDefault(i => i != null && i.key == req.key)) == null)
+            {
+
+                Thread.Sleep(1);
+            }
+            int[] values = req_final.ReadHoldingRegisterData;
+            try
+            {
+                lock (modbus_cli.ReadHoldingResults)
+                {
+                    int index = modbus_cli.ReadHoldingResults.FindIndex(r => r == req_final);
+                    if (index != -1)
+                        modbus_cli.ReadHoldingResults.RemoveAt(index);
+                }
+                return values;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
         /// <summary>
         /// 下達F03指令並轉成浮點數回傳
         /// </summary>
@@ -375,8 +416,13 @@ namespace gpm_vibration_module_api.Modbus
         private async Task<double[]> GetF03FloatValue(int start, int len)
         {
             int[] values = null;
-            values = Connection_Type == CONNECTION_TYPE.TCP ? modbusClient_TCP.ReadHoldingRegisters(start, len) :
-                SerialPortManager.ReadHoldingRegisters(SlaveID, PortName, start, len);
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                values = modbusClient_TCP.ReadHoldingRegisters(start, len);
+            else
+            {
+                values= RTUReadHoldingRegister(start, len,SlaveID);
+            }
+            Thread.Sleep(1);
             return values.ToIEEE754FloatAry();
         }
 
