@@ -12,12 +12,23 @@ namespace gpm_vibration_module_api.ThreeInOne
 {
     public class ThreeInOneModuleAPI : SerialProtocolBase, IDisposable
     {
+        /// <summary>
+        /// 壓力量測模式列舉
+        /// </summary>
         public enum PRESSURE_DATA_ACQ_MODE
         {
+            /// <summary>
+            /// 量測值為絕對大氣壓力值
+            /// </summary>
             NON_ZERO_REST = 0,
+            /// <summary>
+            /// 量測值為相對大氣壓力值(相對於參數[7 or 8]設為2的當前壓力值)
+            /// </summary>
             ZERO_REST = 1
         }
-
+        /// <summary>
+        /// ODR列舉
+        /// </summary>
         public enum ODR
         {
             Hz1344 = 1344,
@@ -32,11 +43,27 @@ namespace gpm_vibration_module_api.ThreeInOne
         private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x97, 0x08, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
         private bool isMeasureRangeSettingReady = false;
 
-        public ODR Odr = ODR.Hz1344;
+        #region PUBLIC Methods and Properties
+		
+        /// <summary>
+        /// 目前的ODR設定值
+        /// </summary>
+        public ODR Odr { get; private set; } = ODR.Hz1344;
+        /// <summary>
+        /// 目前的量測範圍設定值
+        /// </summary>
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+        /// <summary>
+        /// 目前Chanel 1壓力感測值模式設定
+        /// </summary>
         public PRESSURE_DATA_ACQ_MODE Pressure_1_DataMode { get; private set; } = PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+        /// <summary>
+        /// 目前Chanel 2壓力感測值模式設定
+        /// </summary>
         public PRESSURE_DATA_ACQ_MODE Pressure_2_DataMode { get; private set; } = PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
-
+        /// <summary>
+        /// 目前的加速規晶片取樣率設定
+        /// </summary>
         public double SamplingRate { get; set; } = 8000;
 
         /// <summary>
@@ -109,9 +136,9 @@ namespace gpm_vibration_module_api.ThreeInOne
 
 
         /// <summary>
-        /// (可等候)設定量測範圍 
+        /// (可等候)設定ODR 
         /// </summary>
-        /// <param name="mEASURE">量測範圍列舉</param>
+        /// <param name="odr">ODR設定值列舉</param>
         /// <returns></returns>
         public async Task<int> ODRSetting(ODR odr)
         {
@@ -199,7 +226,10 @@ namespace gpm_vibration_module_api.ThreeInOne
 
         public void Dispose()
         {
+            Dispose();
         }
+
+        #endregion
 
         #region Private Methods
 
@@ -251,7 +281,8 @@ namespace gpm_vibration_module_api.ThreeInOne
             byte mByte = 0x00;
 
             if (odr == ODR.Hz5367)
-            { //    HERE ↓↓
+            { 
+                //   HERE ↓↓
                 //53 01 00 ◯ 10 00 00 00 00 0d 0a
                 ParamsSendOutBytes[3] = 0x9F;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
@@ -265,7 +296,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
             else
             {
-                //    HERE ↓↓
+                //   HERE ↓↓
                 //53 01 00 ◯ 10 00 00 00 00 0d 0a
                 ParamsSendOutBytes[3] = 0x97;
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G)
@@ -277,7 +308,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G)
                     mByte = 0x38;
             }
-            //        HERE ↓↓
+            //       HERE ↓↓
             //53 01 00 9f  ◯ 00 00 00 00 0d 0a
             ParamsSendOutBytes[4] = mByte;
         }
