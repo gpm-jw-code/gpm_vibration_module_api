@@ -223,11 +223,12 @@ namespace gpm_vibration_module_api.Modbus
                     serialport.StopBits = stopBits;
                     serialport.WriteTimeout = 10000;
                     serialport.ReadTimeout = connectTimeout;
+                    serialport.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
                     try
                     {
                         serialport.Open();
                         connected = true;
-                        Task.Run(()=>QueueRequestHandle());
+                        //Task.Run(()=>QueueRequestHandle());
                     }
                     catch (Exception ex)
                     {
@@ -1571,9 +1572,9 @@ namespace gpm_vibration_module_api.Modbus
                 IsBusy = false;
                 if (connect_type == CONNECTION_TYPE.RTU)
                 {
-                    Request ret = new Request(CurrentRequest.SlaveID, CurrentRequest.request, CurrentRequest.StartIndex, CurrentRequest.ValueOrLength, CurrentRequest.key);
-                    ret.ReadHoldingRegisterData = response;
-                    ReadHoldingResults.Add(ret);
+                    //Request ret = new Request(CurrentRequest.SlaveID, CurrentRequest.request, CurrentRequest.StartIndex, CurrentRequest.ValueOrLength, CurrentRequest.key);
+                    //ret.ReadHoldingRegisterData = response;
+                    //ReadHoldingResults.Add(ret);
                 }
                 return (response);
             }
