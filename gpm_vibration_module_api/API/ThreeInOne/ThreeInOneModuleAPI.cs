@@ -33,7 +33,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// </summary>
         public enum HUMIDITY_CALIBRATION_ACTION
         {
-            NONE,
+            NONE=0x03,
             MINUS_6RH = 0x4,
             MINUS_5RH = 0x5,
             MINUS_4RH = 0x6,
@@ -249,8 +249,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             TotalDataByteLen = ParametersPacketLen;
             /// 53 01 00 9f 00 00 00 00 00 0d 0a
             int indexOfPbyte = Channel == 1 ? 7 : 8;
-            int Calibaration_Action = (int)mode;
-            int byteOfModeSet = mode == HUMIDITY_CALIBRATION_ACTION.NONE ? 3 : Calibaration_Action;
+            int byteOfModeSet = (int)mode;
             ParamsSendOutBytes[indexOfPbyte] = (byte)byteOfModeSet;
             int errorCode = await WriteParametersAndDefine();
 

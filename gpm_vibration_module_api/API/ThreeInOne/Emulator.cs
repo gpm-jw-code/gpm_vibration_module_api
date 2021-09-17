@@ -16,6 +16,11 @@ namespace gpm_vibration_module_api.ThreeInOne
         {
             return base.Open(PortName, 115200) ? 0 : (int)clsErrorCode.Error.CONNECT_FAIL;
         }
+
+        private double base_Pressure_1 = 0;
+        private double base_Pressure_2 = 0;
+        private double calibration_Humidity_1 = 0;
+        private double calibration_Humidity_2 = 0;
         internal override void _serialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
@@ -38,51 +43,60 @@ namespace gpm_vibration_module_api.ThreeInOne
                     fakeData[i + 2048] = (byte)r;
                 }
 
+                double fakeTemp1 = 23.335 + new Random(DateTime.Now.Second).NextDouble();
+                var bytes_fakeTemp1 = FloatToIEEE754Bytes((float)fakeTemp1);
                 //t1 : 32.3
-                fakeData[3072] = 0x42;
-                //fakeData[3073] = 0x11;
-                fakeData[3073] = (byte)DateTime.Now.Second;
-                //fakeData[3074] = 0x73;
-                fakeData[3074] = (byte)DateTime.Now.Second;
-                //fakeData[3075] = 0x33;
-                fakeData[3075] = (byte)DateTime.Now.Second;
-                //p1 : 123.3
-                fakeData[3076] = 0x42;
-                //fakeData[3077] = 0xf6;
-                fakeData[3077] = (byte)DateTime.Now.Second;
-                fakeData[3078] = 0x99;
-                fakeData[3079] = 0x9a;
+                fakeData[3072] = bytes_fakeTemp1[3];
+                fakeData[3073] = bytes_fakeTemp1[2];
+                fakeData[3074] = bytes_fakeTemp1[1];
+                fakeData[3075] = bytes_fakeTemp1[0];
 
+                double fakePressure1 = 1253.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_1;
+                byte[] bytes_FakP1 = FloatToIEEE754Bytes((float)fakePressure1);
+                fakeData[3076] = bytes_FakP1[3];
+                fakeData[3077] = bytes_FakP1[2];
+                fakeData[3078] = bytes_FakP1[1];
+                fakeData[3079] = bytes_FakP1[0];
+
+
+                double fakeHumidity1 = 44.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_1;
+                var bytes_fakeHumidity1 = FloatToIEEE754Bytes((float)fakeHumidity1);
                 //h1 : 60.2
-                fakeData[3080] = 0x42;
-                fakeData[3081] = 0x70;
-                fakeData[3082] = 0xcc;
-                fakeData[3083] = 0xcd;
+                fakeData[3080] = bytes_fakeHumidity1[3];
+                fakeData[3081] = bytes_fakeHumidity1[2];
+                fakeData[3082] = bytes_fakeHumidity1[1];
+                fakeData[3083] = bytes_fakeHumidity1[0];
 
 
+                double fakeTemp2 = 24.55 + new Random(DateTime.Now.Second).NextDouble();
+                var bytes_fakeTemp2 = FloatToIEEE754Bytes((float)fakeTemp2);
                 //t2 : 34.0
-                fakeData[3084] = 0x42;
-                fakeData[3085] = 0x08;
-                fakeData[3086] = 0x00;
-                fakeData[3087] = 0x00;
+                fakeData[3084] = bytes_fakeTemp2[3];
+                fakeData[3085] = bytes_fakeTemp2[2];
+                fakeData[3086] = bytes_fakeTemp2[1];
+                fakeData[3087] = bytes_fakeTemp2[0];
 
                 //p2 : 200.3
-                fakeData[3088] = 0x43;
-                fakeData[3089] = 0x48;
-                fakeData[3090] = 0x4c;
-                fakeData[3091] = 0xcd;
+                double fakePressure2 = 1333.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_2;
+                byte[] bytes_FakP2 = FloatToIEEE754Bytes((float)fakePressure2);
+                fakeData[3088] = bytes_FakP2[3];
+                fakeData[3089] = bytes_FakP2[2];
+                fakeData[3090] = bytes_FakP2[1];
+                fakeData[3091] = bytes_FakP2[0];
 
+                double fakeHumidity2 = 42.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_2;
+                var bytes_fakeHumidity2 = FloatToIEEE754Bytes((float)fakeHumidity2);
                 //h2 : 94.0
-                fakeData[3092] = 0x42;
-                fakeData[3093] = 0xbc;
-                fakeData[3094] = 0x00;
-                fakeData[3095] = 0x00;
+                fakeData[3092] = bytes_fakeHumidity2[3];
+                fakeData[3093] = bytes_fakeHumidity2[2];
+                fakeData[3094] = bytes_fakeHumidity2[1];
+                fakeData[3095] = bytes_fakeHumidity2[0];
 
                 #endregion
                 //讀取數據
                 if (cmd == "READVALUE\r\n")
                 {
-                    Thread.Sleep(700);
+                    Thread.Sleep(360);
                     Console.WriteLine(cmd);
                     sp.Write(fakeData, 0, fakeData.Length);
                 }
@@ -98,6 +112,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                     Array.Copy(buff, 1, returnBytes, 0, 8);
                     if (isParamReturErrorSimulate)
                         returnBytes[3] = 0x32;//模擬封包回傳錯誤
+                    HumidityCalibrationDefine(returnBytes);
                     sp.Write(returnBytes, 0, 8);
                 }
             }
@@ -105,13 +120,107 @@ namespace gpm_vibration_module_api.ThreeInOne
             {
                 return;
             }
-            
 
+
+        }
+
+        private void HumidityCalibrationDefine(byte[] returnBytes)
+        {
+            calibration_Humidity_1 = GetHumidityCalibration(returnBytes[6]);
+            calibration_Humidity_2 = GetHumidityCalibration(returnBytes[7]);
+
+        }
+        private double GetHumidityCalibration(byte settingByte)
+        {
+            switch (settingByte)
+            {
+                case 3:
+                    return 0;
+                case 4:
+                    return -6;
+                case 5:
+                    return -5;
+                case 6:
+                    return -4;
+                case 7:
+                    return -3;
+                case 8:
+                    return -2;
+                case 9:
+                    return -1;
+                case 10:
+                    return 1;
+                case 11:
+                    return 2;
+                case 12:
+                    return 3;
+                case 13:
+                    return 4;
+                case 14:
+                    return 5;
+                case 15:
+                    return 6;
+                default:
+                    return 0;
+
+            }
         }
 
         public void Close()
         {
             base.Close();
         }
+
+        private byte[] FloatToIEEE754Bytes(float data)
+        {
+            int nValue = 0;
+            int nSign;
+            if (data >= 0)
+                nSign = 0x00;
+            else
+            {
+                nSign = 0x01;
+                data = data * (-1);
+            }
+            int nHead = (int)data;
+            float fTail = data % 1;
+            String str = Convert.ToString(nHead, 2);
+            int nHead_Length = str.Length;
+            nValue = nHead;
+            int nShift = nHead_Length;
+            while (nShift < 24)   // (nHead_Length + nShift < 23)
+            {
+                if ((fTail * 2) >= 1)
+                    nValue = (nValue << 1) | 0x00000001;
+                else
+                    nValue = (nValue << 1);
+                fTail = (fTail * 2) % 1;
+                nShift++;
+            }
+
+            int nExp = nHead_Length - 1 + 127;
+            nExp = nExp << 23;
+            nValue = nValue & 0x7FFFFF;
+            nValue = nValue | nExp;
+            nSign = nSign << 31;
+            nValue = nValue | nSign;
+
+            int data1, data2, data3, data4;
+            data1 = nValue & 0x000000FF;
+            data2 = (nValue & 0x0000FF00) >> 8;
+            data3 = (nValue & 0x00FF0000) >> 16;
+            data4 = (nValue >> 24) & 0x000000FF;
+
+            if (data == 0)
+            {
+                data1 = 0x00;
+                data2 = 0x00;
+                data3 = 0x00;
+                data4 = 0x00;
+            }
+            return new byte[4] { (byte)data1, (byte)data2, (byte)data3, (byte)data4 };
+
+        }
+
     }
 }
