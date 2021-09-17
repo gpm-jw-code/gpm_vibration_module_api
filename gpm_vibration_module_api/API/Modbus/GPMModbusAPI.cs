@@ -138,7 +138,7 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient_TCP = null;
             this.SlaveID = SlaveID;
             this.PortName = ComPort;
-            modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID);
+            modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID,this);
             if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
             {
                 int CurrentBaudRate = ReadBaudRateSetting().Result;
@@ -382,39 +382,55 @@ namespace gpm_vibration_module_api.Modbus
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.RangeRegStart, valwrite);
         }
 
+        int[] Response = null;
+        bool IsResultLoadOK = false;
+
+        public void GetRequestResult(int[] Response)
+        {
+            this.Response = Response;
+            IsResultLoadOK = true;
+        }
 
         private async Task<int[]> RTUReadHoldingRegister(int start, int len, string SlaveID)
         {
-            ModbusClient.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, PortName, start, len);
-            ModbusClient.Request req_final = null;
+            IsResultLoadOK = false;
+            API.Modbus.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, PortName, start, len);
+            API.Modbus.Request req_final = null;
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            await Task.Run(() =>
+            while (!IsResultLoadOK)
             {
-                while ((req_final = modbus_cli.ReadHoldingResults.ToArray().FirstOrDefault(i => i != null && i.key == req.key)) == null)
-                {
-                    Thread.Sleep(1);
-                    //Console.WriteLine($"[{SlaveID}] Wait response");
-                }
-            });
+                Thread.Sleep(1);
+            }
+            IsResultLoadOK = false;
+            return this.Response;
+
+            //await Task.Run(() =>
+            //{
+            //    while ((req_final = modbus_cli.ReadHoldingResults.ToArray().FirstOrDefault(i => i != null && i.key == req.key)) == null)
+            //    {
+            //        Thread.Sleep(1);
+            //        //Console.WriteLine($"[{SlaveID}] Wait response");
+            //    }
+            //});
 
 
-            int[] values = req_final.ReadHoldingRegisterData;
-            try
-            {
-                lock (modbus_cli.ReadHoldingResults)
-                {
-                    int index = modbus_cli.ReadHoldingResults.FindIndex(r => r == req_final);
-                    if (index != -1)
-                        modbus_cli.ReadHoldingResults.RemoveAt(index);
-                }
-                return values;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            //int[] values = req_final.ReadHoldingRegisterData;
+            //try
+            //{
+            //    lock (modbus_cli.ReadHoldingResults)
+            //    {
+            //        int index = modbus_cli.ReadHoldingResults.FindIndex(r => r == req_final);
+            //        if (index != -1)
+            //            modbus_cli.ReadHoldingResults.RemoveAt(index);
+            //    }
+            //    return values;
+            //}
+            //catch (Exception ex)
+            //{
+            //    throw ex;
+            //}
         }
 
         /// <summary>
