@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static gpm_vibration_module_api.ThreeInOne.ThreeInOneModuleAPI;
 
 namespace gpm_vibration_module_api.ThreeInOne
 {
@@ -26,6 +27,27 @@ namespace gpm_vibration_module_api.ThreeInOne
             /// </summary>
             ZERO_REST = 1
         }
+
+        /// <summary>
+        /// 濕度值校正動作
+        /// </summary>
+        public enum HUMIDITY_CALIBRATION_ACTION
+        {
+            NONE,
+            MINUS_6RH = 0x4,
+            MINUS_5RH = 0x5,
+            MINUS_4RH = 0x6,
+            MINUS_3RH = 0x7,
+            MINUS_2RH = 0x8,
+            MINUS_1RH = 0x9,
+            ADD_1RH = 0x0A,
+            ADD_2RH = 0x0B,
+            ADD_3RH = 0x0C,
+            ADD_4RH = 0x0D,
+            ADD_5RH = 0x0E,
+            ADD_6RH = 0x0F,
+        }
+
         /// <summary>
         /// ODR列舉
         /// </summary>
@@ -35,6 +57,17 @@ namespace gpm_vibration_module_api.ThreeInOne
             Hz5367 = 5367
         }
 
+        /// <summary>
+        /// 參數設定的原因
+        /// </summary>
+        private enum CURRENT_SETTING_TYPE
+        {
+            DEV,
+            PRESSURE_MODE,
+            HUMIDITY_MODE
+        }
+
+
         private const int GetDataPacketLen = 3096;
         private const int ParametersPacketLen = 8;
         private ThreeInOneModuleDataSet _currentDataSet = new ThreeInOneModuleDataSet();
@@ -42,9 +75,10 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool isParametersSettingRunning = false;
         private byte[] ParamsSendOutBytes = new byte[11] { 0x53, 0x01, 0x00, 0x97, 0x08, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a }; // 8 + 前Header(1)+ 後結尾(2) >> 共11 byte
         private bool isMeasureRangeSettingReady = false;
+        private CURRENT_SETTING_TYPE Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.DEV;
 
         #region PUBLIC Methods and Properties
-		
+
         /// <summary>
         /// 目前的ODR設定值
         /// </summary>
@@ -53,6 +87,8 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// 目前的量測範圍設定值
         /// </summary>
         public clsEnum.Module_Setting_Enum.MEASURE_RANGE MEASURE_RANGE { get; private set; } = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_2G;
+
+
         /// <summary>
         /// 目前Chanel 1壓力感測值模式設定
         /// </summary>
@@ -61,6 +97,15 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// 目前Chanel 2壓力感測值模式設定
         /// </summary>
         public PRESSURE_DATA_ACQ_MODE Pressure_2_DataMode { get; private set; } = PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+
+        #region 濕度模式
+
+        public HUMIDITY_CALIBRATION_ACTION Humidity_1_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
+        public HUMIDITY_CALIBRATION_ACTION Humidity_2_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
+
+        #endregion
+
+
         /// <summary>
         /// 目前的加速規晶片取樣率設定
         /// </summary>
@@ -71,6 +116,8 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// 單位:ms 毫秒
         /// </summary>
         public int RecieveTimeout = 1000;
+        private bool disposedValue;
+
         /// <summary>
         /// 透過Serial Port與模組連線
         /// </summary>
@@ -161,7 +208,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             if (mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_32G | mEASURE == clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_64G)
                 return (int)clsErrorCode.Error.MRSettingOutOfRange;
             TotalDataByteLen = ParametersPacketLen;
-            MeasureRangeByteDefine(Odr,mEASURE);
+            MeasureRangeByteDefine(Odr, mEASURE);
             int errorCode = await WriteParametersAndDefine();
             isMeasureRangeSettingReady = errorCode == 0;
             return errorCode;
@@ -176,15 +223,42 @@ namespace gpm_vibration_module_api.ThreeInOne
         public async Task<int> PresssureValueModeSetting(int Channel, PRESSURE_DATA_ACQ_MODE mode)
         {
             if (Channel != 1 && Channel != 2)
-                return (int)clsErrorCode.Error.PressChannelNotExit;
-            TotalDataByteLen = ParametersPacketLen;
+                return (int)clsErrorCode.Error.ChannelNotExist;
 
+            Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.PRESSURE_MODE;
+            TotalDataByteLen = ParametersPacketLen;
             int indexOfPbyte = Channel == 1 ? 7 : 8;
             int byteOfModeSet = mode == PRESSURE_DATA_ACQ_MODE.ZERO_REST ? 1 : 2;
             ParamsSendOutBytes[indexOfPbyte] = (byte)byteOfModeSet;
             int errorCode = await WriteParametersAndDefine();
+            Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.DEV;
             return errorCode;
         }
+
+        /// <summary>
+        /// (可等候)設定壓力數值顯示模式
+        /// </summary>
+        /// <param name="Channel">欲設定的壓力感測Channel</param>
+        /// <param name="mode">壓力數值顯示模式</param>
+        /// <returns></returns>
+        public async Task<int> HumidityValueModeSetting(int Channel, HUMIDITY_CALIBRATION_ACTION mode)
+        {
+            if (Channel != 1 && Channel != 2)
+                return (int)clsErrorCode.Error.ChannelNotExist;
+            Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.HUMIDITY_MODE;
+            TotalDataByteLen = ParametersPacketLen;
+            /// 53 01 00 9f 00 00 00 00 00 0d 0a
+            int indexOfPbyte = Channel == 1 ? 7 : 8;
+            int Calibaration_Action = (int)mode;
+            int byteOfModeSet = mode == HUMIDITY_CALIBRATION_ACTION.NONE ? 3 : Calibaration_Action;
+            ParamsSendOutBytes[indexOfPbyte] = (byte)byteOfModeSet;
+            int errorCode = await WriteParametersAndDefine();
+
+            Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.DEV;
+            return errorCode;
+        }
+
+
 
         /// <summary>
         /// (可等候)寫入參數組(8byte),如果不知道參數組的定義請不要輕易嘗試
@@ -222,11 +296,6 @@ namespace gpm_vibration_module_api.ThreeInOne
             isParametersSettingRunning = false;
             var ErrorCode = !isTimeout ? 0 : (int)clsErrorCode.Error.DATA_GET_TIMEOUT;
             return new Tuple<int, byte[]>(ErrorCode, isTimeout ? null : TempDataByteList.ToArray());
-        }
-
-        public void Dispose()
-        {
-            Dispose();
         }
 
         #endregion
@@ -269,10 +338,20 @@ namespace gpm_vibration_module_api.ThreeInOne
             if (mbyte == (Odr == ODR.Hz1344 ? 0x38 : 0x30))
                 MEASURE_RANGE = clsEnum.Module_Setting_Enum.MEASURE_RANGE.MR_16G;
 
-            byte pressure_1_AcqModeByte = TempDataByteList[6];
-            byte pressure_2_AcqModeByte = TempDataByteList[7];
-            Pressure_1_DataMode = pressure_1_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
-            Pressure_2_DataMode = pressure_2_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+            if (Extension_SETTING_TYPE == CURRENT_SETTING_TYPE.PRESSURE_MODE)
+            {
+                byte pressure_1_AcqModeByte = TempDataByteList[6];
+                byte pressure_2_AcqModeByte = TempDataByteList[7];
+                Pressure_1_DataMode = pressure_1_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+                Pressure_2_DataMode = pressure_2_AcqModeByte == 1 ? PRESSURE_DATA_ACQ_MODE.ZERO_REST : PRESSURE_DATA_ACQ_MODE.NON_ZERO_REST;
+            }
+            if (Extension_SETTING_TYPE == CURRENT_SETTING_TYPE.HUMIDITY_MODE)
+            {
+                byte humidity_1_AcqModeByte = TempDataByteList[6];
+                byte humidity_2_AcqModeByte = TempDataByteList[7];
+                Humidity_1_Calibration_Action = humidity_1_AcqModeByte == 3 ? HUMIDITY_CALIBRATION_ACTION.NONE : humidity_1_AcqModeByte.ToHumidityCalAction();
+                Humidity_2_Calibration_Action = humidity_2_AcqModeByte == 3 ? HUMIDITY_CALIBRATION_ACTION.NONE : humidity_2_AcqModeByte.ToHumidityCalAction();
+              }
 
         }
 
@@ -281,7 +360,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             byte mByte = 0x00;
 
             if (odr == ODR.Hz5367)
-            { 
+            {
                 //   HERE ↓↓
                 //53 01 00 ◯ 10 00 00 00 00 0d 0a
                 ParamsSendOutBytes[3] = 0x9F;
@@ -452,7 +531,35 @@ namespace gpm_vibration_module_api.ThreeInOne
             return (float)doubleout;
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: 處置受控狀態 (受控物件)
+                }
+                _currentDataSet.Dispose();
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: 僅有當 'Dispose(bool disposing)' 具有會釋出非受控資源的程式碼時，才覆寫完成項
+        // ~ThreeInOneModuleAPI()
+        // {
+        //     // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
 
         #endregion
     }
+
 }

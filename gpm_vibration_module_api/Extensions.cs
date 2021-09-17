@@ -101,6 +101,42 @@ namespace gpm_vibration_module_api
                     return MEASURE_RANGE.MR_2G;
             }
         }
+
+        internal static ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION ToHumidityCalAction(this byte bty)
+        {
+            switch (bty)
+            {
+                case 0x03:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.NONE;
+                case 0x04:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_6RH;
+                case 0x05:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_5RH;
+                case 0x06:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_4RH;
+                case 0x07:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_3RH;
+                case 0x08:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_2RH;
+                case 0x09:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_1RH;
+                case 0x0A:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
+                case 0x0B:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_2RH;
+                case 0x0C:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_3RH;
+                case 0x0D:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_4RH;
+                case 0x0E:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_5RH;
+                case 0x0F:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_6RH;
+                default:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.NONE;
+            }
+        }
+
         internal static double ToRMS(this List<double> data)
         {
             var sum = 0.0;

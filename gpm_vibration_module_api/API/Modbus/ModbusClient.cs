@@ -278,13 +278,7 @@ namespace gpm_vibration_module_api.Modbus
             return connected;
         }
 
-        private void RTURequestHandle()
-        {
-            while (true)
-            {
-                Thread.Sleep(1);
-            }
-        }
+      
 
         /// <summary>
         /// Establish connection to Master device in case of Modbus TCP.
@@ -812,8 +806,6 @@ namespace gpm_vibration_module_api.Modbus
         private bool receiveActive = false;
         private byte[] readBuffer = new byte[256];
         private int bytesToRead = 0;
-        private int akjjjctualPositionToRead = 0;
-        DateTime dateTimeLastRead;
         /*
                 private void DataReceivedHandler(object sender,
                                 SerialDataReceivedEventArgs e)
