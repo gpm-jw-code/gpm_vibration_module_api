@@ -54,6 +54,7 @@ namespace gpm_vibration_module_api.API.Modbus
             var ModbusClientModule = DictModbusTCP[IP];
             var RequestQueue = Dict_TCPRequest[IP];
             var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP];
+            int TimeoutCount = 0;
             while (true)
             {
                 lock (RequestQueue)
@@ -80,6 +81,16 @@ namespace gpm_vibration_module_api.API.Modbus
                         {
                             ModbusClientModule.UnitIdentifier = UnitIdentifier;
                             int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+
+                            if (Result == null)
+                                TimeoutCount += 1;
+                            else
+                                TimeoutCount = 0;
+                            if (TimeoutCount>5)
+                            {
+                              //連線異常處理
+                            }
+
                             Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
                         }
                         else
