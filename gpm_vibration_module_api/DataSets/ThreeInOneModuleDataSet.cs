@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.DataSets
 {
-    public class ThreeInOneModuleDataSet
+    public class ThreeInOneModuleDataSet :IDisposable
     {
+        private bool disposedValue;
+
         public int ErrorCode { get; internal set; }
         public double Temperature1 { get; internal set; }
         public double Temperature2 { get; internal set; }
@@ -20,5 +22,26 @@ namespace gpm_vibration_module_api.DataSets
         public DataSet.clsFFTData FFTData { get; internal set; } = new DataSet.clsFFTData();
         public List<byte> RawBytes { get; internal set; }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: 處置受控狀態 (受控物件)
+                }
+                RawBytes = null;
+                VibrationData = null;
+                FFTData = null;
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

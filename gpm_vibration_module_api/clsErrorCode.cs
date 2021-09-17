@@ -35,8 +35,7 @@
             /// 量測範圍尚未進行設定,
             /// </summary>
             VibrationMeasureRangeNotSetYet = 144450,
-            PressChannelNotExist = 144451,
-            PressChannelNotExit = 144452
+            ChannelNotExist = 144451,
         }
 
     }
