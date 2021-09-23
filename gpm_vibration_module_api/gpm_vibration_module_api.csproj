@@ -48,7 +48,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>
     </CodeAnalysisRuleSet>
@@ -61,7 +61,7 @@
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>latest</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>
     </CodeAnalysisRuleSet>
@@ -85,6 +85,7 @@
   <ItemGroup>
     <Compile Include="API\Modbus\TCPSocketManager.cs" />
     <Compile Include="API\Modbus\SerialPortManager.cs" />
+    <Compile Include="API\ThreeInOne\Settings.cs" />
     <Compile Include="DataSets\ThreeInOneModuleDataSet.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GpmMath\Filters.cs" />
@@ -385,7 +386,6 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

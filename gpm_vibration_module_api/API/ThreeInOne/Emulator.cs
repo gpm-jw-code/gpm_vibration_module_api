@@ -11,6 +11,7 @@ namespace gpm_vibration_module_api.ThreeInOne
     public class Emulator : SerialProtocolBase
     {
         public bool isParamReturErrorSimulate { get; set; } = false;
+        public bool ShortDataTest = true;
         byte[] returnBytes = new byte[8];
         public int Connect(string PortName)
         {
@@ -30,73 +31,11 @@ namespace gpm_vibration_module_api.ThreeInOne
                 byte[] buff = new byte[numOfReadByte];
                 sp.Read(buff, 0, numOfReadByte);
                 string cmd = Encoding.ASCII.GetString(buff);
-
-                byte[] fakeData = new byte[3096];
-
-                #region Fake Data Defined
-
-                for (int i = 0; i < 512; i++)
-                {
-                    fakeData[i + 512] = (byte)i;
-                    int r = (i * DateTime.Now.Second);
-                    fakeData[i + 1024] = (byte)r;
-                    fakeData[i + 2048] = (byte)r;
-                }
-
-                double fakeTemp1 = 23.335 + new Random(DateTime.Now.Second).NextDouble();
-                var bytes_fakeTemp1 = FloatToIEEE754Bytes((float)fakeTemp1);
-                //t1 : 32.3
-                fakeData[3072] = bytes_fakeTemp1[3];
-                fakeData[3073] = bytes_fakeTemp1[2];
-                fakeData[3074] = bytes_fakeTemp1[1];
-                fakeData[3075] = bytes_fakeTemp1[0];
-
-                double fakePressure1 = 1253.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_1;
-                byte[] bytes_FakP1 = FloatToIEEE754Bytes((float)fakePressure1);
-                fakeData[3076] = bytes_FakP1[3];
-                fakeData[3077] = bytes_FakP1[2];
-                fakeData[3078] = bytes_FakP1[1];
-                fakeData[3079] = bytes_FakP1[0];
-
-
-                double fakeHumidity1 = 44.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_1;
-                var bytes_fakeHumidity1 = FloatToIEEE754Bytes((float)fakeHumidity1);
-                //h1 : 60.2
-                fakeData[3080] = bytes_fakeHumidity1[3];
-                fakeData[3081] = bytes_fakeHumidity1[2];
-                fakeData[3082] = bytes_fakeHumidity1[1];
-                fakeData[3083] = bytes_fakeHumidity1[0];
-
-
-                double fakeTemp2 = 24.55 + new Random(DateTime.Now.Second).NextDouble();
-                var bytes_fakeTemp2 = FloatToIEEE754Bytes((float)fakeTemp2);
-                //t2 : 34.0
-                fakeData[3084] = bytes_fakeTemp2[3];
-                fakeData[3085] = bytes_fakeTemp2[2];
-                fakeData[3086] = bytes_fakeTemp2[1];
-                fakeData[3087] = bytes_fakeTemp2[0];
-
-                //p2 : 200.3
-                double fakePressure2 = 1333.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_2;
-                byte[] bytes_FakP2 = FloatToIEEE754Bytes((float)fakePressure2);
-                fakeData[3088] = bytes_FakP2[3];
-                fakeData[3089] = bytes_FakP2[2];
-                fakeData[3090] = bytes_FakP2[1];
-                fakeData[3091] = bytes_FakP2[0];
-
-                double fakeHumidity2 = 42.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_2;
-                var bytes_fakeHumidity2 = FloatToIEEE754Bytes((float)fakeHumidity2);
-                //h2 : 94.0
-                fakeData[3092] = bytes_fakeHumidity2[3];
-                fakeData[3093] = bytes_fakeHumidity2[2];
-                fakeData[3094] = bytes_fakeHumidity2[1];
-                fakeData[3095] = bytes_fakeHumidity2[0];
-
-                #endregion
+                var fakeData = FakeDataGen();
                 //讀取數據
                 if (cmd == "READVALUE\r\n")
                 {
-                    Thread.Sleep(360);
+                    Thread.Sleep(1);
                     Console.WriteLine(cmd);
                     sp.Write(fakeData, 0, fakeData.Length);
                 }
@@ -124,6 +63,104 @@ namespace gpm_vibration_module_api.ThreeInOne
 
         }
 
+        private byte[] FakeDataGen()
+        {
+
+            double fakeTemp1 = 23.335 + new Random(DateTime.Now.Second).NextDouble();
+            var bytes_fakeTemp1 = FloatToIEEE754Bytes((float)fakeTemp1);
+
+            double fakePressure1 = 1253.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_1;
+            byte[] bytes_FakP1 = FloatToIEEE754Bytes((float)fakePressure1);
+
+            double fakeHumidity1 = 44.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_1;
+            var bytes_fakeHumidity1 = FloatToIEEE754Bytes((float)fakeHumidity1);
+
+            double fakeTemp2 = 24.55 + new Random(DateTime.Now.Second).NextDouble();
+            var bytes_fakeTemp2 = FloatToIEEE754Bytes((float)fakeTemp2);
+
+            double fakePressure2 = 1333.5 + new Random(DateTime.Now.Second).NextDouble() - base_Pressure_2;
+            byte[] bytes_FakP2 = FloatToIEEE754Bytes((float)fakePressure2);
+
+            double fakeHumidity2 = 42.55 + new Random(DateTime.Now.Second).NextDouble() + calibration_Humidity_2;
+            var bytes_fakeHumidity2 = FloatToIEEE754Bytes((float)fakeHumidity2);
+
+            byte[] fakeData = new byte[ShortDataTest ? 22 : 3096];//3072 / 6 = 512 ;   6/6
+            int single_axis_data_cnt = (ShortDataTest ? 1 : 512);
+            for (int i = 0; i < single_axis_data_cnt; i++)
+            {
+                fakeData[i + single_axis_data_cnt * 3] = (byte)(DateTime.Now.Millisecond*new Random(2).Next(1,5));
+                int r = ShortDataTest? DateTime.Now.Millisecond : (i * (int)DateTime.Now.Second);
+                fakeData[i + single_axis_data_cnt * 4] = (byte)r;
+                fakeData[i + single_axis_data_cnt * 5] = (byte)(DateTime.Now.Millisecond * new Random(2).Next(1, 5));
+            }
+            int TR_Data_start_index = ShortDataTest ? 6 : 3072;
+
+            if (ShortDataTest)
+            {
+                //t1 : 32.3
+                fakeData[TR_Data_start_index] = bytes_fakeTemp1[3];
+                fakeData[TR_Data_start_index + 1] = bytes_fakeTemp1[2];
+                fakeData[TR_Data_start_index + 2] = bytes_fakeTemp1[1];
+                fakeData[TR_Data_start_index + 3] = bytes_fakeTemp1[0];
+
+                //h1 : 60.2
+                fakeData[TR_Data_start_index + 4] = bytes_fakeHumidity1[3];
+                fakeData[TR_Data_start_index + 5] = bytes_fakeHumidity1[2];
+                fakeData[TR_Data_start_index + 6] = bytes_fakeHumidity1[1];
+                fakeData[TR_Data_start_index + 7] = bytes_fakeHumidity1[0];
+
+                //t2 : 34.0
+                fakeData[TR_Data_start_index + 8] = bytes_fakeTemp2[3];
+                fakeData[TR_Data_start_index + 9] = bytes_fakeTemp2[2];
+                fakeData[TR_Data_start_index + 10] = bytes_fakeTemp2[1];
+                fakeData[TR_Data_start_index + 11] = bytes_fakeTemp2[0];
+                fakeData[TR_Data_start_index + 12] = bytes_fakeHumidity2[3];
+                fakeData[TR_Data_start_index + 13] = bytes_fakeHumidity2[2];
+                fakeData[TR_Data_start_index + 14] = bytes_fakeHumidity2[1];
+                fakeData[TR_Data_start_index + 15] = bytes_fakeHumidity2[0];
+                return fakeData;
+            }
+
+            //t1 : 32.3
+            fakeData[3072] = bytes_fakeTemp1[3];
+            fakeData[3073] = bytes_fakeTemp1[2];
+            fakeData[3074] = bytes_fakeTemp1[1];
+            fakeData[3075] = bytes_fakeTemp1[0];
+            fakeData[3076] = bytes_FakP1[3];
+            fakeData[3077] = bytes_FakP1[2];
+            fakeData[3078] = bytes_FakP1[1];
+            fakeData[3079] = bytes_FakP1[0];
+
+
+            //h1 : 60.2
+            fakeData[3080] = bytes_fakeHumidity1[3];
+            fakeData[3081] = bytes_fakeHumidity1[2];
+            fakeData[3082] = bytes_fakeHumidity1[1];
+            fakeData[3083] = bytes_fakeHumidity1[0];
+
+
+            //t2 : 34.0
+            fakeData[3084] = bytes_fakeTemp2[3];
+            fakeData[3085] = bytes_fakeTemp2[2];
+            fakeData[3086] = bytes_fakeTemp2[1];
+            fakeData[3087] = bytes_fakeTemp2[0];
+
+            //p2 : 200.3
+            fakeData[3088] = bytes_FakP2[3];
+            fakeData[3089] = bytes_FakP2[2];
+            fakeData[3090] = bytes_FakP2[1];
+            fakeData[3091] = bytes_FakP2[0];
+
+            //h2 : 94.0
+            fakeData[3092] = bytes_fakeHumidity2[3];
+            fakeData[3093] = bytes_fakeHumidity2[2];
+            fakeData[3094] = bytes_fakeHumidity2[1];
+            fakeData[3095] = bytes_fakeHumidity2[0];
+
+            return fakeData;
+
+        }
+
         private void HumidityCalibrationDefine(byte[] returnBytes)
         {
             calibration_Humidity_1 = GetHumidityCalibration(returnBytes[6]);
@@ -137,29 +174,45 @@ namespace gpm_vibration_module_api.ThreeInOne
                 case 3:
                     return 0;
                 case 4:
-                    return -6;
+                    return -10;
                 case 5:
-                    return -5;
+                    return -9;
                 case 6:
-                    return -4;
+                    return -8;
                 case 7:
-                    return -3;
+                    return -7;
                 case 8:
-                    return -2;
+                    return -6;
                 case 9:
-                    return -1;
+                    return -5;
                 case 10:
-                    return 1;
+                    return -4;
                 case 11:
-                    return 2;
+                    return -3;
                 case 12:
-                    return 3;
+                    return -2;
                 case 13:
-                    return 4;
+                    return -1;
                 case 14:
-                    return 5;
+                    return 1;
                 case 15:
+                    return 2;
+                case 16:
+                    return 3;
+                case 17:
+                    return 4;
+                case 18:
+                    return 5;
+                case 19:
                     return 6;
+                case 20:
+                    return 7;
+                case 21:
+                    return 8;
+                case 22:
+                    return 9;
+                case 23:
+                    return 10;
                 default:
                     return 0;
 

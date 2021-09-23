@@ -1,12 +1,15 @@
-﻿using gpm_vibration_module_api.DataSets;
+﻿using gpm_vibration_module_api.API.ThreeInOne;
+using gpm_vibration_module_api.DataSets;
 using gpm_vibration_module_api.GpmMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static gpm_vibration_module_api.API.ThreeInOne.Settings;
 using static gpm_vibration_module_api.ThreeInOne.ThreeInOneModuleAPI;
 
 namespace gpm_vibration_module_api.ThreeInOne
@@ -33,19 +36,28 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// </summary>
         public enum HUMIDITY_CALIBRATION_ACTION
         {
-            NONE=0x03,
-            MINUS_6RH = 0x4,
-            MINUS_5RH = 0x5,
-            MINUS_4RH = 0x6,
-            MINUS_3RH = 0x7,
-            MINUS_2RH = 0x8,
-            MINUS_1RH = 0x9,
-            ADD_1RH = 0x0A,
-            ADD_2RH = 0x0B,
-            ADD_3RH = 0x0C,
-            ADD_4RH = 0x0D,
-            ADD_5RH = 0x0E,
-            ADD_6RH = 0x0F,
+            NONE = 0x03,
+            MINUS_10RH = 0x4,
+            MINUS_9RH = 0x5,
+            MINUS_8RH = 0x6,
+            MINUS_7RH = 0x7,
+            MINUS_6RH = 0x8,
+            MINUS_5RH = 0x9,
+            MINUS_4RH = 0x0A,
+            MINUS_3RH = 0x0B,
+            MINUS_2RH = 0x0C,
+            MINUS_1RH = 0x0D,
+            ADD_1RH = 0x0E,
+            ADD_2RH = 0x0F,
+            ADD_3RH = 0x10,
+            ADD_4RH = 0x11,
+            ADD_5RH = 0x12,
+            ADD_6RH = 0x13,
+            ADD_7RH = 0x14,
+            ADD_8RH = 0x15,
+            ADD_9RH = 0x16,
+            ADD_10RH = 0x17,
+
         }
 
         /// <summary>
@@ -67,7 +79,8 @@ namespace gpm_vibration_module_api.ThreeInOne
             HUMIDITY_MODE
         }
 
-
+        public bool ShorDataTest = true;
+        private readonly Configs globalConfig;
         private const int GetDataPacketLen = 3096;
         private const int ParametersPacketLen = 8;
         private ThreeInOneModuleDataSet _currentDataSet = new ThreeInOneModuleDataSet();
@@ -77,7 +90,17 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool isMeasureRangeSettingReady = false;
         private CURRENT_SETTING_TYPE Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.DEV;
 
+        private const string RecordFolder = "Three-in-One-Device-Data";
         #region PUBLIC Methods and Properties
+
+
+        public ThreeInOneModuleAPI()
+        {
+            globalConfig = LoadConfig();
+            ShorDataTest = globalConfig.single_data_mode == 1;
+            if (globalConfig.record_raw_data == 1)
+                Directory.CreateDirectory(RecordFolder);
+        }
 
         /// <summary>
         /// 目前的ODR設定值
@@ -163,7 +186,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return _currentDataSet;
             }
             isGetDataRunning = true;
-            TotalDataByteLen = GetDataPacketLen;
+            TotalDataByteLen = ShorDataTest ? 22 : GetDataPacketLen;
             bool SendSuccess = SendCommand("READVALUE\r\n");
             if (!SendSuccess)
             {
@@ -177,8 +200,30 @@ namespace gpm_vibration_module_api.ThreeInOne
 
             if (isTimeout)
                 return _currentDataSet;
-            DataSetPrepareProcessing();
+            _ = ShorDataTest ? DataSetPrepareProcessing_ShortDataMode() : DataSetPrepareProcessing();
+
+            if (globalConfig.record_raw_data == 1 && _currentDataSet.ErrorCode == 0)
+                RecordData();
+
             return _currentDataSet;
+        }
+
+        private void RecordData()
+        {
+            if (!ShorDataTest)
+                return;
+            DateTime time = DateTime.Now;
+            double x = _currentDataSet.VibrationData.X[0];
+            double y = _currentDataSet.VibrationData.Y[0];
+            double z = _currentDataSet.VibrationData.X[0];
+            double t1 = _currentDataSet.Temperature1;
+            double t2 = _currentDataSet.Temperature2;
+            double h1 = _currentDataSet.Humidity1;
+            double h2 = _currentDataSet.Humidity2;
+            using (StreamWriter sw = new StreamWriter(RecordFolder + $"\\{time.ToString("yyyy-MM-dd")}.csv", true))
+            {
+                sw.WriteLine(time.ToString("yyyy/MM/dd HH:mm:ss:ffff") + "," + x + "," + y + "," + z + "," + t1 + "," + h1 + "," + t2 + "," + h2);
+            }
         }
 
 
@@ -350,7 +395,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 byte humidity_2_AcqModeByte = TempDataByteList[7];
                 Humidity_1_Calibration_Action = humidity_1_AcqModeByte == 3 ? HUMIDITY_CALIBRATION_ACTION.NONE : humidity_1_AcqModeByte.ToHumidityCalAction();
                 Humidity_2_Calibration_Action = humidity_2_AcqModeByte == 3 ? HUMIDITY_CALIBRATION_ACTION.NONE : humidity_2_AcqModeByte.ToHumidityCalAction();
-              }
+            }
 
         }
 
@@ -419,7 +464,71 @@ namespace gpm_vibration_module_api.ThreeInOne
             return false;
         }
 
-        private void DataSetPrepareProcessing()
+        private bool DataSetPrepareProcessing_ShortDataMode()
+        {
+            //TempDataByteList
+            try
+            {
+                byte[] AccDataBytes = new byte[6];
+                byte[] temperature1 = new byte[4];
+                byte[] humidity1 = new byte[4];
+                byte[] temperature2 = new byte[4];
+                byte[] humidity2 = new byte[4];
+                byte[] tmpeDataByteListAry = TempDataByteList.ToArray();
+                Array.Copy(tmpeDataByteListAry, 0, AccDataBytes, 0, 6);
+                Array.Copy(tmpeDataByteListAry, 6, temperature1, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 10, humidity1, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 14, temperature2, 0, 4);
+                Array.Copy(tmpeDataByteListAry, 18, humidity2, 0, 4);
+
+                List<List<double>> axisDatasList = Tools.ConverterTools.AccPacketToListDouble(AccDataBytes, MEASURE_RANGE, DAQMode.High_Sampling);
+
+                //List<double> fft_x = FFT.GetFFT(axisDatasList[0]);
+                //List<double> fft_y = FFT.GetFFT(axisDatasList[1]);
+                //List<double> fft_z = FFT.GetFFT(axisDatasList[2]);
+
+                double t1 = GetDoubleByIEEE754(temperature1);
+                double h1 = GetDoubleByIEEE754(humidity1);
+                double t2 = GetDoubleByIEEE754(temperature2);
+                double h2 = GetDoubleByIEEE754(humidity2);
+
+                _currentDataSet = new ThreeInOneModuleDataSet
+                {
+                    Temperature1 = t1,
+                    Temperature2 = t2,
+                    Humidity1 = h1,
+                    Humidity2 = h2,
+                    VibrationData = new DataSet.clsAcc
+                    {
+                        X = axisDatasList[0],
+                        Y = axisDatasList[1],
+                        Z = axisDatasList[2],
+                    },
+                    //FFTData = new DataSet.clsFFTData
+                    //{
+                    //    SamplingRate = SamplingRate,
+                    //    FreqVec = FreqVecCal(fft_x.Count, SamplingRate),
+                    //    X = fft_x,
+                    //    Y = fft_y,
+                    //    Z = fft_z
+                    //},
+                    RawBytes = TempDataByteList,
+                    ErrorCode = 0
+                };
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _currentDataSet = new ThreeInOneModuleDataSet
+                {
+                    ErrorCode = (int)clsErrorCode.Error.SYSTEM_ERROR
+                };
+                return false;
+            }
+
+        }
+
+        private bool DataSetPrepareProcessing()
         {
             //TempDataByteList
             try
@@ -478,6 +587,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                     RawBytes = TempDataByteList,
                     ErrorCode = 0
                 };
+                return true;
             }
             catch (Exception ex)
             {
@@ -485,6 +595,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 {
                     ErrorCode = (int)clsErrorCode.Error.SYSTEM_ERROR
                 };
+                return false;
             }
 
 

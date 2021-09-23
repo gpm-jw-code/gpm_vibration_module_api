@@ -15,6 +15,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         internal bool _isDataRecieveDone = false;
         internal List<byte> TempDataByteList = new List<byte>();
         internal bool IsSimulator = false;
+
         internal bool Open(string ComPort, int BaudRate = 115200)
         {
             try

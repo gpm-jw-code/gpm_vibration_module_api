@@ -109,29 +109,45 @@ namespace gpm_vibration_module_api
                 case 0x03:
                     return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.NONE;
                 case 0x04:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_6RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_10RH;
                 case 0x05:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_5RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_9RH;
                 case 0x06:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_4RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_8RH;
                 case 0x07:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_3RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_7RH;
                 case 0x08:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_2RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_6RH;
                 case 0x09:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_1RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_5RH;
                 case 0x0A:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_4RH;
                 case 0x0B:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_2RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_3RH;
                 case 0x0C:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_3RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_2RH;
                 case 0x0D:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_4RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.MINUS_1RH;
                 case 0x0E:
-                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_5RH;
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
                 case 0x0F:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_2RH;
+                case 0x10:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_3RH;
+                case 0x11:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_4RH;
+                case 0x12:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_5RH;
+                case 0x13:
                     return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_6RH;
+                case 0x14:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_7RH;
+                case 0x15:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_8RH;
+                case 0x16:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_9RH;
+                case 0x17:
+                    return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.ADD_10RH;
                 default:
                     return ThreeInOne.ThreeInOneModuleAPI.HUMIDITY_CALIBRATION_ACTION.NONE;
             }
