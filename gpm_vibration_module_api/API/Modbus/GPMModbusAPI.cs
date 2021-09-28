@@ -22,8 +22,15 @@ namespace gpm_vibration_module_api.Modbus
         }
 
         internal string SlaveID;
+
+        public delegate void Event_GetDataTimeOut(string IP,string SerialPort,string SlaveID);
+
+        public Event_GetDataTimeOut EventGetDataTimeOut;
+
+        private string SlaveID;
         private string PortName;
         private string IP;
+        internal bool IsWaitingForTCPReconnectResult = false;
         internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
         private CONNECTION_TYPE _ConnectType = CONNECTION_TYPE.TCP;
@@ -134,6 +141,18 @@ namespace gpm_vibration_module_api.Modbus
             }
 
         }
+
+        public bool TCPConnectRetry(string IP,string SlaveID)
+        {
+            IsWaitingForTCPReconnectResult = true;
+            TCPSocketManager.ConnectionRetry(IP, SlaveID);
+            while (IsWaitingForTCPReconnectResult)
+            {
+                Thread.Sleep(1);
+            }
+            return Connected;
+        }
+
         /// <summary>
         /// Modbus RTU連線
         /// </summary>
@@ -477,6 +496,10 @@ namespace gpm_vibration_module_api.Modbus
             {
                 values = await RTUReadHoldingRegister(start, len, SlaveID);
             }
+            if (values == null)
+            {
+                return null;
+            }
             Thread.Sleep(1);
             return values.ToIEEE754FloatAry();
         }
@@ -490,6 +513,17 @@ namespace gpm_vibration_module_api.Modbus
             if (intAry == null)
                 return null;
             List<double> valuesList = new List<double>();
+            if (intAry.Length == 1)
+            {
+                if (intAry[0] == -1)
+                {
+                    return new double[1] { -1 };
+                }
+                else if(intAry[0]==-2)
+                {
+                    return new double[1] { -2 };
+                }
+            }
             for (int i = 0; i < intAry.Length; i += 4)
             {
                 var hexstring = intAry[i].ToString("X2") + intAry[i + 1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");

@@ -8,19 +8,41 @@ using System.Threading.Tasks;
 
 namespace gpm_vibration_module_api.API.Modbus
 {
+
     public class TCPSocketManager
     {
         public static Dictionary<string, ModbusClient> DictModbusTCP = new Dictionary<string, ModbusClient>();
         public static Dictionary<string, Queue<Request>> Dict_TCPRequest = new Dictionary<string, Queue<Request>>();
         public static Dictionary<string, Dictionary<string, GPMModbusAPI>> Dict_IP_dict_ID_ModbusModule = new Dictionary<string, Dictionary<string, GPMModbusAPI>>();
 
+        public static Dictionary<string, bool> Dict_IsModbusClientRetry = new Dictionary<string, bool>();
+        public static bool ConnectionRetry(string IP, string SlaveID)
+        {
+            if (Dict_IsModbusClientRetry[IP] == true)
+            {
+                return false;
+            }
+
+            Dict_IsModbusClientRetry[IP] = true;
+
+            var TargetModbusClient = DictModbusTCP[IP];
+            bool ConnectResult = TargetModbusClient.Connect();
+
+            foreach (var item in Dict_IP_dict_ID_ModbusModule[IP].Values)
+            {
+                item.IsWaitingForTCPReconnectResult = false;
+            }
+            Dict_IsModbusClientRetry[IP] = false; ;
+
+            return ConnectResult;
+        }
 
 
         /// <summary>
-        /// 註冊一個Comport來使用
+        /// 註冊一個TCP Socket來使用
         /// </summary>
         /// <param name="IP"></param>
-        /// <param name="BaudRate"></param>
+        /// <param name="Port"></param>
         /// <param name="SlaveID"></param>
         /// <returns></returns>
         public static ModbusClient TCPSocketRegist(string IP, int Port, string SlaveID, GPMModbusAPI APIObject)
@@ -28,6 +50,7 @@ namespace gpm_vibration_module_api.API.Modbus
             if (!DictModbusTCP.ContainsKey(IP))
             {
                 DictModbusTCP.Add(IP, new ModbusClient());
+                Dict_IsModbusClientRetry.Add(IP, false);
                 Dict_TCPRequest.Add(IP, new Queue<Request>());
                 Dict_IP_dict_ID_ModbusModule.Add(IP, new Dictionary<string, GPMModbusAPI>());
             }
@@ -54,56 +77,46 @@ namespace gpm_vibration_module_api.API.Modbus
             var ModbusClientModule = DictModbusTCP[IP];
             var RequestQueue = Dict_TCPRequest[IP];
             var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP];
-            int TimeoutCount = 0;
             while (true)
             {
+                if (Dict_IsModbusClientRetry[IP])
+                {
+                    Thread.Sleep(1000);
+                    continue;
+                }
+                Request CurrentRequest = null;
                 lock (RequestQueue)
                 {
+                    Thread.Sleep(300);
+                    if (RequestQueue.Count == 0)
+                        continue;
 
+                    CurrentRequest = RequestQueue.Dequeue();
+                    if (CurrentRequest == null)
+                        continue;
                 }
                 try
                 {
-                    Thread.Sleep(300);
-                    if (RequestQueue.Count != 0)
+                    var UnitIdentifier = CurrentRequest.SlaveID;
+                    if (CurrentRequest.request == Request.REQUEST.READHOLDING)
                     {
-                        //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
-                        //lock (RequestQueue)
-                        //{
-                        var CurrentRequest = RequestQueue.Dequeue();
-                        if (CurrentRequest == null)
+                        ModbusClientModule.UnitIdentifier = UnitIdentifier;
+                        if (!ModbusClientModule.Connected)
+                        {
+                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 });
                             continue;
-                        var UnitIdentifier = CurrentRequest.SlaveID;
-                        if (UnitIdentifier == 3)
-                        {
-
                         }
-                        if (CurrentRequest.request == Request.REQUEST.READHOLDING)
-                        {
-                            ModbusClientModule.UnitIdentifier = UnitIdentifier;
-                            int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-
-                            if (Result == null)
-                                TimeoutCount += 1;
-                            else
-                                TimeoutCount = 0;
-                            if (TimeoutCount>5)
-                            {
-                              //連線異常處理
-                            }
-
-                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
-                        }
-                        else
-                            ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-
-                        //}
+                        int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
                     }
+                    else
+                        ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
-
             }
         }
 
