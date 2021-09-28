@@ -8,6 +8,9 @@ using gpm_vibration_module_api.Modbus;
 
 namespace gpm_vibration_module_api.API.Modbus
 {
+    /// <summary>
+    /// 用來讀取允宥的溫溼度模組 > RS485 MODBUS RTU
+    /// </summary>
     public class YuelAPI : GPMModbusAPI
     {
         internal new struct Register
