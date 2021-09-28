@@ -25,7 +25,7 @@ namespace gpm_vibration_module_api.API.Modbus
         /// <param name="BaudRate"></param>
         /// <param name="SlaveID"></param>
         /// <returns></returns>
-        public static ModbusClient SerialPortRegist(string ComName, int BaudRate, string SlaveID,GPMModbusAPI APIObject)
+        public static ModbusClient SerialPortRegist(string ComName, int BaudRate, string SlaveID, Parity parity, StopBits stopBits, GPMModbusAPI APIObject)
         {
             if (!DictModbusRTU.ContainsKey(ComName))
             {
@@ -46,8 +46,8 @@ namespace gpm_vibration_module_api.API.Modbus
                 return mdc;
             mdc.SerialPort = ComName;
             mdc.Baudrate = BaudRate;
-            mdc.Parity = Parity.None;
-            mdc.StopBits = StopBits.One;
+            mdc.Parity = parity;
+            mdc.StopBits = stopBits;
             mdc.Connect();
             Task.Run(() => QueueRequestHandle(ComName));
             return mdc;
@@ -76,7 +76,7 @@ namespace gpm_vibration_module_api.API.Modbus
                         if (CurrentRequest == null)
                             continue;
                         var UnitIdentifier = CurrentRequest.SlaveID;
-                        if (UnitIdentifier ==3)
+                        if (UnitIdentifier == 3)
                         {
 
                         }
@@ -104,13 +104,13 @@ namespace gpm_vibration_module_api.API.Modbus
             }
         }
 
-        internal static Request SendReadHoldingRegistersRequest(string slaveID,string ComeName, int RegIndex, int length)
+        internal static Request SendReadHoldingRegistersRequest(string slaveID, string ComeName, int RegIndex, int length)
         {
             ModbusClient RTUClient = DictModbusRTU[ComeName];
-            var req = new Request(slaveID, Request.REQUEST.READHOLDING, RegIndex, length,DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            var req = new Request(slaveID, Request.REQUEST.READHOLDING, RegIndex, length, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             //RTUClient.AddRequest(req);
             var TargetRequestQueue = Dict_RTURequest[ComeName];
-            lock(TargetRequestQueue)
+            lock (TargetRequestQueue)
             {
                 TargetRequestQueue.Enqueue(req);
             }
@@ -122,7 +122,7 @@ namespace gpm_vibration_module_api.API.Modbus
             ModbusClient RUTClient = DictModbusRTU[ComeName];
             var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             RUTClient.AddRequest(req);
-           
+
         }
     }
 
@@ -134,7 +134,7 @@ namespace gpm_vibration_module_api.API.Modbus
         }
         public Request(string SlaveID, REQUEST request, int StartIndex, int ValueOrLength, string key)
         {
-            this.str_ID= SlaveID;
+            this.str_ID = SlaveID;
             this.SlaveID = byte.Parse(SlaveID);
             this.request = request;
             this.StartIndex = StartIndex;
