@@ -27,7 +27,6 @@ namespace gpm_vibration_module_api.Modbus
 
         public Event_GetDataTimeOut EventGetDataTimeOut;
 
-        private string SlaveID;
         private string PortName;
         private string IP;
         internal bool IsWaitingForTCPReconnectResult = false;
