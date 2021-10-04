@@ -90,10 +90,14 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool isMeasureRangeSettingReady = false;
         private CURRENT_SETTING_TYPE Extension_SETTING_TYPE = CURRENT_SETTING_TYPE.DEV;
 
-        private const string RecordFolder = "Three-in-One-Device-Data";
+        public const string RecordFolder = "Three-in-One-Device-Data";
         #region PUBLIC Methods and Properties
 
 
+        public double Offset_T1 = 0.0;
+        public double Offset_T2 = 0.0;
+        public double Offset_H1 = 0.0;
+        public double Offset_H2 = 0.0;
         public ThreeInOneModuleAPI()
         {
             globalConfig = LoadConfig();
@@ -123,8 +127,8 @@ namespace gpm_vibration_module_api.ThreeInOne
 
         #region 濕度模式
 
-        public HUMIDITY_CALIBRATION_ACTION Humidity_1_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
-        public HUMIDITY_CALIBRATION_ACTION Humidity_2_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.ADD_1RH;
+        public HUMIDITY_CALIBRATION_ACTION Humidity_1_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.NONE;
+        public HUMIDITY_CALIBRATION_ACTION Humidity_2_Calibration_Action { get; private set; } = HUMIDITY_CALIBRATION_ACTION.NONE;
 
         #endregion
 
@@ -133,7 +137,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// 目前的加速規晶片取樣率設定
         /// </summary>
         public double SamplingRate { get; set; } = 8000;
-
+        public string Port { get; private set; }
         /// <summary>
         /// 封包接收Timeout設定。
         /// 單位:ms 毫秒
@@ -149,6 +153,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         /// <returns>Error Code > 0:連線成功; Otherwise Error Code </returns>
         public int Connect(string PortName, int baudRate = 115200)
         {
+            Port = PortName;
             return base.Open(PortName, baudRate) ? 0 : (int)clsErrorCode.Error.SerialPortOpenFail;
         }
 
@@ -202,6 +207,11 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return _currentDataSet;
             _ = ShorDataTest ? DataSetPrepareProcessing_ShortDataMode() : DataSetPrepareProcessing();
 
+            _currentDataSet.Temperature1 = _currentDataSet.Temperature1 + Offset_T1;
+            _currentDataSet.Temperature2 = _currentDataSet.Temperature2 + Offset_T2;
+            _currentDataSet.Humidity1 = _currentDataSet.Humidity1 + Offset_H1;
+            _currentDataSet.Humidity2 = _currentDataSet.Humidity2 + Offset_H2;
+
             if (globalConfig.record_raw_data == 1 && _currentDataSet.ErrorCode == 0)
                 RecordData();
 
@@ -220,9 +230,10 @@ namespace gpm_vibration_module_api.ThreeInOne
             double t2 = _currentDataSet.Temperature2;
             double h1 = _currentDataSet.Humidity1;
             double h2 = _currentDataSet.Humidity2;
-            using (StreamWriter sw = new StreamWriter(RecordFolder + $"\\{time.ToString("yyyy-MM-dd")}.csv", true))
+            using (StreamWriter sw = new StreamWriter(RecordFolder + $"\\{Port}-{time.ToString("yyyy-MM-dd")}.csv", true))
             {
-                sw.WriteLine(time.ToString("yyyy/MM/dd HH:mm:ss:ffff") + "," + x + "," + y + "," + z + "," + t1 + "," + h1 + "," + t2 + "," + h2);
+                sw.WriteLine(time.ToString("yyyy/MM/dd HH:mm:ss:ffff") + "," + x + "," + y + "," + z + "," + t1 + "," + h1 + "," + t2 + "," + h2 + ","
+                    + Offset_T1 + "," + Offset_H1 + "," + Offset_T2 + "," + Offset_H2);
             }
         }
 

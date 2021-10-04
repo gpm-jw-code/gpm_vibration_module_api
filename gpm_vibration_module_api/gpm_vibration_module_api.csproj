@@ -85,6 +85,7 @@
   <ItemGroup>
     <Compile Include="API\Modbus\TCPSocketManager.cs" />
     <Compile Include="API\Modbus\SerialPortManager.cs" />
+    <Compile Include="API\Modbus\YuelAPI.cs" />
     <Compile Include="API\ThreeInOne\Settings.cs" />
     <Compile Include="DataSets\ThreeInOneModuleDataSet.cs" />
     <Compile Include="Extensions.cs" />
