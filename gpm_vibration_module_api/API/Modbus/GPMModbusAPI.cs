@@ -405,7 +405,7 @@ namespace gpm_vibration_module_api.Modbus
                     break;
             }
             if (Connection_Type == CONNECTION_TYPE.TCP)
-                modbusClient_TCP.WriteSingleRegister(Register.RangeRegStart, valwrite);
+                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, Register.RangeRegStart, valwrite);
             else
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.RangeRegStart, valwrite);
         }

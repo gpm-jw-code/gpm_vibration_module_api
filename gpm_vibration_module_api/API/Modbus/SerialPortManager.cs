@@ -106,7 +106,6 @@ namespace gpm_vibration_module_api.API.Modbus
 
         internal static Request SendReadHoldingRegistersRequest(string slaveID,string ComeName, int RegIndex, int length)
         {
-            ModbusClient RTUClient = DictModbusRTU[ComeName];
             var req = new Request(slaveID, Request.REQUEST.READHOLDING, RegIndex, length,DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             //RTUClient.AddRequest(req);
             var TargetRequestQueue = Dict_RTURequest[ComeName];
@@ -119,10 +118,12 @@ namespace gpm_vibration_module_api.API.Modbus
 
         internal static void SendWriteSingleRegisterRequest(string slaveID, string ComeName, int RegIndex, int value)
         {
-            ModbusClient RUTClient = DictModbusRTU[ComeName];
-            var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
-            RUTClient.AddRequest(req);
-           
+            var req = new Request(slaveID, Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            var TargetRequestQueue = Dict_RTURequest[ComeName];
+            lock (TargetRequestQueue)
+            {
+                TargetRequestQueue.Enqueue(req);
+            }
         }
     }
 

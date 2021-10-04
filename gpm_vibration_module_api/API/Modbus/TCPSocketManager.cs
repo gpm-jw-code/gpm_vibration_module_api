@@ -97,21 +97,21 @@ namespace gpm_vibration_module_api.API.Modbus
                 }
                 try
                 {
-                    var UnitIdentifier = CurrentRequest.SlaveID;
+                    ModbusClientModule.UnitIdentifier = CurrentRequest.SlaveID;
+                    if (!ModbusClientModule.Connected)
+                    {
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 });
+                        continue;
+                    }
                     if (CurrentRequest.request == Request.REQUEST.READHOLDING)
                     {
-                        ModbusClientModule.UnitIdentifier = UnitIdentifier;
-                        if (!ModbusClientModule.Connected)
-                        {
-                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 });
-                            continue;
-                        }
                         int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
                         Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
                     }
                     else
+                    {
                         ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -134,10 +134,12 @@ namespace gpm_vibration_module_api.API.Modbus
 
         internal static void SendWriteSingleRegisterRequest(string slaveID, string IP, int RegIndex, int value)
         {
-            ModbusClient TcpClient = DictModbusTCP[IP];
-            var req = new ModbusClient.Request(byte.Parse(slaveID), ModbusClient.Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
-            TcpClient.AddRequest(req);
-
+            var req = new Request(slaveID, Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            var TargetRequestQueue = Dict_TCPRequest[IP];
+            lock (TargetRequestQueue)
+            {
+                TargetRequestQueue.Enqueue(req);
+            }
         }
     }
 }
