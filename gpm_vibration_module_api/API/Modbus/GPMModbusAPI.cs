@@ -29,6 +29,7 @@ namespace gpm_vibration_module_api.Modbus
 
         private string PortName;
         private string IP;
+        private string Port;
         internal bool IsWaitingForTCPReconnectResult = false;
         internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
@@ -100,6 +101,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             modbus_cli = null;
             this.SlaveID = SlaveID;
+            this.Port = Port.ToString();
             this.IP = IP;
             modbusClient_TCP = TCPSocketManager.TCPSocketRegist(IP, Port, SlaveID, this);
             this._ConnectType = CONNECTION_TYPE.TCP;
@@ -141,10 +143,10 @@ namespace gpm_vibration_module_api.Modbus
 
         }
 
-        public bool TCPConnectRetry(string IP,string SlaveID)
+        public bool TCPConnectRetry(string IP,string Port,string SlaveID)
         {
             IsWaitingForTCPReconnectResult = true;
-            TCPSocketManager.ConnectionRetry(IP, SlaveID);
+            TCPSocketManager.ConnectionRetry(IP,Port, SlaveID);
             while (IsWaitingForTCPReconnectResult)
             {
                 Thread.Sleep(1);
@@ -406,7 +408,7 @@ namespace gpm_vibration_module_api.Modbus
                     break;
             }
             if (Connection_Type == CONNECTION_TYPE.TCP)
-                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, Register.RangeRegStart, valwrite);
+                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP,this.Port, Register.RangeRegStart, valwrite);
             else
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.RangeRegStart, valwrite);
         }
@@ -423,7 +425,7 @@ namespace gpm_vibration_module_api.Modbus
         private async Task<int[]> TCPReadHoldingRegister(int StartAddress, int DataLength, string SlaveID)
         {
             IsResultLoadOK = false;
-            var Req = TCPSocketManager.SendReadHoldingRegistersRequest(SlaveID, this.IP, StartAddress, DataLength);
+            var Req = TCPSocketManager.SendReadHoldingRegistersRequest(SlaveID, this.IP,this.Port, StartAddress, DataLength);
 
             while (!IsResultLoadOK)
             {

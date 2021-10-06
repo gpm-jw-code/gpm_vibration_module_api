@@ -16,23 +16,23 @@ namespace gpm_vibration_module_api.API.Modbus
         public static Dictionary<string, Dictionary<string, GPMModbusAPI>> Dict_IP_dict_ID_ModbusModule = new Dictionary<string, Dictionary<string, GPMModbusAPI>>();
 
         public static Dictionary<string, bool> Dict_IsModbusClientRetry = new Dictionary<string, bool>();
-        public static bool ConnectionRetry(string IP, string SlaveID)
+        public static bool ConnectionRetry(string IP,string Port, string SlaveID)
         {
-            if (Dict_IsModbusClientRetry[IP] == true)
+            if (Dict_IsModbusClientRetry[IP+"_"+Port] == true)
             {
                 return false;
             }
 
-            Dict_IsModbusClientRetry[IP] = true;
+            Dict_IsModbusClientRetry[IP + "_" + Port] = true;
 
-            var TargetModbusClient = DictModbusTCP[IP];
+            var TargetModbusClient = DictModbusTCP[IP + "_" + Port];
             bool ConnectResult = TargetModbusClient.Connect();
 
-            foreach (var item in Dict_IP_dict_ID_ModbusModule[IP].Values)
+            foreach (var item in Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].Values)
             {
                 item.IsWaitingForTCPReconnectResult = false;
             }
-            Dict_IsModbusClientRetry[IP] = false; ;
+            Dict_IsModbusClientRetry[IP + "_" + Port] = false; ;
 
             return ConnectResult;
         }
@@ -47,19 +47,19 @@ namespace gpm_vibration_module_api.API.Modbus
         /// <returns></returns>
         public static ModbusClient TCPSocketRegist(string IP, int Port, string SlaveID, GPMModbusAPI APIObject)
         {
-            if (!DictModbusTCP.ContainsKey(IP))
+            if (!DictModbusTCP.ContainsKey(IP+"_"+Port))
             {
-                DictModbusTCP.Add(IP, new ModbusClient());
-                Dict_IsModbusClientRetry.Add(IP, false);
-                Dict_TCPRequest.Add(IP, new Queue<Request>());
-                Dict_IP_dict_ID_ModbusModule.Add(IP, new Dictionary<string, GPMModbusAPI>());
+                DictModbusTCP.Add(IP + "_" + Port, new ModbusClient());
+                Dict_IsModbusClientRetry.Add(IP + "_" + Port, false);
+                Dict_TCPRequest.Add(IP + "_" + Port, new Queue<Request>());
+                Dict_IP_dict_ID_ModbusModule.Add(IP + "_" + Port, new Dictionary<string, GPMModbusAPI>());
             }
-            if (!Dict_IP_dict_ID_ModbusModule[IP].ContainsKey(SlaveID))
+            if (!Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].ContainsKey(SlaveID))
             {
-                Dict_IP_dict_ID_ModbusModule[IP].Add(SlaveID, APIObject);
+                Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].Add(SlaveID, APIObject);
             }
 
-            ModbusClient mdc = DictModbusTCP[IP];
+            ModbusClient mdc = DictModbusTCP[IP + "_" + Port];
             mdc.connect_type = ModbusClient.CONNECTION_TYPE.TCP;
             if (!mdc.SlaveIDList.Contains(SlaveID))
                 mdc.SlaveIDList.Add(SlaveID);
@@ -68,18 +68,18 @@ namespace gpm_vibration_module_api.API.Modbus
             mdc.IPAddress = IP;
             mdc.Port = Port;
             mdc.Connect();
-            Task.Run(() => QueueRequestHandle(IP));
+            Task.Run(() => QueueRequestHandle(IP + "_" + Port));
             return mdc;
         }
 
-        public static void QueueRequestHandle(string IP)
+        public static void QueueRequestHandle(string IP_Port)
         {
-            var ModbusClientModule = DictModbusTCP[IP];
-            var RequestQueue = Dict_TCPRequest[IP];
-            var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP];
+            var ModbusClientModule = DictModbusTCP[IP_Port];
+            var RequestQueue = Dict_TCPRequest[IP_Port];
+            var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP_Port];
             while (true)
             {
-                if (Dict_IsModbusClientRetry[IP])
+                if (Dict_IsModbusClientRetry[IP_Port])
                 {
                     Thread.Sleep(1000);
                     continue;
@@ -120,11 +120,11 @@ namespace gpm_vibration_module_api.API.Modbus
             }
         }
 
-        internal static Request SendReadHoldingRegistersRequest(string slaveID, string IP, int RegIndex, int length)
+        internal static Request SendReadHoldingRegistersRequest(string slaveID, string IP,string Port, int RegIndex, int length)
         {
             var req = new Request(slaveID, Request.REQUEST.READHOLDING, RegIndex, length, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             //RTUClient.AddRequest(req);
-            var TargetRequestQueue = Dict_TCPRequest[IP];
+            var TargetRequestQueue = Dict_TCPRequest[IP+"_"+Port];
             lock (TargetRequestQueue)
             {
                 TargetRequestQueue.Enqueue(req);
@@ -132,10 +132,10 @@ namespace gpm_vibration_module_api.API.Modbus
             return req;
         }
 
-        internal static void SendWriteSingleRegisterRequest(string slaveID, string IP, int RegIndex, int value)
+        internal static void SendWriteSingleRegisterRequest(string slaveID, string IP, string Port, int RegIndex, int value)
         {
             var req = new Request(slaveID, Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
-            var TargetRequestQueue = Dict_TCPRequest[IP];
+            var TargetRequestQueue = Dict_TCPRequest[IP + "_" + Port];
             lock (TargetRequestQueue)
             {
                 TargetRequestQueue.Enqueue(req);
