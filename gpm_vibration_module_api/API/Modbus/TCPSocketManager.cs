@@ -47,19 +47,20 @@ namespace gpm_vibration_module_api.API.Modbus
         /// <returns></returns>
         public static ModbusClient TCPSocketRegist(string IP, int Port, string SlaveID, GPMModbusAPI APIObject)
         {
-            if (!DictModbusTCP.ContainsKey(IP+"_"+Port))
+            string SocketName = IP + "_" + Port;
+            if (!DictModbusTCP.ContainsKey(SocketName))
             {
-                DictModbusTCP.Add(IP + "_" + Port, new ModbusClient());
-                Dict_IsModbusClientRetry.Add(IP + "_" + Port, false);
-                Dict_TCPRequest.Add(IP + "_" + Port, new Queue<Request>());
-                Dict_IP_dict_ID_ModbusModule.Add(IP + "_" + Port, new Dictionary<string, GPMModbusAPI>());
+                DictModbusTCP.Add(SocketName, new ModbusClient());
+                Dict_IsModbusClientRetry.Add(SocketName, false);
+                Dict_TCPRequest.Add(SocketName, new Queue<Request>());
+                Dict_IP_dict_ID_ModbusModule.Add(SocketName, new Dictionary<string, GPMModbusAPI>());
             }
-            if (!Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].ContainsKey(SlaveID))
+            if (!Dict_IP_dict_ID_ModbusModule[SocketName].ContainsKey(SlaveID))
             {
-                Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].Add(SlaveID, APIObject);
+                Dict_IP_dict_ID_ModbusModule[SocketName].Add(SlaveID, APIObject);
             }
 
-            ModbusClient mdc = DictModbusTCP[IP + "_" + Port];
+            ModbusClient mdc = DictModbusTCP[SocketName];
             mdc.connect_type = ModbusClient.CONNECTION_TYPE.TCP;
             if (!mdc.SlaveIDList.Contains(SlaveID))
                 mdc.SlaveIDList.Add(SlaveID);
@@ -68,9 +69,24 @@ namespace gpm_vibration_module_api.API.Modbus
             mdc.IPAddress = IP;
             mdc.Port = Port;
             mdc.Connect();
-            Task.Run(() => QueueRequestHandle(IP + "_" + Port));
+            Task.Run(() => QueueRequestHandle(SocketName));
             return mdc;
         }
+
+        public static void TCPSocketCancelRegist(string IP,int Port,string SlaveID)
+        {
+            string SocketName = IP + "_" + Port;
+            Dict_IP_dict_ID_ModbusModule[SocketName].Remove(SlaveID);
+            if (Dict_IP_dict_ID_ModbusModule.Count == 0)
+            {
+                Dict_IP_dict_ID_ModbusModule.Remove(SocketName);
+                Dict_TCPRequest.Remove(SocketName);
+                Dict_IsModbusClientRetry.Remove(SocketName);
+                DictModbusTCP[SocketName].Disconnect();
+                DictModbusTCP.Remove(SocketName);
+            }
+        }
+
 
         public static void QueueRequestHandle(string IP_Port)
         {

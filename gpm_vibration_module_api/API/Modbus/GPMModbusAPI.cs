@@ -48,6 +48,10 @@ namespace gpm_vibration_module_api.Modbus
         {
             get
             {
+                if (modbusClient_TCP == null)
+                {
+                    return false;
+                }
                 return modbusClient_TCP.Connected;
             }
         }
@@ -56,6 +60,26 @@ namespace gpm_vibration_module_api.Modbus
             if (modbusClient_TCP != null)
                 modbusClient_TCP?.Disconnect();
         }
+
+        public void Disconnect(string IP, int Port, string SlaveID)
+        {
+            modbus_cli = null;
+            this.SlaveID = SlaveID;
+            this.Port = Port.ToString();
+            this.IP = IP;
+            switch (_ConnectType)
+            {
+                case CONNECTION_TYPE.TCP:
+                    TCPSocketManager.TCPSocketCancelRegist(IP, Port, SlaveID);
+                    break;
+                case CONNECTION_TYPE.RTU:
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
+
         #region STRUCT
         /// <summary>
         /// 暫存器位址設定
