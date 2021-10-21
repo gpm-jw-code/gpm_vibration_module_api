@@ -62,7 +62,7 @@ namespace gpm_vibration_module_api
 
         internal static byte ToGENByte(this MEASURE_RANGE range_set)
         {
-            byte b = 0xC0;
+            byte b = 0x00;
             switch (range_set)
             {
                 case MEASURE_RANGE.MR_2G:
