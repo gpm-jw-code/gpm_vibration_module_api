@@ -22,9 +22,9 @@ namespace gpm_vibration_module_api.Modbus.Tests
         private int excepectedBaudRateForTest = 115200;
         string slaveID = "08";
         const string SensorFwVersion = "1.09";
-        const string IP = "192.168.0.9";
-        const int Port = 5000;
-        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.RTU;
+        const string IP = "127.0.0.1";
+        const int Port = 500;
+        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.TCP;
         bool connected = false;
 
 
