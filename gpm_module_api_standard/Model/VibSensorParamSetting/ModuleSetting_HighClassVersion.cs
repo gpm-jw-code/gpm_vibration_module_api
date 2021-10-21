@@ -165,7 +165,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             var DLHLBytes = ratio.ToHLBytes();
             _SettingBytes[0] = DLHLBytes[0];
             _SettingBytes[1] = DLHLBytes[1];
-             if (Is5KDaulCPUVersion)
+            if (Is5KDaulCPUVersion)
             {
                 _SettingBytes[3] = 0x9F; //Fix ususally
                 //量測範圍設定
@@ -188,7 +188,8 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
                     .Select(pos => Convert.ToByte(bitStringODCNTL.Substring(pos * 8, 8), 2)).ToArray()[0];
                 _SettingBytes[4] = _byte;
                 #endregion
-            }        }
+            }
+        }
         /// <summary>
         /// Calculates the CRC16 for Modbus-RTU
         /// </summary>

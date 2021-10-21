@@ -19,7 +19,7 @@ namespace gpm_vibration_module_api
         /// <summary>
         /// Constructor
         /// </summary>
-        public  GPMModuleAPI()
+        public GPMModuleAPI()
         {
             Logger.Event_Log.Log("GPMMODULEAPI OBJECT BUILD");
             base.Settings = new ModuleSetting_GEN() { _mEASURE_RANGE = MEASURE_RANGE.MR_2G }; //<<<<<<<< Must do it..2021年3月的某一天，我卡在永進一個下午，部分原因是因為這個.^_^
@@ -207,7 +207,7 @@ namespace gpm_vibration_module_api
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
-        public  async Task<byte[]> GetDeviceParams_bytes_Format()
+        public async Task<byte[]> GetDeviceParams_bytes_Format()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray() : null;

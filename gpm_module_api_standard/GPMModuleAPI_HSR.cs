@@ -53,7 +53,7 @@ namespace gpm_vibration_module_api
             //Tools.Logger.Event_Log.Log($"GPMModuleAPI_HSR 物件建立");
         }
 
-        
+
         /// <summary>
         /// 是否為5K雙核版本
         /// </summary>
@@ -69,7 +69,7 @@ namespace gpm_vibration_module_api
         }
 
 
-		public string IP { get; set; }
+        public string IP { get; set; }
         public int Port { get; set; }
 
         public string PortName { get; private set; }
@@ -438,13 +438,13 @@ namespace gpm_vibration_module_api
             Settings.Mode = Mode;
             StateObject state;
             int cnt = 0;
-            while ( (state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 1000)).ErrorCode!= clsErrorCode.Error.None)
+            while ((state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 1000)).ErrorCode != clsErrorCode.Error.None)
             {
                 cnt += 1;
                 if (cnt == 2)
                     break;
                 Thread.Sleep(1);
-            }   
+            }
 
             if (state.ErrorCode != clsErrorCode.Error.None)
             {
@@ -810,7 +810,7 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        int len = (IsKX134Sensor | Is5KDaulCPUVersion)? Settings.DataLength * 6 : (raw_bytes.Count);
+                        int len = (IsKX134Sensor | Is5KDaulCPUVersion) ? Settings.DataLength * 6 : (raw_bytes.Count);
                         _raw_bytes = new byte[len];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }
@@ -821,7 +821,7 @@ namespace gpm_vibration_module_api
                     }
                 }
                 List<List<double>> ori_xyz_data_list = null;
-                if (IsKX134Sensor| Is5KDaulCPUVersion)
+                if (IsKX134Sensor | Is5KDaulCPUVersion)
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
                 else
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(_raw_bytes, Settings.mEASURE_RANGE, Settings.Mode);
