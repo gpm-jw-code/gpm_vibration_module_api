@@ -21,13 +21,13 @@ namespace gpm_vibration_module_api.Modbus
             PACKET_LOSS = -404
         }
 
-        internal string SlaveID;
 
         public delegate void Event_GetDataTimeOut(string IP,string SerialPort,string SlaveID);
 
         public Event_GetDataTimeOut EventGetDataTimeOut;
 
-        private string PortName;
+        internal string SlaveID;
+        private string ComName;
         private string IP;
         private string Port;
         internal bool IsWaitingForTCPReconnectResult = false;
@@ -55,24 +55,16 @@ namespace gpm_vibration_module_api.Modbus
                 return modbusClient_TCP.Connected;
             }
         }
-        public void DisConnect()
-        {
-            if (modbusClient_TCP != null)
-                modbusClient_TCP?.Disconnect();
-        }
 
-        public void Disconnect(string IP, int Port, string SlaveID)
+        public void Disconnect()
         {
-            modbus_cli = null;
-            this.SlaveID = SlaveID;
-            this.Port = Port.ToString();
-            this.IP = IP;
             switch (_ConnectType)
             {
                 case CONNECTION_TYPE.TCP:
-                    TCPSocketManager.TCPSocketCancelRegist(IP, Port, SlaveID);
+                    TCPSocketManager.TCPSocketCancelRegist(IP, Convert.ToInt32(Port) , SlaveID);
                     break;
                 case CONNECTION_TYPE.RTU:
+                    SerialPortManager.SerialPortCancelRegist(ComName, SlaveID);
                     break;
                 default:
                     break;
@@ -191,7 +183,7 @@ namespace gpm_vibration_module_api.Modbus
         {
             modbusClient_TCP = null;
             this.SlaveID = SlaveID;
-            this.PortName = ComPort;
+            this.ComName = ComPort;
             modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID, parity, StopBits, this);
             if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
             {
@@ -413,7 +405,7 @@ namespace gpm_vibration_module_api.Modbus
             else
             {
                 var oriID = SlaveID;
-                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.IDRegIndex, ID);
+                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.IDRegIndex, ID);
             }
         }
         /// <summary>
@@ -444,7 +436,7 @@ namespace gpm_vibration_module_api.Modbus
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP,this.Port, Register.RangeRegStart, valwrite);
             else
-                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, PortName, Register.RangeRegStart, valwrite);
+                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.RangeRegStart, valwrite);
         }
 
         int[] Response = null;
@@ -474,7 +466,7 @@ namespace gpm_vibration_module_api.Modbus
         internal async Task<int[]> RTUReadHoldingRegister(int start, int len, string SlaveID)
         {
             IsResultLoadOK = false;
-            API.Modbus.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, PortName, start, len);
+            API.Modbus.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, ComName, start, len);
             Stopwatch sw = new Stopwatch();
             sw.Start();
 

@@ -70,7 +70,7 @@ namespace gpm_vibration_module_api.API.Modbus
             mdc.IPAddress = IP;
             mdc.Port = Port;
             mdc.Connect();
-            Task.Run(() => QueueRequestHandle(SocketName));
+            Task.Run(() =>  QueueRequestHandle(SocketName));
             return mdc;
         }
 
@@ -78,7 +78,7 @@ namespace gpm_vibration_module_api.API.Modbus
         {
             string SocketName = IP + "_" + Port;
             Dict_IP_dict_ID_ModbusModule[SocketName].Remove(SlaveID);
-            if (Dict_IP_dict_ID_ModbusModule.Count == 0)
+            if (Dict_IP_dict_ID_ModbusModule[SocketName].Count == 0)
             {
                 Dict_IP_dict_ID_ModbusModule.Remove(SocketName);
                 Dict_TCPRequest.Remove(SocketName);
@@ -96,6 +96,10 @@ namespace gpm_vibration_module_api.API.Modbus
             var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP_Port];
             while (true)
             {
+                if (!Dict_IsModbusClientRetry.ContainsKey(IP_Port))
+                {
+                    break;
+                }
                 if (Dict_IsModbusClientRetry[IP_Port])
                 {
                     Thread.Sleep(1000);
