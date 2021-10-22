@@ -87,7 +87,7 @@ namespace gpm_vibration_module_api.API.Modbus
                             ModbusClientModule.UnitIdentifier = UnitIdentifier;
                             int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
                             sw.Stop();
-                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
+                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result,(int)sw.ElapsedMilliseconds);
                             Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
                         }
                         else
