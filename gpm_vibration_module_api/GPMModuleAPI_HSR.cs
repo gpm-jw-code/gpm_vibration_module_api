@@ -27,8 +27,6 @@ namespace gpm_vibration_module_api
         private ModuleSerialPortBase SerialPortBase;
         private readonly NET.DeviceTestData DeviceData = new NET.DeviceTestData();
         private Stopwatch HSStopWatch = new Stopwatch();
-        private int GetDataInteruptFlag;
-        private bool GetDataFirstCall = true;
 
 
         internal bool IsKX134Sensor = true;
@@ -465,7 +463,6 @@ namespace gpm_vibration_module_api
             //Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
 
             GetDataCalledStasify();
-            GetDataInteruptFlag = 0;
             Tools.Logger.Event_Log.Log("GetData Fun called");
             try
             {
@@ -491,7 +488,6 @@ namespace gpm_vibration_module_api
                 }
 
                 HSStopWatch.Stop();
-                GetDataFirstCall = false;
                 //DataUploadToWeb();
                 //Tools.Logger.Event_Log.Log($"Memory Used:{sys.Utility.GetUsedPhysMB()} MB");
                 if (state_obj.ErrorCode == clsErrorCode.Error.None)
