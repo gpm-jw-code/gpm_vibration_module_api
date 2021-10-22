@@ -43,7 +43,7 @@ namespace gpm_vibration_module_api.Modbus.Tests
         public void NullValueTest()
         {
             GPMModbusAPI api = new GPMModbusAPI();
-            var ret = api.TestGetF03FloatValue().Result;
+            //var ret = api.GetF03FloatValue(0,0).Result;
         }
 
 
