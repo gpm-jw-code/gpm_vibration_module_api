@@ -1,6 +1,7 @@
 ﻿using gpm_vibration_module_api.Modbus;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -116,13 +117,16 @@ namespace gpm_vibration_module_api.API.Modbus
                     ModbusClientModule.UnitIdentifier = CurrentRequest.SlaveID;
                     if (!ModbusClientModule.Connected)
                     {
-                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 });
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 },0);
                         continue;
                     }
                     if (CurrentRequest.request == Request.REQUEST.READHOLDING)
                     {
+                        Stopwatch SW = new Stopwatch();
+                        SW.Start();
                         int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
+                        SW.Stop();
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result,(int)SW.ElapsedMilliseconds);
                     }
                     else
                     {

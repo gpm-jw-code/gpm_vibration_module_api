@@ -228,6 +228,16 @@ namespace gpm_vibration_module_api.Modbus
 
         }
 
+        public async Task<double[]> ReadCustomValue(int StartIndex,int Length)
+        {
+            RecieveData = false;
+            double[] dVals = (await GetF03FloatValue(StartIndex, Length));
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return dVals;
+        }
+
         /// <summary>
         /// 讀取3軸振動能量值
         /// </summary>
@@ -438,11 +448,13 @@ namespace gpm_vibration_module_api.Modbus
         }
 
         int[] Response = null;
+        public int DelayTime = 0;
         bool IsResultLoadOK = false;
 
-        public void GetRequestResult(int[] Response)
+        public void GetRequestResult(int[] Response,int delayTime)
         {
             this.Response = Response;
+            this.DelayTime = delayTime;
             IsResultLoadOK = true;
         }
 
