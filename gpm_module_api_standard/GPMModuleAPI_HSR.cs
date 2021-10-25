@@ -588,7 +588,32 @@ namespace gpm_vibration_module_api
         }
         #endregion
         #region Private Methods
+        /// <summary>
+        /// 降取樣s
+        /// </summary>
+        /// <param name="ori_xyz_data_list"></param>
+        private List<List<double>> DownSampleProcessingAsync(List<List<double>> ori_xyz_data_list)
+        {
+            double d;
 
+            List<double>[] output = new List<double>[3];
+            int ra = Convert.ToInt32(Math.Ceiling(1.0 / Settings._downSamplingRatio) + "");
+            int output_len = Convert.ToInt32(Math.Floor(ori_xyz_data_list[0].Count * Settings._downSamplingRatio) + "");
+            for (int i = 0; i < 3; i++)
+            {
+
+                List<double> ortSamples = ori_xyz_data_list[i];
+                List<double> downSamples = new List<double>();
+                //ratio = 0.5  1/0.5 = 2 '
+                for (int j = 0; j < ori_xyz_data_list[0].Count; j += ra)
+                {
+                    downSamples.Add(ortSamples[j]);
+                }
+                output[i] = downSamples;
+
+            }
+            return output.ToList();
+        }
         /// <summary>
         /// 從參數回傳值定義量測範圍
         /// </summary>
