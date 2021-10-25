@@ -91,57 +91,65 @@ namespace gpm_vibration_module_api.API.Modbus
 
         public static void QueueRequestHandle(string IP_Port)
         {
-            var ModbusClientModule = DictModbusTCP[IP_Port];
-            var RequestQueue = Dict_TCPRequest[IP_Port];
-            var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP_Port];
-            while (true)
+            try
             {
-                if (!Dict_IsModbusClientRetry.ContainsKey(IP_Port))
+                var ModbusClientModule = DictModbusTCP[IP_Port];
+                var RequestQueue = Dict_TCPRequest[IP_Port];
+                var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP_Port];
+                while (true)
                 {
-                    break;
-                }
-                if (Dict_IsModbusClientRetry[IP_Port])
-                {
-                    Thread.Sleep(1000);
-                    continue;
-                }
-                Request CurrentRequest = null;
-                lock (RequestQueue)
-                {
-                    Thread.Sleep(300);
-                    if (RequestQueue.Count == 0)
+                    if (!Dict_IsModbusClientRetry.ContainsKey(IP_Port))
+                    {
+                        break;
+                    }
+                    if (Dict_IsModbusClientRetry[IP_Port])
+                    {
+                        Thread.Sleep(1000);
                         continue;
+                    }
+                    Request CurrentRequest = null;
+                    lock (RequestQueue)
+                    {
+                        Thread.Sleep(300);
+                        if (RequestQueue.Count == 0)
+                            continue;
 
-                    CurrentRequest = RequestQueue.Dequeue();
-                    if (CurrentRequest == null)
-                        continue;
-                }
-                try
-                {
-                    ModbusClientModule.UnitIdentifier = CurrentRequest.SlaveID;
-                    if (!ModbusClientModule.Connected)
-                    {
-                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 },0);
-                        continue;
+                        CurrentRequest = RequestQueue.Dequeue();
+                        if (CurrentRequest == null)
+                            continue;
                     }
-                    if (CurrentRequest.request == Request.REQUEST.READHOLDING)
+                    try
                     {
-                        Stopwatch SW = new Stopwatch();
-                        SW.Start();
-                        int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-                        SW.Stop();
-                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result,(int)SW.ElapsedMilliseconds);
+                        ModbusClientModule.UnitIdentifier = CurrentRequest.SlaveID;
+                        if (!ModbusClientModule.Connected)
+                        {
+                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(new int[1] { -1 }, 0);
+                            continue;
+                        }
+                        if (CurrentRequest.request == Request.REQUEST.READHOLDING)
+                        {
+                            Stopwatch SW = new Stopwatch();
+                            SW.Start();
+                            int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                            SW.Stop();
+                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result, (int)SW.ElapsedMilliseconds);
+                        }
+                        else
+                        {
+                            ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        Console.WriteLine(ex.Message);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
                 }
             }
+            catch (Exception)
+            {
+                return;
+            }
+           
         }
 
         internal static Request SendReadHoldingRegistersRequest(string slaveID, string IP,string Port, int RegIndex, int length)
