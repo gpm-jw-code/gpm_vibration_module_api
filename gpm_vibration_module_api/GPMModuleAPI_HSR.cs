@@ -60,6 +60,7 @@ namespace gpm_vibration_module_api
             {
                 IsKX134Sensor = !value;
                 Settings.Is5KDaulCPUVersion = value;
+                SamplingRate = value ? 5032 : 10064;
                 Settings._mEASURE_RANGE = value ? MEASURE_RANGE.MR_2G : MEASURE_RANGE.MR_8G;
             }
         }
@@ -810,16 +811,23 @@ namespace gpm_vibration_module_api
                     }
                 }
                 List<List<double>> ori_xyz_data_list = null;
+
                 if (IsKX134Sensor | Is5KDaulCPUVersion)
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble_KX134(_raw_bytes, Settings.LSB, MiniPacketDataLen);
                 else
                     ori_xyz_data_list = Tools.ConverterTools.AccPacketToListDouble(_raw_bytes, Settings.mEASURE_RANGE, Settings.Mode);
                 // List<List<double>> XYZ_Acc_Data_List = Filters.LPF(ori_xyz_data_list, LowpassFilterCutOffFreq, Settings.SamplingRate); //濾波
-                DataSet dataSet_ret = new DataSet(Settings.SamplingRate) { RecieveTime = DateTime.Now };
 
-                dataSet_ret.AccData.X = ori_xyz_data_list[0];
-                dataSet_ret.AccData.Y = ori_xyz_data_list[1];
-                dataSet_ret.AccData.Z = ori_xyz_data_list[2];
+                List<List<double>> down_sample_ls = DownSampleProcessingAsync(ori_xyz_data_list);
+
+                DataSet dataSet_ret = new DataSet(Settings.SamplingRate) { RecieveTime = DateTime.Now };
+                //dataSet_ret.AccData.X = ori_xyz_data_list[0];
+                //dataSet_ret.AccData.Y = ori_xyz_data_list[1];
+                //dataSet_ret.AccData.Z = ori_xyz_data_list[2];
+
+                dataSet_ret.AccData.X = down_sample_ls[0];
+                dataSet_ret.AccData.Y = down_sample_ls[1];
+                dataSet_ret.AccData.Z = down_sample_ls[2];
 
                 if (FilterActive)
                 {
@@ -842,6 +850,34 @@ namespace gpm_vibration_module_api
                 return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.PostProcessingError };
             }
         }
+
+        /// <summary>
+        /// 降取樣
+        /// </summary>
+        /// <param name="ori_xyz_data_list"></param>
+        private List<List<double>> DownSampleProcessingAsync(List<List<double>> ori_xyz_data_list)
+        {
+            double d;
+
+            List<double>[] output = new List<double>[3];
+            int ra = Convert.ToInt32(Math.Ceiling(1.0 / Settings._downSamplingRatio) + "");
+            int output_len = Convert.ToInt32(Math.Floor(ori_xyz_data_list[0].Count * Settings._downSamplingRatio) + "");
+            for (int i = 0; i < 3; i++)
+            {
+
+                List<double> ortSamples = ori_xyz_data_list[i];
+                List<double> downSamples = new List<double>();
+                //ratio = 0.5  1/0.5 = 2 '
+                for (int j = 0; j < ori_xyz_data_list[0].Count; j += ra)
+                {
+                    downSamples.Add(ortSamples[j]);
+                }
+                output[i] = downSamples;
+
+            }
+            return output.ToList();
+        }
+
         internal void FFTAndFeatureCal(ref DataSet dataSet_ret, bool fft, bool other_feature, double samplingRate)
         {
             if (fft)
