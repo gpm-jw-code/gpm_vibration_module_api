@@ -151,7 +151,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         public int MiniPacketDataLen = 128;
 
-        internal double SamplingRate
+        public double SamplingRate
         {
             get
             {
