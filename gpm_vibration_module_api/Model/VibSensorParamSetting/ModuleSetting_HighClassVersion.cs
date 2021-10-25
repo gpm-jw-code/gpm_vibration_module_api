@@ -95,29 +95,29 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         /// <summary>
         /// 單軸資料長度
         /// </summary>
-        internal int _DataLength = 512;
+        internal int _DataOutputLength = 512;
 
-        internal int DefaulDataLength = 256;
+        internal int DefaulDataOutPutLength = 256;
         /// <summary>
         /// 單軸資料長度
         /// </summary>
-        virtual public int DataLength
+        virtual public int DataOuputLength
         {
-            get { return _DataLength; }
+            get { return _DataOutputLength; }
             set
             {
-                _DataLength = value;
+                _DataOutputLength = value;
                 UpdateSettingBytes();
             }
         }
         /// <summary>
-        /// 取得封包總長度
+        /// 模組必須回傳的封包長度
         /// </summary>
-        virtual public int PackageTotalLen
+        virtual public int PacketLengthOfDeviceShoultReturn
         {
             get
             {
-                return _DataLength * 6;
+                return _DataOutputLength * CompValueOfDownSample * 6;
             }
         }
 
@@ -161,7 +161,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         {
             get
             {
-                int meas_time = (int)Math.Floor((double)_DataLength / SamplingRate * 1000);
+                int meas_time = (int)Math.Floor((double)_DataOutputLength / SamplingRate * 1000);
                 return meas_time;
             }
         }
@@ -177,10 +177,15 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             }
         }
 
+        /// <summary>
+        /// 因為Down Sample, 要多取幾倍的數據量
+        /// </summary>
+        internal int CompValueOfDownSample => Convert.ToInt32((1.0 / _downSamplingRatio + ""));
+
         virtual internal void UpdateSettingBytes()
         {
-            ///長度;先計算倍率
-            var ratio = _DataLength * 6 / 1536;
+            ///長度;先計算倍率(要考慮DownSampling,所以要得數據要N倍)
+            var ratio = _DataOutputLength * 6 * CompValueOfDownSample / 1536;
             var DLHLBytes = ratio.ToHLBytes();
             _SettingBytes[0] = DLHLBytes[0];
             _SettingBytes[1] = DLHLBytes[1];

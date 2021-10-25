@@ -130,7 +130,7 @@ namespace gpm_vibration_module_api
 
             get
             {
-                return Settings.DataLength;
+                return Settings.DataOuputLength;
             }
         }
 
@@ -151,7 +151,7 @@ namespace gpm_vibration_module_api
         /// </summary>
         public int MiniPacketDataLen = 128;
 
-        public double SamplingRate
+        internal double SamplingRate
         {
             get
             {
@@ -304,8 +304,8 @@ namespace gpm_vibration_module_api
                     return (int)clsErrorCode.Error.DATA_LENGTH_SETTING_VALUE_ILLEGAL;
                 }
                 //await GetDataInterupt();
-                var ori_Set = Settings.DataLength;
-                Settings.DataLength = N;
+                var ori_Set = Settings.DataOuputLength;
+                Settings.DataOuputLength = N;
                 var state = await SendMessageMiddleware(Settings.SettingBytesWithHead, ParamSetCheckLen, Timeout: 3000);
                 int retry_cnt = 0;
                 while (state.ErrorCode != clsErrorCode.Error.None)
@@ -322,12 +322,12 @@ namespace gpm_vibration_module_api
                 if (!ParamRetCheck(Settings._SettingBytes, Param_Ret))
                 {
                     Tools.Logger.Event_Log.Log($"Data Length Setting Range Fail::{state.ErrorCode}");
-                    Settings.DataLength = ori_Set;
+                    Settings.DataOuputLength = ori_Set;
                     return -1;
                 }
                 else
                 {
-                    Settings.DataLength = N;
+                    Settings.DataOuputLength = N;
                     Tools.Logger.Event_Log.Log($"Data Length Setting OK::{N}");
                     Console.WriteLine("量測時間預估:" + Settings.Measure_Time + " ms");
                     return 0;
@@ -494,7 +494,7 @@ namespace gpm_vibration_module_api
                 if (state_obj.ErrorCode == clsErrorCode.Error.None)
                 {
                     GetDataSuccessNum++;
-                    Tools.Logger.Event_Log.Log("封包接收完成:" + state_obj.DataByteList.Count + $"(單軸長度:{state_obj.DataByteList.Count / 6}|設定值:{Settings.DataLength})");
+                    Tools.Logger.Event_Log.Log("封包接收完成:" + state_obj.DataByteList.Count + $"(單軸長度:{state_obj.DataByteList.Count / 6}|設定值:{Settings.DataOuputLength})");
                     DataSetForUser = PostProcessing(state_obj.DataByteList, IsGetFFT, IsGetOtherFeatures);
                     DataSetForUser.RecieveTime = DateTime.Now;
                     DataSetForUser.TimeSpend = HSStopWatch.ElapsedMilliseconds;
@@ -573,9 +573,9 @@ namespace gpm_vibration_module_api
         {
             StateObject state_obj = null;
             if (!_Is485Module)
-                state_obj = SendMessageMiddleware("READVALUE\r\n", Settings.PackageTotalLen, Timeout).Result;
+                state_obj = SendMessageMiddleware("READVALUE\r\n", Settings.PacketLengthOfDeviceShoultReturn, Timeout).Result;
             else
-                state_obj = SendMessageMiddleware(Settings.READRAWCmdByteForModbus, Settings.PackageTotalLen, Timeout).Result;
+                state_obj = SendMessageMiddleware(Settings.READRAWCmdByteForModbus, Settings.PacketLengthOfDeviceShoultReturn, Timeout).Result;
             return state_obj;
         }
         #endregion
@@ -700,7 +700,7 @@ namespace gpm_vibration_module_api
         private new async Task<int> Reconnect()
         {
             #region Timeout的時候將連線關閉在重連(才能把非同步接收進程關掉)
-            Settings.DefaulDataLength = Settings.DataLength;
+            Settings.DefaulDataOutPutLength = Settings.DataOuputLength;
             Disconnect();
             var connect_ret = await Connect(IP, Port);
             Console.WriteLine($"Timeout>Disconnect.Reconnect process::{connect_ret}");
@@ -755,7 +755,7 @@ namespace gpm_vibration_module_api
         private bool ParamRetCheck(byte[] Ret)
         {
             List<int[]> Asserts = new List<int[]>() {
-              new int[2]{1,Settings.DefaulDataLength/256}, new int[2]{3,192}, new int[2]{4, 47}
+              new int[2]{1,Settings.DefaulDataOutPutLength/256}, new int[2]{3,192}, new int[2]{4, 47}
             };
             foreach (var assert_item in Asserts)
             {
@@ -772,7 +772,7 @@ namespace gpm_vibration_module_api
         private async Task<int> SetDefaul()
         {
             var state_1 = await Measure_Range_Setting(MEASURE_RANGE.MR_8G);
-            var state_2 = await Data_Length_Setting(Settings.DefaulDataLength);
+            var state_2 = await Data_Length_Setting(Settings.DefaulDataOutPutLength);
             if (state_1 == 0 && state_2 == 0)
                 return 0;
             else
@@ -800,7 +800,7 @@ namespace gpm_vibration_module_api
                 {
                     try
                     {
-                        int len = (IsKX134Sensor | Is5KDaulCPUVersion) ? Settings.DataLength * 6 : (raw_bytes.Count);
+                        int len = (IsKX134Sensor | Is5KDaulCPUVersion) ? Settings.DataOuputLength * Settings.CompValueOfDownSample * 6 : raw_bytes.Count;
                         _raw_bytes = new byte[len];
                         Array.Copy(raw_bytes.ToArray(), 0, _raw_bytes, 0, _raw_bytes.Length);
                     }

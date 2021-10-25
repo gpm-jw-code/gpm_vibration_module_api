@@ -145,7 +145,7 @@ namespace gpm_vibration_module_api
                 int ErrorCnt = 0;
                 DataSet dataSet_ret = new DataSet(base.Settings.SamplingRate);
                 //拿好幾次 組合
-                while (dataSet_ret.AccData.X.Count != base.Settings.DataLength)
+                while (dataSet_ret.AccData.X.Count != base.Settings.DataOuputLength)
                 {
                     DataSet dataSet_slice = await base.GetData(IsGetFFT, IsGetOtherFeatures);
                     if (dataSet_slice == null)
@@ -330,7 +330,7 @@ namespace gpm_vibration_module_api
                 await Connect();
                 await Measure_Range_Setting(base.Settings.mEASURE_RANGE);
                 await DAQModeSetting(base.Settings.Mode);
-                await Data_Length_Setting(base.Settings.DataLength);
+                await Data_Length_Setting(base.Settings.DataOuputLength);
                 return true;
             }
             catch (Exception ex)

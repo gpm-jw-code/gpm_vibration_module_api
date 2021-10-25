@@ -16,10 +16,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x20 };
         }
 
-        /// <summary>
-        /// 在資料長度設定下的封包總數
-        /// </summary>
-        public override int PackageTotalLen
+        public override int PacketLengthOfDeviceShoultReturn
         {
             get
             {
@@ -48,10 +45,10 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         /// <summary>
         /// 單軸數據長度設定
         /// </summary>
-        public override int DataLength
+        public override int DataOuputLength
         {
-            get { return base.DataLength; }
-            set { base.DataLength = value; }
+            get { return base.DataOuputLength; }
+            set { base.DataOuputLength = value; }
         }
 
         /// <summary>
@@ -61,7 +58,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         {
             get
             {
-                return _DataLength / 512;
+                return _DataOutputLength / 512;
             }
         }
         /// <summary>

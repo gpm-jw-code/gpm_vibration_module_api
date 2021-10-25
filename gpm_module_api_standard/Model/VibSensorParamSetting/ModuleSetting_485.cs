@@ -16,14 +16,14 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             base._SettingBytes = new byte[6] { 0x00, 0x06, 0x00, 0x00, 0x00, 0x00 };
             base.Mode = DAQMode.High_Sampling;
         }
-        public override int PackageTotalLen
+        public override int PacketLengthOfDeviceShoultReturn
         {
             get
             {
                 if (_Mode == DAQMode.High_Sampling)
                     return 3072 + 3; //包含ID(Head) 跟 oxod oxoa(Tail)
                 else
-                    return 3072 * (_DataLength / 512); //待確認?
+                    return 3072 * (_DataOutputLength / 512); //待確認?
             }
         }
         internal override byte[] SettingBytesWithHead
@@ -38,16 +38,16 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
                 return cmdlist.ToArray();
             }
         }
-        public override int DataLength
+        public override int DataOuputLength
         {
             get
             {
-                return base.DataLength;
+                return base.DataOuputLength;
             }
             set
             {
                 settingItem = SettingItem.SetDataLen;
-                base.DataLength = value;
+                base.DataOuputLength = value;
             }
         }
 
@@ -86,7 +86,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
                     _SettingBytes[3] = 0x10; _SettingBytes[4] = 0;
                     if (_Mode == DAQMode.Low_Sampling)
                     {
-                        int _ratio = _DataLength / 512;  //倍數
+                        int _ratio = _DataOutputLength / 512;  //倍數
                         _SettingBytes[5] = (byte)_ratio;
                     }
                     else
@@ -96,7 +96,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
                     _SettingBytes[3] = 0x10; _SettingBytes[4] = 0;
                     if (_Mode == DAQMode.Low_Sampling)
                     {
-                        int _ratio = _DataLength / 512;  //倍數
+                        int _ratio = _DataOutputLength / 512;  //倍數
                         _SettingBytes[5] = (byte)_ratio;
                     }
                     else
