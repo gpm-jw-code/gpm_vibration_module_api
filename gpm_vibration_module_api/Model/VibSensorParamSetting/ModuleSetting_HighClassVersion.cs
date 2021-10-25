@@ -44,7 +44,20 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             SetDaqMode, SetDataLen, SetMeasureRange, NotSpecify
         }
         internal SettingItem settingItem = SettingItem.NotSpecify;
-        public double SamplingRate { get; set; } = 10064;
+
+        private double _SamplingRate = 10064;
+
+        protected double BaseSamplingRate = 10064;
+        internal double _downSamplingRatio = 1;
+        public double SamplingRate
+        {
+            get => _SamplingRate;
+            set
+            {
+                _SamplingRate = value;
+                _downSamplingRatio = value / BaseSamplingRate;
+            }
+        }
 
         /// <summary>
         /// [3] KX134: CNTL1  預設量測範圍 = +-8G ; 5K雙核 : 9F/87

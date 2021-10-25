@@ -65,6 +65,8 @@ namespace gpm_vibration_module_api
                 IsKX134Sensor = !value;
                 Settings.Is5KDaulCPUVersion = value;
                 Settings._mEASURE_RANGE = value ? MEASURE_RANGE.MR_2G : MEASURE_RANGE.MR_8G;
+				Settings.SamplingRate = value ? 5032 : 10064;
+
             }
         }
 
