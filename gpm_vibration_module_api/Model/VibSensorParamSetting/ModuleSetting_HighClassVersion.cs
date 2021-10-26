@@ -45,11 +45,11 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         }
         internal SettingItem settingItem = SettingItem.NotSpecify;
 
-        private double _SamplingRate = 10064;
+        protected double _SamplingRate = 10064;
 
         protected double BaseSamplingRate = 10064;
         internal double _downSamplingRatio = 1;
-        public double SamplingRate
+        virtual public double SamplingRate
         {
             get => _SamplingRate;
             set
@@ -137,7 +137,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             get { return _Mode; }
             set
             {
-                SamplingRate = value == DAQMode.High_Sampling ? 8000 : 3500;
+                SamplingRate = value == DAQMode.High_Sampling ? 5600 : 3500;
                 _Mode = value;
                 UpdateSettingBytes();
             }

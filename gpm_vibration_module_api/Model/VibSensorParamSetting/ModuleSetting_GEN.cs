@@ -16,6 +16,20 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             base._SettingBytes = new byte[8] { 0x00, 0x00, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x20 };
         }
 
+        protected new double BaseSamplingRate = 5600;
+        protected new double _SamplingRate = 5600;
+
+
+        override public double SamplingRate
+        {
+            get => _SamplingRate;
+            set
+            {
+                _SamplingRate = value;
+                _downSamplingRatio = value / BaseSamplingRate;
+            }
+        }
+
         public override int PacketLengthOfDeviceShoultReturn
         {
             get

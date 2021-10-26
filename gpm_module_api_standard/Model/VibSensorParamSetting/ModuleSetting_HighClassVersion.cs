@@ -85,7 +85,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
         }
 
 
-       /// <summary>
+        /// <summary>
         /// 單軸資料長度
         /// </summary>
         internal int _DataOutputLength = 512;
@@ -130,7 +130,7 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             get { return _Mode; }
             set
             {
-                SamplingRate = value == DAQMode.High_Sampling ? 8000 : 3500;
+                SamplingRate = value == DAQMode.High_Sampling ? 5600 : 3500;
                 _Mode = value;
                 UpdateSettingBytes();
             }
@@ -170,14 +170,14 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
             }
         }
 
-    	/// <summary>
+        /// <summary>
         /// 因為Down Sample, 要多取幾倍的數據量
         /// </summary>
         internal int CompValueOfDownSample => Convert.ToInt32((1.0 / _downSamplingRatio + ""));
-        
-		virtual internal void UpdateSettingBytes()
+
+        virtual internal void UpdateSettingBytes()
         {
-             ///長度;先計算倍率(要考慮DownSampling,所以要得數據要N倍)
+            ///長度;先計算倍率(要考慮DownSampling,所以要得數據要N倍)
             var ratio = _DataOutputLength * 6 * CompValueOfDownSample / 1536;
             var DLHLBytes = ratio.ToHLBytes();
             _SettingBytes[0] = DLHLBytes[0];

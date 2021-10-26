@@ -65,6 +65,9 @@ namespace gpm_vibration_module_api.Model.VibSensorParamSetting
                 return _DataOutputLength / 512;
             }
         }
+
+        internal new double BaseSamplingRate = 5600;
+
         /// <summary>
         /// 根據設定值更新參數陣列
         /// </summary>

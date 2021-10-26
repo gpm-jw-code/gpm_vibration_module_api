@@ -21,10 +21,11 @@ namespace gpm_vibration_module_api
         public GPMModuleAPI()
         {
             Logger.Event_Log.Log("GPMMODULEAPI OBJECT BUILD");
-            base.Settings = new ModuleSetting_GEN() { _mEASURE_RANGE = MEASURE_RANGE.MR_2G }; //<<<<<<<< Must do it..2021年3月的某一天，我卡在永進一個下午，部分原因是因為這個.^_^
+            base.Settings = new ModuleSetting_GEN() { _mEASURE_RANGE = MEASURE_RANGE.MR_2G };
             IsKX134Sensor = false;
             DataLenMiniLen = 512;
             LowPassFilterCutOffFreq = 3000;
+            SamplingRate = 5600;
         }
         /// <summary>
         /// Constructor(When module is client mode using.)
@@ -86,6 +87,19 @@ namespace gpm_vibration_module_api
             get { return base.LowPassFilterActive; }
             set { base.LowPassFilterActive = value; }
         }
+
+        override public double SamplingRate
+        {
+            get
+            {
+                return Settings.SamplingRate;
+            }
+            set
+            {
+                Settings.SamplingRate = value;
+            }
+        }
+
         /// <summary>
         /// 設定低通濾波器截止頻率
         /// </summary>
@@ -142,7 +156,7 @@ namespace gpm_vibration_module_api
             else
             {
                 int ErrorCnt = 0;
-                DataSet dataSet_ret = new DataSet(base.Settings.SamplingRate);
+                DataSet dataSet_ret = new DataSet(Settings.SamplingRate);
                 //拿好幾次 組合
                 while (dataSet_ret.AccData.X.Count != base.Settings.DataOuputLength)
                 {
@@ -206,7 +220,7 @@ namespace gpm_vibration_module_api
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray().ToCommaHexString() : state.ErrorCode.ToString();
         }
-        public  async Task<byte[]> GetDeviceParams_bytes_Format()
+        public async Task<byte[]> GetDeviceParams_bytes_Format()
         {
             var state = await SendMessageMiddleware("READSTVAL\r\n", ParamSetCheckLen, 1000);
             return state.ErrorCode == clsErrorCode.Error.None ? state.DataByteList.ToArray() : null;
