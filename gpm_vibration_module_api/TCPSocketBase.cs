@@ -41,7 +41,7 @@ namespace gpm_vibration_module_api.GPMBase
         /// <param name="ip"></param>
         /// <param name="port"></param>
         /// <returns></returns>
-        internal async Task<int> AsyncConnect(string ip, int port)
+        public async Task<int> AsyncConnect(string ip, int port)
         {
             IP = ip;
             Port = port;

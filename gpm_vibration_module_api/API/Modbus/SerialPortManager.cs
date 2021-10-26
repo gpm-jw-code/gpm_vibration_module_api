@@ -53,6 +53,18 @@ namespace gpm_vibration_module_api.API.Modbus
             return mdc;
         }
 
+        public static void SerialPortCancelRegist(string ComName,string SlaveID)
+        {
+            Dict_Com_dict_ID_ModbusModule[ComName].Remove(SlaveID);
+            if (Dict_Com_dict_ID_ModbusModule[ComName].Count == 0)
+            {
+                Dict_Com_dict_ID_ModbusModule.Remove(ComName);
+                Dict_RTURequest.Remove(ComName);
+                DictModbusRTU[ComName].Disconnect();
+                DictModbusRTU.Remove(ComName);
+            }
+        }
+
         public static void QueueRequestHandle(string ComportName)
         {
             var ModbusClientModule = DictModbusRTU[ComportName];
@@ -87,7 +99,7 @@ namespace gpm_vibration_module_api.API.Modbus
                             ModbusClientModule.UnitIdentifier = UnitIdentifier;
                             int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
                             sw.Stop();
-                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result);
+                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result,(int)sw.ElapsedMilliseconds);
                             Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
                         }
                         else

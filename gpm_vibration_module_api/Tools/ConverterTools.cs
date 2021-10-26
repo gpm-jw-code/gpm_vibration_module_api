@@ -6,7 +6,7 @@ using static gpm_vibration_module_api.DataSet;
 
 namespace gpm_vibration_module_api.Tools
 {
-    internal static class ConverterTools
+    public static class ConverterTools
     {
         /// <summary>
         /// 將兩個Byte組合成Double
