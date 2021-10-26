@@ -26,7 +26,15 @@ namespace gpm_vibration_module_api.API.Modbus
             Dict_IsModbusClientRetry[IP + "_" + Port] = true;
 
             var TargetModbusClient = DictModbusTCP[IP + "_" + Port];
-            bool ConnectResult = TargetModbusClient.Connect();
+            bool ConnectResult = false;
+            try
+            {
+                 ConnectResult = TargetModbusClient.Connect();
+            }
+            catch (Exception)
+            {
+
+            }
 
             foreach (var item in Dict_IP_dict_ID_ModbusModule[IP + "_" + Port].Values)
             {
@@ -68,7 +76,14 @@ namespace gpm_vibration_module_api.API.Modbus
                 return mdc;
             mdc.IPAddress = IP;
             mdc.Port = Port;
-            mdc.Connect();
+            try
+            {
+                mdc.Connect();
+            }
+            catch (Exception)
+            {
+
+            }
             Task.Run(() => QueueRequestHandle(SocketName));
             return mdc;
         }
