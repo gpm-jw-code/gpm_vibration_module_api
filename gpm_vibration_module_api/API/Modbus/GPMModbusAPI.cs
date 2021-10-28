@@ -528,6 +528,10 @@ namespace gpm_vibration_module_api.Modbus
             int[] values = null;
             if (Connection_Type == CONNECTION_TYPE.TCP)
             {
+                if (!Connected)
+                {
+                    return null;
+                }
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
                 values = await TCPReadHoldingRegister(start, len, SlaveID);
