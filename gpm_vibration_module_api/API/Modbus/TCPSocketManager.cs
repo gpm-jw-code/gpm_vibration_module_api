@@ -92,15 +92,23 @@ namespace gpm_vibration_module_api.API.Modbus
         public static void TCPSocketCancelRegist(string IP,int Port,string SlaveID)
         {
             string SocketName = IP + "_" + Port;
-            Dict_IP_dict_ID_ModbusModule[SocketName].Remove(SlaveID);
-            if (Dict_IP_dict_ID_ModbusModule[SocketName].Count == 0)
+            try
             {
-                Dict_IP_dict_ID_ModbusModule.Remove(SocketName);
-                Dict_TCPRequest.Remove(SocketName);
-                Dict_IsModbusClientRetry.Remove(SocketName);
-                DictModbusTCP[SocketName].Disconnect();
-                DictModbusTCP.Remove(SocketName);
+                Dict_IP_dict_ID_ModbusModule[SocketName].Remove(SlaveID);
+                if (Dict_IP_dict_ID_ModbusModule[SocketName].Count == 0)
+                {
+                    Dict_IP_dict_ID_ModbusModule.Remove(SocketName);
+                    Dict_TCPRequest.Remove(SocketName);
+                    Dict_IsModbusClientRetry.Remove(SocketName);
+                    DictModbusTCP[SocketName].Disconnect();
+                    DictModbusTCP.Remove(SocketName);
+                }
             }
+            catch (Exception)
+            {
+
+            }
+            
         }
 
 

@@ -38,8 +38,6 @@ namespace gpm_vibration_module_api.Modbus
         {
             get
             {
-                //var i = modbusClient_TCP == null ? modbus_cli : modbusClient_TCP;
-                //return i.connect_type;
                 return _ConnectType;
             }
         }
@@ -48,9 +46,24 @@ namespace gpm_vibration_module_api.Modbus
         {
             get
             {
-                if (modbusClient_TCP == null)
+                switch (_ConnectType)
                 {
-                    return false;
+                    case CONNECTION_TYPE.TCP:
+                        if (modbusClient_TCP == null)
+                        {
+                            return false;
+                        }
+                        return modbusClient_TCP.Connected;
+                        break;
+                    case CONNECTION_TYPE.RTU:
+                        if (ModbusClient_RTU ==null)
+                        {
+                            return false;
+                        }
+                        return ModbusClient_RTU.Connected;
+                        break;
+                    default:
+                        break;
                 }
                 return modbusClient_TCP.Connected;
             }
@@ -100,7 +113,7 @@ namespace gpm_vibration_module_api.Modbus
         #endregion
         private bool RecieveData = false;
         private ModbusClient modbusClient_TCP;
-        private ModbusClient modbus_cli;
+        private ModbusClient ModbusClient_RTU;
         public GPMModbusAPI()
         {
             //modbusClient_TCP.ReceiveDataChanged += new ModbusClient.ReceiveDataChangedHandler(ModbusClient_ReceiveDataChanged);
@@ -115,7 +128,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns></returns>
         public bool Connect(string IP, int Port, string SlaveID)
         {
-            modbus_cli = null;
+            ModbusClient_RTU = null;
             this.SlaveID = SlaveID;
             this.Port = Port.ToString();
             this.IP = IP;
@@ -184,15 +197,15 @@ namespace gpm_vibration_module_api.Modbus
             modbusClient_TCP = null;
             this.SlaveID = SlaveID;
             this.ComName = ComPort;
-            modbus_cli = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID, parity, StopBits, this);
-            if (modbus_cli.Connected && IsReadBaudRateWhenConnected)
+            ModbusClient_RTU = SerialPortManager.SerialPortRegist(ComPort, BaudRate, SlaveID, parity, StopBits, this);
+            if (ModbusClient_RTU.Connected && IsReadBaudRateWhenConnected)
             {
                 int CurrentBaudRate = ReadBaudRateSetting().Result;
                 this.BaudRate = CurrentBaudRate != -1 ? CurrentBaudRate : BaudRate;
             }
-            modbus_cli.connect_type = CONNECTION_TYPE.RTU;
+            ModbusClient_RTU.connect_type = CONNECTION_TYPE.RTU;
             this._ConnectType = CONNECTION_TYPE.RTU;
-            return modbus_cli.Connected;
+            return ModbusClient_RTU.Connected;
         }
 
 

@@ -55,14 +55,22 @@ namespace gpm_vibration_module_api.API.Modbus
 
         public static void SerialPortCancelRegist(string ComName,string SlaveID)
         {
-            Dict_Com_dict_ID_ModbusModule[ComName].Remove(SlaveID);
-            if (Dict_Com_dict_ID_ModbusModule[ComName].Count == 0)
+            try
             {
-                Dict_Com_dict_ID_ModbusModule.Remove(ComName);
-                Dict_RTURequest.Remove(ComName);
-                DictModbusRTU[ComName].Disconnect();
-                DictModbusRTU.Remove(ComName);
+                Dict_Com_dict_ID_ModbusModule[ComName].Remove(SlaveID);
+                if (Dict_Com_dict_ID_ModbusModule[ComName].Count == 0)
+                {
+                    Dict_Com_dict_ID_ModbusModule.Remove(ComName);
+                    Dict_RTURequest.Remove(ComName);
+                    DictModbusRTU[ComName].Disconnect();
+                    DictModbusRTU.Remove(ComName);
+                }
             }
+            catch (Exception)
+            {
+
+            }
+           
         }
 
         public static void QueueRequestHandle(string ComportName)
