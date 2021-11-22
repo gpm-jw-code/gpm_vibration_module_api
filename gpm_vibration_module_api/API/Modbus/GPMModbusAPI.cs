@@ -105,13 +105,20 @@ namespace gpm_vibration_module_api.Modbus
 
             public const int AllValuesRegStartIndex = 0;
             public const int AllValuesRegLen = 20;
+
+            public const int VelocityRegStartIndex = 20;
+            public const int VelocityRegLen = 6;
+
+            public const int DisplacementRegStartIndex = 26;
+            public const int DisplacementRegLen = 6;
             //ID
             public const int IDRegIndex = 144;
             public const int RangeRegStart = 129;
             public const int BaudRateSetRegIndex = 146;
+            
         }
         #endregion
-        private bool RecieveData = false;
+        private bool ReceiveData = false;
         private ModbusClient modbusClient_TCP;
         private ModbusClient ModbusClient_RTU;
         public GPMModbusAPI()
@@ -215,7 +222,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>if return -1 > 表示模組回傳的封包數據有異常 </returns>
         public async Task<int> ReadBaudRateSetting()
         {
-            RecieveData = false;
+            ReceiveData = false;
             int[] intAry = null;
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 intAry = await TCPReadHoldingRegister(Register.BaudRateSetRegIndex, 1, SlaveID);
@@ -233,9 +240,30 @@ namespace gpm_vibration_module_api.Modbus
 
         }
 
+        public async Task<double[]> ReadDisplacementValues()
+        {
+            ReceiveData = false;
+            double[] dVals = await GetF03FloatValue(Register.DisplacementRegStartIndex, Register.DisplacementRegLen);
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
+        }
+
+
+        public async Task<double[]> ReadVelocityValues()
+        {
+            ReceiveData = false;
+            double[] dVals = await GetF03FloatValue(Register.VelocityRegStartIndex, Register.VelocityRegLen);
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
+        }
+
         public async Task<double[]> ReadCustomValue(int StartIndex,int Length)
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(StartIndex, Length));
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
@@ -249,7 +277,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadVEValues()
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(Register.VEValuesRegStartIndex, Register.VEValuesRegLen));
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
@@ -262,7 +290,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>If return -1 > 表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double> ReadTotalVEValues()
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(Register.TotalVEValueRegStartIndex, Register.TotalVEValueRegLen));
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals.First();
@@ -275,7 +303,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadRMSValues()
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = GetF03FloatValue(Register.RMSValuesRegStartIndex, Register.RMSValuesRegLen).Result;
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
@@ -288,7 +316,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>If return double array = [-1,-1,-1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadP2PValues()
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(Register.P2PValuesRegStartIndex, Register.P2PValuesRegLen));
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
@@ -301,7 +329,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns>If return double array = [-1, -1, -1, -1, -1, -1, -1],表示接收到的封包有異常(比如長度不足)，解封包時發生錯誤</returns>
         public async Task<double[]> ReadAllValues()
         {
-            RecieveData = false;
+            ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(Register.AllValuesRegStartIndex, Register.AllValuesRegLen));
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
@@ -314,7 +342,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <returns></returns>
         public string GetSlaveID()
         {
-            RecieveData = false;
+            ReceiveData = false;
             int ID_int = -1;
             if (Connection_Type == CONNECTION_TYPE.TCP)
             {
@@ -328,7 +356,7 @@ namespace gpm_vibration_module_api.Modbus
         }
         public int GetCurrentMeasureRange()
         {
-            RecieveData = false;
+            ReceiveData = false;
             int[] ints = null;
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 ints = TCPReadHoldingRegister(Register.RangeRegStart - 1, 4, SlaveID).Result;
@@ -362,11 +390,11 @@ namespace gpm_vibration_module_api.Modbus
                 throw new Exception("鮑率設定必須在Modbus TCP模式下操作");
             if (baud != 115200 && baud != 9600)
                 throw new Exception($"{baud}是不允許的鮑率設定值");
-            RecieveData = false;
+            ReceiveData = false;
             modbusClient_TCP.WriteSingleRegister(Register.BaudRateSetRegIndex, baud == 115200 ? 1 : 0);
-            BaudRate = RecieveData ? baud : BaudRate;
+            BaudRate = ReceiveData ? baud : BaudRate;
             modbusClient_TCP.BuferClear();
-            return RecieveData;
+            return ReceiveData;
         }
         /// <summary>
         /// 版本號查詢 
@@ -374,7 +402,7 @@ namespace gpm_vibration_module_api.Modbus
         public string GetVersion()
         {
             var version = "err_err_err";
-            RecieveData = false;
+            ReceiveData = false;
             byte[] byteVals = new byte[4] { 0x31, 0x2E, 0x30, 0x36 };
             if (!IsTest)
             {
@@ -402,11 +430,11 @@ namespace gpm_vibration_module_api.Modbus
             if (Connection_Type == CONNECTION_TYPE.TCP)
             {
                 var oriID = modbusClient_TCP.UnitIdentifier;
-                RecieveData = false;
+                ReceiveData = false;
                 //modbusClient.UnitIdentifier = 0xF0;
                 modbusClient_TCP.WriteSingleRegister(Register.IDRegIndex, ID);
 
-                if (RecieveData)
+                if (ReceiveData)
                 {
                     modbusClient_TCP.UnitIdentifier = ID;
                 }
@@ -427,7 +455,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="Range"></param>
         public void MeasureRangeSet(int Range)
         {
-            RecieveData = false;
+            ReceiveData = false;
             int valwrite = 0;
             switch (Range)
             {
