@@ -840,7 +840,7 @@ namespace gpm_vibration_module_api
                     dataSet_ret.AccData_Filtered.Y = XYZ_Acc_Data_List[1];
                     dataSet_ret.AccData_Filtered.Z = XYZ_Acc_Data_List[2];
                 }
-
+                PhysicalQuantityCal(ref dataSet_ret, Settings.SamplingRate);
                 FFTAndFeatureCal(ref dataSet_ret, GetFFT, GetFeatures, Settings.SamplingRate);
                 return dataSet_ret;
             }
@@ -849,6 +849,21 @@ namespace gpm_vibration_module_api
                 Tools.Logger.Event_Log.Log("[PostProcessingError]" + ex.Message);
                 return new DataSet(0) { ErrorCode = (int)clsErrorCode.Error.PostProcessingError };
             }
+        }
+
+        private void PhysicalQuantityCal(ref DataSet dataSet_ret, double samplingRate)
+        {
+            double[] g_array_x = dataSet_ret.AccData.X.ToArray();
+            double[] g_array_y = dataSet_ret.AccData.Y.ToArray();
+            double[] g_array_z = dataSet_ret.AccData.Z.ToArray();
+            dataSet_ret.PhysicalQuantity.X.Displacement = JMAlgorithm.PhysicalQuantity.GetDisplacement(g_array_x, samplingRate);
+            dataSet_ret.PhysicalQuantity.Y.Displacement = JMAlgorithm.PhysicalQuantity.GetDisplacement(g_array_y, samplingRate);
+            dataSet_ret.PhysicalQuantity.Z.Displacement = JMAlgorithm.PhysicalQuantity.GetDisplacement(g_array_z, samplingRate);
+
+            dataSet_ret.PhysicalQuantity.X.Velocity = JMAlgorithm.PhysicalQuantity.GetVelocity(g_array_x, samplingRate);
+            dataSet_ret.PhysicalQuantity.Y.Velocity = JMAlgorithm.PhysicalQuantity.GetVelocity(g_array_y, samplingRate);
+            dataSet_ret.PhysicalQuantity.Z.Velocity = JMAlgorithm.PhysicalQuantity.GetVelocity(g_array_z, samplingRate);
+
         }
 
         /// <summary>
