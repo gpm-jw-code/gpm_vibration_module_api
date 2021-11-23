@@ -213,6 +213,8 @@ namespace gpm_vibration_module_api.Modbus
             catch (Exception ex)
             {
             }
+
+            connected = false;
             if (connect_type == CONNECTION_TYPE.RTU)
             {
                 if (!serialport.IsOpen)
@@ -1494,6 +1496,10 @@ namespace gpm_vibration_module_api.Modbus
                             ReceiveDataChanged(this);
                         }
                     }
+                }
+                else
+                {
+                    return null;
                 }
                 if(data.Length<8)
                 {

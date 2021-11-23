@@ -17,6 +17,8 @@ namespace gpm_vibration_module_api.API.Modbus
         public static Dictionary<string, Dictionary<string, GPMModbusAPI>> Dict_IP_dict_ID_ModbusModule = new Dictionary<string, Dictionary<string, GPMModbusAPI>>();
 
         public static Dictionary<string, bool> Dict_IsModbusClientRetry = new Dictionary<string, bool>();
+        private static Thread RequestProcessThread = null;
+
         public static bool ConnectionRetry(string IP,string Port, string SlaveID)
         {
             if (Dict_IsModbusClientRetry[IP+"_"+Port] == true)
@@ -62,12 +64,21 @@ namespace gpm_vibration_module_api.API.Modbus
                 DictModbusTCP.Add(SocketName, new ModbusClient());
                 Dict_IsModbusClientRetry.Add(SocketName, false);
                 Dict_TCPRequest.Add(SocketName, new Queue<Request>());
-                Dict_IP_dict_ID_ModbusModule.Add(SocketName, new Dictionary<string, GPMModbusAPI>());
+                
             }
-            if (!Dict_IP_dict_ID_ModbusModule[SocketName].ContainsKey(SlaveID))
+            lock (Dict_IP_dict_ID_ModbusModule)
             {
-                Dict_IP_dict_ID_ModbusModule[SocketName].Add(SlaveID, APIObject);
+                if (!Dict_IP_dict_ID_ModbusModule.ContainsKey(SocketName))
+                {
+                    var NewDict_API = new Dictionary<string, GPMModbusAPI>();
+                    Dict_IP_dict_ID_ModbusModule.Add(SocketName, NewDict_API);
+                }
+                if (!Dict_IP_dict_ID_ModbusModule[SocketName].ContainsKey(SlaveID))
+                {
+                    Dict_IP_dict_ID_ModbusModule[SocketName].Add(SlaveID, APIObject);
+                }
             }
+            
 
             ModbusClient mdc = DictModbusTCP[SocketName];
             mdc.connect_type = ModbusClient.CONNECTION_TYPE.TCP;
@@ -85,7 +96,12 @@ namespace gpm_vibration_module_api.API.Modbus
             {
 
             }
-            Task.Run(() =>  QueueRequestHandle(SocketName));
+            if (mdc.Connected)
+            {
+                RequestProcessThread = new Thread(new ParameterizedThreadStart(QueueRequestHandle));
+                RequestProcessThread.Start(SocketName);
+            }
+            //Task.Run(() =>  QueueRequestHandle(SocketName));
             return mdc;
         }
 
@@ -102,9 +118,10 @@ namespace gpm_vibration_module_api.API.Modbus
                     Dict_IsModbusClientRetry.Remove(SocketName);
                     DictModbusTCP[SocketName].Disconnect();
                     DictModbusTCP.Remove(SocketName);
+                    RequestProcessThread.Abort();
                 }
             }
-            catch (Exception)
+            catch (Exception exp)
             {
 
             }
@@ -112,10 +129,11 @@ namespace gpm_vibration_module_api.API.Modbus
         }
 
 
-        public static void QueueRequestHandle(string IP_Port)
+        public static void QueueRequestHandle(object obj_IP_Port)
         {
             try
             {
+                string IP_Port = obj_IP_Port.ToString();
                 var ModbusClientModule = DictModbusTCP[IP_Port];
                 var RequestQueue = Dict_TCPRequest[IP_Port];
                 var Dict_ModbusModule = Dict_IP_dict_ID_ModbusModule[IP_Port];
