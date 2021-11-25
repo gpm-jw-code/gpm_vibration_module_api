@@ -119,9 +119,9 @@ clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
 - 輸入參數(int) : 倍率。
 
 ### Example:
-    //設定為單軸資料點數為 1024 ( = 512 x 2) 
+    //設定為單軸資料點數為 512 
     var retCode;
-    if (retCode = await module.Data_Length_Setting(2) 
+    if (retCode = await module.Data_Length_Setting(512) 
         MessageBox.Show("OK");
     else //返回值非0,表示設定異常
         MessageBox.Show("Error_Code:" + retCode);
