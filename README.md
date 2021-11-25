@@ -111,12 +111,11 @@ clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
 ## **設定取樣資料長度(單軸)** <a name="設定取樣資料長度"></a>
 
 確認步驟B. Module連線成功後，設定取樣資料長度。    
-- 以 **'512'** 為基底，使用 **'倍率'** 的方式進行設定。
+- 以 **'512'** 為基底，設定的值需要是512的倍數。
 
    Task< int > GPMModuleAPI.Data_Length_Setting(int N)
 
 - 回傳值(int) : Error Code 
-- 輸入參數(int) : 倍率。
 
 ### Example:
     //設定為單軸資料點數為 512 
