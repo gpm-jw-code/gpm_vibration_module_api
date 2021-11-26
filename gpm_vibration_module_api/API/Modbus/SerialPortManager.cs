@@ -17,6 +17,7 @@ namespace gpm_vibration_module_api.API.Modbus
 
         public static Dictionary<string, Dictionary<string, GPMModbusAPI>> Dict_Com_dict_ID_ModbusModule = new Dictionary<string, Dictionary<string, GPMModbusAPI>>();
 
+        private static Thread RequestProcessThread = null;
 
         /// <summary>
         /// 註冊一個Comport來使用
@@ -49,11 +50,13 @@ namespace gpm_vibration_module_api.API.Modbus
             mdc.Parity = parity;
             mdc.StopBits = stopBits;
             mdc.Connect();
-            Task.Run(() => QueueRequestHandle(ComName));
+
+            RequestProcessThread = new Thread(new ParameterizedThreadStart(QueueRequestHandle));
+            RequestProcessThread.Start(ComName);
             return mdc;
         }
 
-        public static void SerialPortCancelRegist(string ComName,string SlaveID)
+        public static void SerialPortCancelRegist(string ComName, string SlaveID)
         {
             try
             {
@@ -64,57 +67,53 @@ namespace gpm_vibration_module_api.API.Modbus
                     Dict_RTURequest.Remove(ComName);
                     DictModbusRTU[ComName].Disconnect();
                     DictModbusRTU.Remove(ComName);
+
+                    RequestProcessThread.Abort();
                 }
             }
             catch (Exception)
             {
 
             }
-           
+
         }
 
-        public static void QueueRequestHandle(string ComportName)
+        public static void QueueRequestHandle(object Obj_ComportName)
         {
+            string ComportName = Obj_ComportName.ToString();
             var ModbusClientModule = DictModbusRTU[ComportName];
             var RequestQueue = Dict_RTURequest[ComportName];
             var Dict_ModbusModule = Dict_Com_dict_ID_ModbusModule[ComportName];
             while (true)
             {
+                Request CurrentRequest = null;
                 lock (RequestQueue)
                 {
+                    Thread.Sleep(300);
+                    if (RequestQueue.Count == 0)
+                        continue;
 
+                    CurrentRequest = RequestQueue.Dequeue();
+                    if (CurrentRequest == null)
+                        continue;
                 }
                 try
                 {
-                    Thread.Sleep(300);
-                    if (RequestQueue.Count != 0)
+                    //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
+                    var UnitIdentifier = CurrentRequest.SlaveID;
+                    if (CurrentRequest.request == Request.REQUEST.READHOLDING)
                     {
-                        //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
-                        //lock (RequestQueue)
-                        //{
-                        var CurrentRequest = RequestQueue.Dequeue();
-                        if (CurrentRequest == null)
-                            continue;
-                        var UnitIdentifier = CurrentRequest.SlaveID;
-                        if (UnitIdentifier == 3)
-                        {
-
-                        }
-                        if (CurrentRequest.request == Request.REQUEST.READHOLDING)
-                        {
-                            Stopwatch sw = new Stopwatch();
-                            sw.Start();
-                            ModbusClientModule.UnitIdentifier = UnitIdentifier;
-                            int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-                            sw.Stop();
-                            Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result,(int)sw.ElapsedMilliseconds);
-                            Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
-                        }
-                        else
-                            ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
-
-                        //}
+                        Stopwatch sw = new Stopwatch();
+                        sw.Start();
+                        ModbusClientModule.UnitIdentifier = UnitIdentifier;
+                        int[] Result = ModbusClientModule.ReadHoldingRegisters(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        sw.Stop();
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(Result, (int)sw.ElapsedMilliseconds);
+                        Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
                     }
+                    else
+                        ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+
                 }
                 catch (Exception ex)
                 {
