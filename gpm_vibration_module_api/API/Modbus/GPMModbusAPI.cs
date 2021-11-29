@@ -106,11 +106,17 @@ namespace gpm_vibration_module_api.Modbus
             public const int AllValuesRegStartIndex = 0;
             public const int AllValuesRegLen = 20;
 
-            public const int VelocityRegStartIndex = 20;
-            public const int VelocityRegLen = 6;
+            public const int Velocity_RMSRegStartIndex = 22;
+            public const int Velocity_RMSRegLen = 6;
 
-            public const int DisplacementRegStartIndex = 26;
-            public const int DisplacementRegLen = 6;
+            public const int Displacement_RMSRegStartIndex = 28;
+            public const int Displacement_RMSRegLen = 6;
+
+            public const int Velocity_P2PRegStartIndex = 34;
+            public const int Velocity_P2PRegLen = 6;
+
+            public const int Displacement_P2PRegStartIndex = 40;
+            public const int Displacement_P2PRegLen = 6;
             //ID
             public const int IDRegIndex = 144;
             public const int RangeRegStart = 129;
@@ -240,10 +246,20 @@ namespace gpm_vibration_module_api.Modbus
 
         }
 
-        public async Task<double[]> ReadDisplacementValues()
+        public async Task<double[]> ReadDisplacement_RMSValues()
         {
             ReceiveData = false;
-            double[] dVals = await GetF03FloatValue(Register.DisplacementRegStartIndex, Register.DisplacementRegLen);
+            double[] dVals = await GetF03FloatValue(Register.Displacement_RMSRegStartIndex, Register.Displacement_RMSRegLen);
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
+        }
+
+        public async Task<double[]> ReadDisplacement_P2PValues()
+        {
+            ReceiveData = false;
+            double[] dVals = await GetF03FloatValue(Register.Displacement_P2PRegStartIndex, Register.Displacement_P2PRegLen);
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
             else
@@ -251,15 +267,27 @@ namespace gpm_vibration_module_api.Modbus
         }
 
 
-        public async Task<double[]> ReadVelocityValues()
+        public async Task<double[]> ReadVelocity_RMSValues()
         {
             ReceiveData = false;
-            double[] dVals = await GetF03FloatValue(Register.VelocityRegStartIndex, Register.VelocityRegLen);
+            double[] dVals = await GetF03FloatValue(Register.Velocity_RMSRegStartIndex, Register.Velocity_RMSRegLen);
             if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
                 return dVals;
             else
                 return new double[] { -1, -1, -1 };
         }
+
+        public async Task<double[]> ReadVelocity_P2PValues()
+        {
+            ReceiveData = false;
+            double[] dVals = await GetF03FloatValue(Register.Velocity_P2PRegStartIndex, Register.Velocity_P2PRegLen);
+            if (dVals != null && dVals.Length > 0 && dVals.All(val => Math.Abs(val) < (double)decimal.MaxValue))
+                return dVals;
+            else
+                return new double[] { -1, -1, -1 };
+        }
+
+       
 
         public async Task<double[]> ReadCustomValue(int StartIndex,int Length)
         {
