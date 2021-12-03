@@ -99,7 +99,9 @@ namespace gpm_vibration_module_api.API.Modbus
                 }
                 try
                 {
+
                     //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
+                    ModbusClientModule.DiscardBuffer();
                     var UnitIdentifier = CurrentRequest.SlaveID;
                     if (CurrentRequest.request == Request.REQUEST.READHOLDING)
                     {

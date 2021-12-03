@@ -508,7 +508,7 @@ namespace gpm_vibration_module_api.Modbus
             if (intVals == null)
                 return -1;
             if (intVals.Length != 2)
-                throw new Exception("回傳的數據長度不正確");
+                return -1;
             int SamplingRate = (intVals[0] * 16 * 16) + intVals[1];
             return SamplingRate;
         }
