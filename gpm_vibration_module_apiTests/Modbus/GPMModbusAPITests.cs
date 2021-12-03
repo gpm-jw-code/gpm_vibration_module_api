@@ -18,22 +18,20 @@ namespace gpm_vibration_module_api.Modbus.Tests
             TCP, RTU
         }
         GPMModbusAPI api = new GPMModbusAPI() { IsReadBaudRateWhenConnected = false };
-        string PortName = "COM3";
+        string PortName = "COM14";
         private int excepectedBaudRateForTest = 115200;
-        string slaveID = "08";
-        const string SensorFwVersion = "1.09";
-        const string IP = "127.0.0.1";
+        string slaveID = "01";
+        const string SensorFwVersion = "1.16";
+        const string IP = "192.168.0.100";
         const int Port = 500;
-        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.TCP;
+        PROTOCOL_TYPE pROTOCOL = PROTOCOL_TYPE.RTU;
         bool connected = false;
-
-
 
         [TestMethod]
         public void TEST2()
         {
             GPMModbusAPI api1 = new GPMModbusAPI();
-            api1.Connect("192.168.0.9",5000,"9");
+            api1.Connect("192.168.0.9", 5000, "9");
 
             for (int i = 0; i < 10; i++)
             {
@@ -204,6 +202,89 @@ namespace gpm_vibration_module_api.Modbus.Tests
                 Assert.IsTrue(success);
             }
 
+        }
+
+        [TestMethod()]
+        public void IntsToIntTest()
+        {
+        }
+
+        [TestMethod()]
+        public void GetSamplingRateTest()
+        {
+            Connect();
+            Assert.AreEqual(5000, api.GetSamplingRate(false));
+        }
+
+        [TestMethod()]
+        public void SetSamplingRateTest()
+        {
+            Task.Run(() =>
+            {
+                Connect();
+                api.SetSamplingRate(3000);
+            });
+            while (true)
+            {
+                Thread.Sleep(1);
+            }
+        }
+    }
+    public static class Extension
+    {
+        internal static double[] ToIEEE754FloatAry(this int[] intAry)
+        {
+            if (intAry == null)
+                return null;
+            List<double> valuesList = new List<double>();
+            if (intAry.Length == 1)
+            {
+                if (intAry[0] == -1)
+                {
+                    return new double[1] { -1 };
+                }
+                else if (intAry[0] == -2)
+                {
+                    return new double[1] { -2 };
+                }
+            }
+            for (int i = 0; i < intAry.Length; i += 4)
+            {
+                var hexstring = intAry[i].ToString("X2") + intAry[i + 1].ToString("X2") + intAry[i + 2].ToString("X2") + intAry[i + 3].ToString("X2");
+                double dVal = hexstring.ToFloat();
+                valuesList.Add(dVal);
+            }
+            return valuesList.ToArray();
+        }
+        internal static byte[] ToByteAry(this int[] intAry)
+        {
+            List<byte> byteList = new List<byte>();
+            for (int i = 0; i < intAry.Length; i++)
+            {
+                byteList.Add((byte)intAry[i]);
+            }
+            return byteList.ToArray();
+        }
+
+        static float ToFloat(this string Hex32Input)
+        {
+            double doubleout = 0.0;
+            UInt64 bigendian;
+            bool success = UInt64.TryParse(Hex32Input,
+                System.Globalization.NumberStyles.HexNumber, null, out bigendian);
+            if (success)
+            {
+                double fractionDivide = Math.Pow(2, 23);
+
+                int sign = (bigendian & 0x80000000) == 0 ? 1 : -1;
+                Int64 exponent = ((Int64)(bigendian & 0x7F800000) >> 23) - (Int64)127;
+                UInt64 fraction = (bigendian & 0x007FFFFF);
+                if (fraction == 0)
+                    doubleout = sign * Math.Pow(2, exponent);
+                else
+                    doubleout = sign * (1 + (fraction / fractionDivide)) * Math.Pow(2, exponent);
+            }
+            return (float)doubleout;
         }
     }
 }

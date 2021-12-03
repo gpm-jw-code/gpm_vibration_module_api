@@ -13,7 +13,7 @@ using static gpm_vibration_module_api.Modbus.ModbusClient;
 
 namespace gpm_vibration_module_api.Modbus
 {
-    public class GPMModbusAPI
+    public partial class GPMModbusAPI
     {
         public enum MODBUS_ERRORCODE
         {
@@ -22,7 +22,7 @@ namespace gpm_vibration_module_api.Modbus
         }
 
 
-        public delegate void Event_GetDataTimeOut(string IP,string SerialPort,string SlaveID);
+        public delegate void Event_GetDataTimeOut(string IP, string SerialPort, string SlaveID);
 
         public Event_GetDataTimeOut EventGetDataTimeOut;
 
@@ -56,7 +56,7 @@ namespace gpm_vibration_module_api.Modbus
                         return modbusClient_TCP.Connected;
                         break;
                     case CONNECTION_TYPE.RTU:
-                        if (ModbusClient_RTU ==null)
+                        if (ModbusClient_RTU == null)
                         {
                             return false;
                         }
@@ -74,7 +74,7 @@ namespace gpm_vibration_module_api.Modbus
             switch (_ConnectType)
             {
                 case CONNECTION_TYPE.TCP:
-                    TCPSocketManager.TCPSocketCancelRegist(IP, Convert.ToInt32(Port) , SlaveID);
+                    TCPSocketManager.TCPSocketCancelRegist(IP, Convert.ToInt32(Port), SlaveID);
                     break;
                 case CONNECTION_TYPE.RTU:
                     SerialPortManager.SerialPortCancelRegist(ComName, SlaveID);
@@ -85,45 +85,6 @@ namespace gpm_vibration_module_api.Modbus
             return;
         }
 
-        #region STRUCT
-        /// <summary>
-        /// 暫存器位址設定
-        /// </summary>
-        internal struct Register
-        {
-            public const int VEValuesRegStartIndex = 0;
-            public const int VEValuesRegLen = 6;
-
-            public const int TotalVEValueRegStartIndex = 6;
-            public const int TotalVEValueRegLen = 2;
-
-            public const int RMSValuesRegStartIndex = 8;
-            public const int RMSValuesRegLen = 6;
-
-            public const int P2PValuesRegStartIndex = 14;
-            public const int P2PValuesRegLen = 6;
-
-            public const int AllValuesRegStartIndex = 0;
-            public const int AllValuesRegLen = 20;
-
-            public const int Velocity_RMSRegStartIndex = 22;
-            public const int Velocity_RMSRegLen = 6;
-
-            public const int Displacement_RMSRegStartIndex = 28;
-            public const int Displacement_RMSRegLen = 6;
-
-            public const int Velocity_P2PRegStartIndex = 34;
-            public const int Velocity_P2PRegLen = 6;
-
-            public const int Displacement_P2PRegStartIndex = 40;
-            public const int Displacement_P2PRegLen = 6;
-            //ID
-            public const int IDRegIndex = 144;
-            public const int RangeRegStart = 129;
-            public const int BaudRateSetRegIndex = 146;
-            
-        }
-        #endregion
         private bool ReceiveData = false;
         private ModbusClient modbusClient_TCP;
         private ModbusClient ModbusClient_RTU;
@@ -185,10 +146,10 @@ namespace gpm_vibration_module_api.Modbus
 
         }
 
-        public bool TCPConnectRetry(string IP,string Port,string SlaveID)
+        public bool TCPConnectRetry(string IP, string Port, string SlaveID)
         {
             IsWaitingForTCPReconnectResult = true;
-            TCPSocketManager.ConnectionRetry(IP,Port, SlaveID);
+            TCPSocketManager.ConnectionRetry(IP, Port, SlaveID);
             while (IsWaitingForTCPReconnectResult)
             {
                 Thread.Sleep(1);
@@ -287,9 +248,9 @@ namespace gpm_vibration_module_api.Modbus
                 return new double[] { -1, -1, -1 };
         }
 
-       
 
-        public async Task<double[]> ReadCustomValue(int StartIndex,int Length)
+
+        public async Task<double[]> ReadCustomValue(int StartIndex, int Length)
         {
             ReceiveData = false;
             double[] dVals = (await GetF03FloatValue(StartIndex, Length));
@@ -503,16 +464,61 @@ namespace gpm_vibration_module_api.Modbus
                     break;
             }
             if (Connection_Type == CONNECTION_TYPE.TCP)
-                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP,this.Port, Register.RangeRegStart, valwrite);
+                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, this.Port, Register.RangeRegStart, valwrite);
             else
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.RangeRegStart, valwrite);
         }
+
+        /// <summary>
+        /// 設定取樣率
+        /// </summary>
+        /// <param name="samplingRate"></param>
+        public void SetSamplingRate(int samplingRate)
+        {
+            ReceiveData = false;
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                modbusClient_TCP.WriteSingleRegister(Register.SamplingRateReg, samplingRate);
+            else
+            {
+                SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.SamplingRateReg, samplingRate);
+            }
+        }
+
+        /// <summary>
+        /// 取得取樣率
+        /// </summary>
+        /// <returns></returns>
+        public int GetSamplingRate(bool SandBoxTest = false)
+        {
+            if (SandBoxTest)
+            {
+                byte[] testData = BitConverter.GetBytes(5000);
+                testData = testData.Reverse().ToArray();
+                return (testData[2] * 16 * 16) + testData[3];
+            }
+
+            ReceiveData = false;
+            int[] intVals = null;
+            if (Connection_Type == CONNECTION_TYPE.TCP)
+                intVals = TCPReadHoldingRegister(Register.SamplingRateReg, 1, SlaveID).Result;
+            else
+            {
+                intVals = RTUReadHoldingRegister(Register.SamplingRateReg, 1, SlaveID).Result;
+            }
+            if (intVals == null)
+                return -1;
+            if (intVals.Length != 2)
+                throw new Exception("回傳的數據長度不正確");
+            int SamplingRate = (intVals[0] * 16 * 16) + intVals[1];
+            return SamplingRate;
+        }
+
 
         int[] Response = null;
         public int DelayTime = 0;
         bool IsResultLoadOK = false;
 
-        public void GetRequestResult(int[] Response,int delayTime)
+        public void GetRequestResult(int[] Response, int delayTime)
         {
             this.Response = Response;
             this.DelayTime = delayTime;
@@ -522,7 +528,7 @@ namespace gpm_vibration_module_api.Modbus
         private async Task<int[]> TCPReadHoldingRegister(int StartAddress, int DataLength, string SlaveID)
         {
             IsResultLoadOK = false;
-            var Req = TCPSocketManager.SendReadHoldingRegistersRequest(SlaveID, this.IP,this.Port, StartAddress, DataLength);
+            var Req = TCPSocketManager.SendReadHoldingRegistersRequest(SlaveID, this.IP, this.Port, StartAddress, DataLength);
 
             while (!IsResultLoadOK)
             {
@@ -621,7 +627,7 @@ namespace gpm_vibration_module_api.Modbus
                 {
                     return new double[1] { -1 };
                 }
-                else if(intAry[0]==-2)
+                else if (intAry[0] == -2)
                 {
                     return new double[1] { -2 };
                 }
