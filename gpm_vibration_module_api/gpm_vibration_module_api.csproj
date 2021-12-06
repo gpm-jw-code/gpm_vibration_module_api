@@ -83,6 +83,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="API\Modbus\DeviceInfoGetFromHtmlPage.cs" />
     <Compile Include="API\Modbus\Register.cs" />
     <Compile Include="API\Modbus\TCPSocketManager.cs" />
     <Compile Include="API\Modbus\SerialPortManager.cs" />

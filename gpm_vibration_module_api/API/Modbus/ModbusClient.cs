@@ -66,7 +66,7 @@ namespace gpm_vibration_module_api.Modbus
         }
         public enum CONNECTION_TYPE
         {
-            TCP, RTU
+            TCP, RTU , UnKnow
         }
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
 
