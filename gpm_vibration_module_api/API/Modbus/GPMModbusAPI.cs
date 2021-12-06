@@ -106,6 +106,10 @@ namespace gpm_vibration_module_api.Modbus
             this.SlaveID = SlaveID;
             this.Port = Port.ToString();
             this.IP = IP;
+
+            if (DeviceInfoGetFromHtmlPage.GET_Protocol_Type(IP) != CONNECTION_TYPE.TCP)
+                throw new Exception("控制器目前的通訊不是 MODBUS TCP!");
+
             modbusClient_TCP = TCPSocketManager.TCPSocketRegist(IP, Port, SlaveID, this);
             this._ConnectType = CONNECTION_TYPE.TCP;
 
