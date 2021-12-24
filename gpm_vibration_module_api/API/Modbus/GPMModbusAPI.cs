@@ -107,8 +107,8 @@ namespace gpm_vibration_module_api.Modbus
             this.Port = Port.ToString();
             this.IP = IP;
 
-            if (DeviceInfoGetFromHtmlPage.GET_Protocol_Type(IP) != CONNECTION_TYPE.TCP)
-                throw new Exception("控制器目前的通訊不是 MODBUS TCP!");
+            //if (DeviceInfoGetFromHtmlPage.GET_Protocol_Type(IP) != CONNECTION_TYPE.TCP)
+            //    throw new Exception("控制器目前的通訊不是 MODBUS TCP!");
 
             modbusClient_TCP = TCPSocketManager.TCPSocketRegist(IP, Port, SlaveID, this);
             this._ConnectType = CONNECTION_TYPE.TCP;
@@ -481,11 +481,9 @@ namespace gpm_vibration_module_api.Modbus
         {
             ReceiveData = false;
             if (Connection_Type == CONNECTION_TYPE.TCP)
-                modbusClient_TCP.WriteSingleRegister(Register.SamplingRateReg, samplingRate);
+                TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, this.Port, Register.SamplingRateReg, samplingRate);
             else
-            {
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.SamplingRateReg, samplingRate);
-            }
         }
 
         /// <summary>

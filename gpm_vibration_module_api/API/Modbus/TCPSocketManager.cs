@@ -205,7 +205,7 @@ namespace gpm_vibration_module_api.API.Modbus
             return req;
         }
 
-        internal static void SendWriteSingleRegisterRequest(string slaveID, string IP, string Port, int RegIndex, int value)
+        internal static Request SendWriteSingleRegisterRequest(string slaveID, string IP, string Port, int RegIndex, int value)
         {
             var req = new Request(slaveID, Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             var TargetRequestQueue = Dict_TCPRequest[IP + "_" + Port];
@@ -213,6 +213,7 @@ namespace gpm_vibration_module_api.API.Modbus
             {
                 TargetRequestQueue.Enqueue(req);
             }
+            return req;
         }
     }
 }
