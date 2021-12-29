@@ -334,6 +334,10 @@ namespace gpm_vibration_module_api.Modbus
                 ints = TCPReadHoldingRegister(Register.RangeRegStart - 1, 4, SlaveID).Result;
             else
                 ints = RTUReadHoldingRegister(Register.RangeRegStart - 1, 4, SlaveID).Result;
+            if (ints == null)
+            {
+                throw new Exception("Measure Range Read Failure");
+            }
             if (ints[3] == 0x00)
                 return 2;
             if (ints[3] == 0x10)

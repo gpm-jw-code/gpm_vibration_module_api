@@ -86,7 +86,7 @@ namespace gpm_vibration_module_api.API.Modbus
                 }
                 try
                 {
-                    Thread.Sleep(300);
+                    Thread.Sleep(3000);
                     if (RequestQueue.Count != 0)
                     {
                         //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
