@@ -44,6 +44,8 @@ namespace gpm_vibration_module_api
         [NonSerialized]
         public clsFFTData FFTData_Filtered = new clsFFTData();
 
+        public clsPhysicalQuantity PhysicalQuantity = new clsPhysicalQuantity();
+
         [NonSerialized]
         public clsFFTData MelBankData = new clsFFTData();
         public clsOtherFeatures Features = new clsOtherFeatures();
@@ -94,6 +96,14 @@ namespace gpm_vibration_module_api
             this.AccData.acc_y_with_window.AddRange(NewData.AccData.acc_y_with_window);
             this.AccData.acc_z_with_window.AddRange(NewData.AccData.acc_z_with_window);
         }
+
+        public class clsPhysicalQuantity
+        {
+            public DataSets.PhysicalQuantityDataSet X;
+            public DataSets.PhysicalQuantityDataSet Y;
+            public DataSets.PhysicalQuantityDataSet Z;
+        }
+
         public class clsAcc : AxisListValue
         {
             internal List<double> acc_x_with_window = new List<double>();
