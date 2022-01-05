@@ -192,7 +192,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
             isGetDataRunning = true;
             TotalDataByteLen = ShorDataTest ? 22 : GetDataPacketLen;
-            bool SendSuccess = SendCommand("READVALUE\r\n");
+            bool SendSuccess = await SendCommand("READVALUE\r\n");
             if (!SendSuccess)
             {
                 isGetDataRunning = false;
@@ -341,7 +341,7 @@ namespace gpm_vibration_module_api.ThreeInOne
             }
             isParametersSettingRunning = true;
             TotalDataByteLen = ParametersPacketLen;
-            bool SendSuccess = SendCommand("READSTVAL\r\n");
+            bool SendSuccess = await SendCommand("READSTVAL\r\n");
             if (!SendSuccess)
             {
                 isParametersSettingRunning = false;
@@ -363,7 +363,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                 return (int)clsErrorCode.Error.ModuleIsBusy;
             isParametersSettingRunning = true;
             TotalDataByteLen = 8;
-            bool SendSuccess = SendCommand(ParamsSendOutBytes);
+            bool SendSuccess = await SendCommand(ParamsSendOutBytes,true,false);
             isParametersSettingRunning = false;
             if (!SendSuccess)
             {
