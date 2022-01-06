@@ -19,6 +19,8 @@ namespace gpm_vibration_module_api.ThreeInOne
         public List<byte> TempDataByteList = new List<byte>();
         internal bool IsSimulator = false;
 
+        public long HandShakeTime { get; private set; }
+
         virtual public bool Open(string ComPort, int BaudRate = 115200)
         {
             try
@@ -83,9 +85,9 @@ namespace gpm_vibration_module_api.ThreeInOne
         {
             try
             {
-                return await SendCommand(bytesCmd, isReviceData);
+                return await SendCommand(bytesCmd, isReviceData,false);
             }
-            catch
+            catch(Exception ex)
             {
                 return false;
             }
@@ -112,10 +114,12 @@ namespace gpm_vibration_module_api.ThreeInOne
                     sw.Start();
                     while (!_isDataRecieveDone)
                     {
-                        if (sw.ElapsedMilliseconds > 10000)
+                        if (sw.ElapsedMilliseconds > 20000)
                             return false;
-                        await Task.Delay(1);
+                        Thread.Sleep(1);
                     }
+                    sw.Stop();
+                    HandShakeTime = sw.ElapsedMilliseconds;
                 }
                 return true;
             }
