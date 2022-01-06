@@ -29,6 +29,9 @@ namespace gpm_vibration_module_api.ThreeInOne
                 {
                     PortName = ComPort.ToUpper(),
                     BaudRate = BaudRate,
+                    StopBits = System.IO.Ports.StopBits.One,
+                    DataBits = 8,
+                    Parity = System.IO.Ports.Parity.None
                 };
                 _serialPort.DataReceived += _serialPort_DataReceived;
 
@@ -85,15 +88,15 @@ namespace gpm_vibration_module_api.ThreeInOne
         {
             try
             {
-                return await SendCommand(bytesCmd, isReviceData,false);
+                return await SendCommand(bytesCmd, isReviceData, false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return false;
             }
         }
 
-        public async Task<bool> SendCommand(byte[] bytesCmd, bool isReviceData = true , bool CRCL = false)
+        public async Task<bool> SendCommand(byte[] bytesCmd, bool isReviceData = true, bool CRCL = false)
         {
             try
             {
