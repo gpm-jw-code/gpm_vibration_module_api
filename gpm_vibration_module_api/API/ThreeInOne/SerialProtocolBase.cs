@@ -18,7 +18,7 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool CRCL_CHECK = false;
         public List<byte> TempDataByteList = new List<byte>();
         internal bool IsSimulator = false;
-
+        protected int Timeout = 10000;
         public long HandShakeTime { get; private set; }
 
         virtual public bool Open(string ComPort, int BaudRate = 115200)
@@ -114,7 +114,7 @@ namespace gpm_vibration_module_api.ThreeInOne
                     sw.Start();
                     while (!_isDataRecieveDone)
                     {
-                        if (sw.ElapsedMilliseconds > 20000)
+                        if (sw.ElapsedMilliseconds > Timeout)
                             return false;
                         Thread.Sleep(1);
                     }
