@@ -18,6 +18,8 @@ namespace gpm_vibration_module_api.ThreeInOne
         private bool CRCL_CHECK = false;
         public List<byte> TempDataByteList = new List<byte>();
         internal bool IsSimulator = false;
+        protected int Timeout = 10000;
+        public long HandShakeTime { get; private set; }
 
         virtual public bool Open(string ComPort, int BaudRate = 115200)
         {
@@ -27,6 +29,9 @@ namespace gpm_vibration_module_api.ThreeInOne
                 {
                     PortName = ComPort.ToUpper(),
                     BaudRate = BaudRate,
+                    StopBits = System.IO.Ports.StopBits.One,
+                    DataBits = 8,
+                    Parity = System.IO.Ports.Parity.None
                 };
                 _serialPort.DataReceived += _serialPort_DataReceived;
 
@@ -83,15 +88,15 @@ namespace gpm_vibration_module_api.ThreeInOne
         {
             try
             {
-                return await SendCommand(bytesCmd, isReviceData);
+                return await SendCommand(bytesCmd, isReviceData, false);
             }
-            catch
+            catch (Exception ex)
             {
                 return false;
             }
         }
 
-        public async Task<bool> SendCommand(byte[] bytesCmd, bool isReviceData = true , bool CRCL = false)
+        public async Task<bool> SendCommand(byte[] bytesCmd, bool isReviceData = true, bool CRCL = false)
         {
             try
             {
@@ -112,10 +117,12 @@ namespace gpm_vibration_module_api.ThreeInOne
                     sw.Start();
                     while (!_isDataRecieveDone)
                     {
-                        if (sw.ElapsedMilliseconds > 10000)
+                        if (sw.ElapsedMilliseconds > Timeout)
                             return false;
-                        await Task.Delay(1);
+                        Thread.Sleep(1);
                     }
+                    sw.Stop();
+                    HandShakeTime = sw.ElapsedMilliseconds;
                 }
                 return true;
             }
