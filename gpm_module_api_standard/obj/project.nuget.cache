@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "N5X7MOSYmfn0kUrbM8lJYqmjWds3RMThxjPitOFhjC7cpKfn19Ue5nuibUEKTthDGteQHwp/bxNLLnELaRQV1A==",
+  "dgSpecHash": "UDRYs/O2Tjthro+m2/9alur5QwfcfovCO73fIunnl6Kvww53HjgDFb3TEUmRgz2FuHG0+GldsAjW7kN1s9ds8Q==",
   "success": true,
-  "projectFilePath": "D:\\ProjectProgram\\Smart IOT\\gpm_vibration_module_api\\gpm_module_api_standard\\gpm_module_api_standard.csproj",
+  "projectFilePath": "C:\\Smart IOT\\gpm_vibration_module_api\\gpm_module_api_standard\\gpm_module_api_standard.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\jinweihuang\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512"
+    "C:\\Users\\ss610\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\ss610\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512"
   ],
   "logs": []
 }

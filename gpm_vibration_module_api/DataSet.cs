@@ -99,9 +99,9 @@ namespace gpm_vibration_module_api
 
         public class clsPhysicalQuantity
         {
-            public DataSets.PhysicalQuantityDataSet X;
-            public DataSets.PhysicalQuantityDataSet Y;
-            public DataSets.PhysicalQuantityDataSet Z;
+            public DataSets.PhysicalQuantityDataSet X = new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Y= new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Z= new DataSets.PhysicalQuantityDataSet();
         }
 
         public class clsAcc : AxisListValue
