@@ -66,7 +66,7 @@ namespace gpm_vibration_module_api.Modbus
         }
         public enum CONNECTION_TYPE
         {
-            TCP, RTU
+            TCP, RTU , UnKnow
         }
         internal enum RegisterOrder { LowHigh = 0, HighLow = 1 };
 
@@ -149,12 +149,25 @@ namespace gpm_vibration_module_api.Modbus
         }
 
 
+        public void DiscardBuffer()
+        {
+            try
+            {
+                serialport.DiscardInBuffer();
+                serialport.DiscardOutBuffer();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
         internal Request CurrentRequest;
         private void QueueRequestHandle()
         {
             while (true)
             {
-                Thread.Sleep( SlaveIDList.Count==1? 1:300);
+                Thread.Sleep(SlaveIDList.Count == 1 ? 1 : 300);
                 try
                 {
                     if (RequestQueue.Count != 0)
@@ -213,6 +226,8 @@ namespace gpm_vibration_module_api.Modbus
             catch (Exception ex)
             {
             }
+
+            connected = false;
             if (connect_type == CONNECTION_TYPE.RTU)
             {
                 if (!serialport.IsOpen)
@@ -278,7 +293,7 @@ namespace gpm_vibration_module_api.Modbus
             return connected;
         }
 
-      
+
 
         /// <summary>
         /// Establish connection to Master device in case of Modbus TCP.
@@ -1495,7 +1510,11 @@ namespace gpm_vibration_module_api.Modbus
                         }
                     }
                 }
-                if(data.Length<8)
+                else
+                {
+                    return null;
+                }
+                if (data.Length < 8)
                 {
 
                 }

@@ -83,12 +83,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="API\Modbus\DeviceInfoGetFromHtmlPage.cs" />
+    <Compile Include="API\Modbus\Register.cs" />
     <Compile Include="API\Modbus\TCPSocketManager.cs" />
     <Compile Include="API\Modbus\SerialPortManager.cs" />
     <Compile Include="API\Modbus\YuelAPI.cs" />
     <Compile Include="API\ThreeInOne\Settings.cs" />
+    <Compile Include="DataSets\PhysicalQuantityDataSet.cs" />
     <Compile Include="DataSets\ThreeInOneModuleDataSet.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="GpmMath\Class_Calculus.cs" />
     <Compile Include="GpmMath\Filters.cs" />
     <Compile Include="GpmMath\NWaves\Audio\ByteConverter.cs" />
     <Compile Include="GpmMath\NWaves\Audio\Channels.cs" />
@@ -316,6 +320,8 @@
     <Compile Include="GpmMath\NWaves\Windows\Window.cs" />
     <Compile Include="GpmMath\NWaves\Windows\WindowExtensions.cs" />
     <Compile Include="GpmMath\NWaves\Windows\WindowTypes.cs" />
+    <Compile Include="GpmMath\PhysicalQuantity.cs" />
+    <Compile Include="DataSets\Series_Data_Properties.cs" />
     <Compile Include="GPMModuleAPI.cs" />
     <Compile Include="GPMModuleAPI_HSR.cs" />
     <Compile Include="gpm_module_api_namespace.cs" />
