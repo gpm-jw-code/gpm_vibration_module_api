@@ -50,6 +50,8 @@ namespace gpm_vibration_module_api
         [NonSerialized]
         public clsOtherFeatures Features_Filtered = new clsOtherFeatures();
 
+        public clsPhysicalQuantity PhysicalQuantity = new clsPhysicalQuantity();
+
         [NonSerialized]
         public ADCError DATAERROR = new ADCError();
         public long TimeSpend;
@@ -94,6 +96,17 @@ namespace gpm_vibration_module_api
             this.AccData.acc_y_with_window.AddRange(NewData.AccData.acc_y_with_window);
             this.AccData.acc_z_with_window.AddRange(NewData.AccData.acc_z_with_window);
         }
+
+
+        public class clsPhysicalQuantity
+        {
+            public DataSets.PhysicalQuantityDataSet X = new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Y = new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Z = new DataSets.PhysicalQuantityDataSet();
+        }
+
+
+
         public class clsAcc : AxisListValue
         {
             internal List<double> acc_x_with_window = new List<double>();

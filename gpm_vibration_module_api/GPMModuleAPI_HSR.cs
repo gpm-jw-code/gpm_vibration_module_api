@@ -853,6 +853,7 @@ namespace gpm_vibration_module_api
 
         private void PhysicalQuantityCal(ref DataSet dataSet_ret, double samplingRate)
         {
+            dataSet_ret.PhysicalQuantity = new DataSet.clsPhysicalQuantity();
             double[] g_array_x = dataSet_ret.AccData.X.ToArray();
             double[] g_array_y = dataSet_ret.AccData.Y.ToArray();
             double[] g_array_z = dataSet_ret.AccData.Z.ToArray();
