@@ -153,12 +153,12 @@ clsEnum.Module_Setting_Enum.MEASURE_RANGE **為量測範圍列舉**
     if (data.ErrorCode == 0) //,返回0值表示Data可抓取
     { 
         //各項數值存於DataSet類別的屬性中, 取出使用即可
-        double[] Gx = data.AccData.X; //x軸 G值
-        double[] Gy = data.AccData.Y; // x軸 G值
-        double[] Gz = data.AccData.Z; // x軸 G值
-        double[] FFTx = data.FFTData.X; //x軸 FFT
-        double[] FFTy = data.FFTData.Y; //y軸 FFT
-        double[] FFTz = data.FFTData.Z; //z軸 FFT
+        List<double> Gx = data.AccData.X; //x軸 G值
+        List<double> Gy = data.AccData.Y; // x軸 G值
+        List<double> Gz = data.AccData.Z; // x軸 G值
+        List<double> FFTx = data.FFTData.X; //x軸 FFT
+        List<double> FFTy = data.FFTData.Y; //y軸 FFT
+        List<double> FFTz = data.FFTData.Z; //z軸 FFT
         double rmsx = data.Features.AccRMS.X; //x軸 RMS
         double rmsy = data.Features.AccRMS.Y; // y軸 RMS
         double rmsz = data.Features.AccRMS.Z; // z軸 RMS
@@ -188,18 +188,12 @@ double SamplingRate { get; set; }
 
 | **Error Code** | **說明** | **排除方式** |
 | ----- | ----- | ----- |
-| **401** | API試用期已超過 | |
-| **403** | Keypro不正確，並非為GPM SSM API使用 | 洽GPM更換KeyPro |
-| **404** | 偵測不到Keypro | 將KeyPro插入USB Port |
 | **601** | IP輸入值不合法 | 需檢查並修改IP輸入值 |
 | **602** | Port輸入值不合法 | 需檢查並修改Port輸入值 |
 | **603** | 嘗試與Sensor連線失敗 | 需檢查IP、Port設定，以及網路連線狀態。 |
 | **604** | 未與模組連線。通常發生在未連線就嘗試抓取DATA | 確認已透過Connect方法成功與模組進行連線。 |
 | **605** | 接收加速度資料時發生timeout |確認網路連線/確認感測器與控制器硬體連接是否異常。|
 | **606** | 設定模組參數時發生timeout |確認網路連線/確認感測器與控制器硬體連接是否異常。|
-| **704** | 找不到License檔案(License.lic) |確認與dll同路徑下的資料夾中，是否有License.lic檔案，若檔案不存在請洽詢GPM。|
-| **705** | License已超出使用期限 |請洽詢GPM以延長使用期限。|
-| **706** | License檢查失敗 |請洽詢GPM索取新的License檔案。|
 | **1506** | 偵測到感測器未連接控制器上/感測器異常 ||
 | **16606** | Host沒有回應 ||
 | **16607** | 模組處於數據擷取狀態(busy) ||
