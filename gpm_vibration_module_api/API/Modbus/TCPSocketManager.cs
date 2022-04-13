@@ -262,7 +262,7 @@ namespace gpm_vibration_module_api.API.Modbus
             }
             catch (Exception exp)
             {
-                return;
+                return req;
             }
             return req;
         }
