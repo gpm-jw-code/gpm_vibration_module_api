@@ -63,6 +63,7 @@ namespace gpm_vibration_module_api
                 module_socket.NoDelay = true;
                 module_socket.Blocking = true;
                 module_socket.Connect(remoteEP);
+                Thread.Sleep(500);
                 if (module_socket.Connected)
                     return 0;
                 else

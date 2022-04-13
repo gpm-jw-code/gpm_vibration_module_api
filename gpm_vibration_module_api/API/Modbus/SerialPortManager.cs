@@ -17,6 +17,7 @@ namespace gpm_vibration_module_api.API.Modbus
 
         public static Dictionary<string, Dictionary<string, GPMModbusAPI>> Dict_Com_dict_ID_ModbusModule = new Dictionary<string, Dictionary<string, GPMModbusAPI>>();
 
+        private static Dictionary<string, Thread> Dict_RequestProcessThread = new Dictionary<string, Thread>();
         private static Thread RequestProcessThread = null;
 
         /// <summary>
@@ -51,8 +52,14 @@ namespace gpm_vibration_module_api.API.Modbus
             mdc.StopBits = stopBits;
             mdc.Connect();
 
-            RequestProcessThread = new Thread(new ParameterizedThreadStart(QueueRequestHandle));
-            RequestProcessThread.Start(ComName);
+            if (Dict_RequestProcessThread.ContainsKey(ComName))
+            {
+                Dict_RequestProcessThread[ComName] =new Thread(  new ParameterizedThreadStart(QueueRequestHandle));
+            }
+            else
+            {
+                Dict_RequestProcessThread.Add(ComName, new Thread(new ParameterizedThreadStart(QueueRequestHandle)));
+            }
             return mdc;
         }
 
@@ -89,7 +96,7 @@ namespace gpm_vibration_module_api.API.Modbus
                 Request CurrentRequest = null;
                 lock (RequestQueue)
                 {
-                    Thread.Sleep(300);
+                    Thread.Sleep(500);
                     if (RequestQueue.Count == 0)
                         continue;
 
@@ -99,6 +106,7 @@ namespace gpm_vibration_module_api.API.Modbus
                 }
                 try
                 {
+                   // Thread.Sleep(2000);
 
                     //Console.WriteLine("待處理柱列:"+RequestQueue.Count);
                     ModbusClientModule.DiscardBuffer();
@@ -114,22 +122,32 @@ namespace gpm_vibration_module_api.API.Modbus
                         Console.WriteLine($"[RTU] ReadHoldingRegisters Time spend:{sw.ElapsedMilliseconds} ms");
                     }
                     else
+                    {
                         ModbusClientModule.WriteSingleRegister(CurrentRequest.StartIndex, CurrentRequest.ValueOrLength);
+                        Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(null, 0);
+                    }
 
                 }
                 catch (Exception ex)
                 {
+                    Dict_ModbusModule[CurrentRequest.str_ID].GetRequestResult(null, 0);
                     Console.WriteLine(ex.Message);
                 }
 
             }
         }
 
+
+        static DateTime LastCommentTime = default;
         internal static Request SendReadHoldingRegistersRequest(string slaveID, string ComeName, int RegIndex, int length)
         {
             var req = new Request(slaveID, Request.REQUEST.READHOLDING, RegIndex, length, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             //RTUClient.AddRequest(req);
             var TargetRequestQueue = Dict_RTURequest[ComeName];
+            if (!Dict_RequestProcessThread[ComeName].IsAlive)
+            {
+                Dict_RequestProcessThread[ComeName].Start(ComeName);
+            }
             lock (TargetRequestQueue)
             {
                 TargetRequestQueue.Enqueue(req);
@@ -141,6 +159,10 @@ namespace gpm_vibration_module_api.API.Modbus
         {
             var req = new Request(slaveID, Request.REQUEST.WRITESIGNLE, RegIndex, value, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             var TargetRequestQueue = Dict_RTURequest[ComeName];
+            if (!Dict_RequestProcessThread[ComeName].IsAlive)
+            {
+                Dict_RequestProcessThread[ComeName].Start(ComeName);
+            }
             lock (TargetRequestQueue)
             {
                 TargetRequestQueue.Enqueue(req);

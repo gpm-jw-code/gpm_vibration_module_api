@@ -34,6 +34,8 @@ namespace gpm_vibration_module_api.Modbus
         internal bool IsTest = false;
         public bool IsReadBaudRateWhenConnected = false;
         private CONNECTION_TYPE _ConnectType = CONNECTION_TYPE.TCP;
+
+        private DateTime LastCommandTime = default;
         public CONNECTION_TYPE Connection_Type
         {
             get
@@ -355,6 +357,10 @@ namespace gpm_vibration_module_api.Modbus
                 ints = TCPReadHoldingRegister(Register.RangeRegStart - 1, 4, SlaveID).Result;
             else
                 ints = RTUReadHoldingRegister(Register.RangeRegStart - 1, 4, SlaveID).Result;
+            if (ints == null)
+            {
+                throw new Exception("Measure Range Read Failure");
+            }
             if (ints[3] == 0x00)
                 return 2;
             if (ints[3] == 0x10)
@@ -438,7 +444,12 @@ namespace gpm_vibration_module_api.Modbus
             }
             else
             {
-                var oriID = SlaveID;
+                var oriID = SlaveID; 
+                if (LastCommandTime.AddSeconds(3) > DateTime.Now)
+                {
+                    Thread.Sleep(100);
+                }
+                LastCommandTime = DateTime.Now;
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.IDRegIndex, ID);
             }
         }
@@ -448,6 +459,7 @@ namespace gpm_vibration_module_api.Modbus
         /// <param name="Range"></param>
         public void MeasureRangeSet(int Range)
         {
+            IsResultLoadOK = false;
             ReceiveData = false;
             int valwrite = 0;
             switch (Range)
@@ -470,7 +482,20 @@ namespace gpm_vibration_module_api.Modbus
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, this.Port, Register.RangeRegStart, valwrite);
             else
+            {
+                if (LastCommandTime.AddSeconds(3) > DateTime.Now)
+                {
+                    Thread.Sleep(100);
+                }
+                LastCommandTime = DateTime.Now;
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.RangeRegStart, valwrite);
+            }
+
+            while (!IsResultLoadOK)
+            {
+                Thread.Sleep(1);
+            }
+            IsResultLoadOK = false;
         }
 
         /// <summary>
@@ -483,6 +508,11 @@ namespace gpm_vibration_module_api.Modbus
             if (Connection_Type == CONNECTION_TYPE.TCP)
                 TCPSocketManager.SendWriteSingleRegisterRequest(SlaveID, this.IP, this.Port, Register.SamplingRateReg, samplingRate);
             else
+                if (LastCommandTime.AddSeconds(3) > DateTime.Now)
+                {
+                    Thread.Sleep(100);
+                }
+                LastCommandTime = DateTime.Now;
                 SerialPortManager.SendWriteSingleRegisterRequest(SlaveID, ComName, Register.SamplingRateReg, samplingRate);
         }
 
@@ -542,6 +572,11 @@ namespace gpm_vibration_module_api.Modbus
 
         internal async Task<int[]> RTUReadHoldingRegister(int start, int len, string SlaveID)
         {
+            if (LastCommandTime.AddSeconds(3)>DateTime.Now)
+            {
+                Thread.Sleep(100);
+            }
+            LastCommandTime = DateTime.Now;
             IsResultLoadOK = false;
             API.Modbus.Request req = SerialPortManager.SendReadHoldingRegistersRequest(SlaveID, ComName, start, len);
             Stopwatch sw = new Stopwatch();
