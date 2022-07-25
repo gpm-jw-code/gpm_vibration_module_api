@@ -18,6 +18,7 @@ namespace gpm_vibration_module_api.Tools
         {
             public EventLog()
             {
+                is_log_enable = false;
                 Console.WriteLine("log initialize");
                 SaveDir = "Log/Event_Log/";
                 //DirCreation();
@@ -25,7 +26,8 @@ namespace gpm_vibration_module_api.Tools
             }
             public override void Log(string content)
             {
-                Console.WriteLine("***EVENT LOG >>>" + content);
+                if (is_log_enable)
+                    Console.WriteLine("***EVENT LOG >>>" + content);
                 //base.Log(content);
             }
         }
@@ -60,7 +62,7 @@ namespace gpm_vibration_module_api.Tools
 
         internal void LoadGlobalSetting()
         {
-            var settings =sys.Settings_Ctrl.Log_Config();
+            var settings = sys.Settings_Ctrl.Log_Config();
             this.is_log_enable = settings.is_write_log_to_HardDisk;
         }
 
@@ -98,7 +100,7 @@ namespace gpm_vibration_module_api.Tools
             {
                 Console.WriteLine(ex.Message);
             }
-           
+
         }
     }
 }

@@ -25,12 +25,10 @@ namespace gpm_vibration_module_api
             }
         }
 
-
         [NonSerialized]
         internal bool IsReady = false;
         public int ID = -1;
 
-        [NonSerialized]
         public int ErrorCode = 0;
         public clsAcc AccData = new clsAcc();
 
@@ -100,8 +98,8 @@ namespace gpm_vibration_module_api
         public class clsPhysicalQuantity
         {
             public DataSets.PhysicalQuantityDataSet X = new DataSets.PhysicalQuantityDataSet();
-            public DataSets.PhysicalQuantityDataSet Y= new DataSets.PhysicalQuantityDataSet();
-            public DataSets.PhysicalQuantityDataSet Z= new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Y = new DataSets.PhysicalQuantityDataSet();
+            public DataSets.PhysicalQuantityDataSet Z = new DataSets.PhysicalQuantityDataSet();
         }
 
         public class clsAcc : AxisListValue
@@ -171,6 +169,9 @@ namespace gpm_vibration_module_api
             public double X = 0;
             public double Y = 0;
             public double Z = 0;
+
+            public IEnumerable<double> axisValues => new[] { X, Y, Z };
+
         }
 
         public class ADCError

@@ -384,8 +384,6 @@ namespace gpm_vibration_module_api.GPMBase
             }
             finally
             {
-
-                Console.WriteLine("Socket buffer clear");
             }
         }
     }
